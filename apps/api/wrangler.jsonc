@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "viewtally-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Better Auth needs AsyncLocalStorage.
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "viewtally",
+      "database_id": "79b7de41-66a2-4048-9b5d-f93ddd5c907f",
+      "migrations_dir": "../../packages/db/migrations",
+    },
+  ],
+}

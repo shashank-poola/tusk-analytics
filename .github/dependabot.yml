@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # Bun ecosystem: Dependabot reads the text bun.lock (Bun >= 1.1.39), not
+  # the old binary bun.lockb. One root entry covers all workspaces.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Skip versions younger than 3 days, so a hijacked release has time to
+    # be pulled before it reaches us.
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    groups:
+      cloudflare:
+        patterns: ["wrangler", "@cloudflare/*"]
+      better-auth:
+        patterns: ["better-auth", "@better-auth/*"]
+      drizzle:
+        patterns: ["drizzle-orm", "drizzle-kit"]
+      next-react:
+        patterns: ["next", "react", "react-dom", "@types/react*", "@next/*"]
+      dev-tooling:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+    labels: [dependencies]
+
+  # "/" covers .github/workflows; composite actions need their own entry.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    labels: [dependencies, ci]

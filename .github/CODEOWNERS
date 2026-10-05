@@ -1,0 +1,6 @@
+# Owner reviews everything. Workflows, agent tooling and migrations are listed
+# separately so they stay owned if the default line changes.
+*                         @shashank-poola
+/.github/                 @shashank-poola
+/.claude/                 @shashank-poola
+/packages/db/migrations/  @shashank-poola

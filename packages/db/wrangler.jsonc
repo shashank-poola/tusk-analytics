@@ -1,0 +1,15 @@
+// Used only to run D1 migrations from this package.
+// Worker apps bind the same database under the same binding name ("DB").
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "viewtally-db",
+  "compatibility_date": "2026-10-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "viewtally",
+      "database_id": "79b7de41-66a2-4048-9b5d-f93ddd5c907f",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

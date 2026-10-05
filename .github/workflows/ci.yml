@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    # Docs-only changes skip CI. Keep this list in sync with push below.
+    paths-ignore:
+      - "docs/**"
+      - "**/README.md"
+      - "LICENSE"
+      - ".vscode/**"
+      - ".github/pull_request_template.md"
+      - ".github/CODEOWNERS"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/README.md"
+      - "LICENSE"
+      - ".vscode/**"
+      - ".github/pull_request_template.md"
+      - ".github/CODEOWNERS"
+  workflow_dispatch:
+
+# Every job gets a read-only token. Nothing in this file uses secrets, so it
+# behaves the same for pull requests from forks.
+permissions:
+  contents: read
+
+# PRs: a new push cancels the previous run. main: every commit runs to the
+# end (it may deploy), so the group is per commit.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  TURBO_TELEMETRY_DISABLED: "1"
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # The shared ESLint config turns every error into a warning
+      # (eslint-plugin-only-warn), so fail on warnings here.
+      - run: bunx turbo run lint -- --max-warnings=0
+      - run: bun run format:check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # TODO: drop the filter once packages/ui has a .ts/.tsx file. Today its
+      # `tsc --noEmit` fails with TS18003 (no inputs), so it's skipped and
+      # --only stops web's ^typecheck from pulling it back in.
+      - run: bunx turbo run typecheck --filter='!@workspace/ui' --only
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: bun run test
+
+  build:
+    name: Build web, bundle API and tracker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # next.config.ts needs it for the /api rewrite; nothing is called.
+      API_ORIGIN: http://localhost:8787
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: bun run build
+      - name: Bundle the API Worker (no upload)
+        working-directory: apps/api
+        run: bunx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/api-bundle"
+      - name: Tracker size budget
+        run: bun run check:tracker-size
+
+  migrations:
+    name: Migration drift and safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # check:migrations diffs against the base commit.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Schema and migrations are in sync
+        run: |
+          bun run db:generate
+          if [ -n "$(git status --porcelain -- packages/db/migrations)" ]; then
+            echo "::error::src/schema changed without a migration. Run 'bun run db:generate' and commit the result."
+            git status --porcelain -- packages/db/migrations
+            git diff -- packages/db/migrations
+            exit 1
+          fi
+      - name: Migration history is consistent
+        working-directory: packages/db
+        run: bunx drizzle-kit check
+      - name: New migrations are backward compatible
+        env:
+          MIGRATIONS_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: bun run check:migrations
+
+  agent-files:
+    name: Validate agent files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: bun run validate:agents
+      - run: bun run test:tooling
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # gitleaks-action lists the PR's commits through the API.
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # Free for repos owned by a personal account. An organization-owned
+      # repo needs a free GITLEAKS_LICENSE secret (fork PRs can't read it).
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+  deploy:
+    name: Deploy
+    needs: [lint, typecheck, test, build, migrations, agent-files, secret-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
