@@ -51,6 +51,12 @@ export function createAuth(env: Bindings) {
       // The default in-memory store is per isolate, so it barely limits
       // anything on Workers. D1 is shared by all of them.
       storage: "database",
+      customRules: {
+        // The web app reads the session on every page load. With D1 storage,
+        // limiting it would add a D1 write per page view, and reading a
+        // session can't be abused. Sign-in routes keep their limits.
+        "/get-session": false,
+      },
     },
     advanced: {
       ipAddress: {
