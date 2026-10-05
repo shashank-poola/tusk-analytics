@@ -6,6 +6,9 @@
   // Better Auth needs AsyncLocalStorage.
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Deploys are production. `bun run dev` overrides this with
+  // `--var ENVIRONMENT:development`.
+  "vars": { "ENVIRONMENT": "production" },
   "d1_databases": [
     {
       "binding": "DB",

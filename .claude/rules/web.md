@@ -10,9 +10,10 @@ paths:
   any API you are unsure of (see the managed block in AGENTS.md).
 - Server components by default. Add `"use client"` only for state, effects or
   event handlers, as in `components/auth/*`.
-- The browser calls only this origin. Server code that needs the API calls
-  `apiOrigin()` from `lib/env.ts` and forwards the cookie, like
-  `lib/session.ts`. Never call the Worker URL from client code.
+- The browser calls only this origin. Server code calls `/api/v1` through
+  `apiRequest` (`lib/api-client.ts`) from a `*.queries.ts` file; client
+  components mutate through server actions. Never call the Worker URL from
+  client code.
 - Route paths live in `lib/routes.ts`; pages read `searchParams` through the
   generated `PageProps<"/path">` type.
 - Pages in `app/(dashboard)/` are already behind the session check in the

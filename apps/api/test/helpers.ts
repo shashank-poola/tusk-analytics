@@ -1,4 +1,4 @@
-import { createDb, eq, sites, user } from "@workspace/db"
+import { createDb, eq, insertSite, user } from "@workspace/db"
 import { env } from "cloudflare:workers"
 import { Hono } from "hono"
 import { expect, vi } from "vitest"
@@ -99,15 +99,17 @@ export async function signIn(
   }
 }
 
+export function uniqueDomain(): string {
+  return `${crypto.randomUUID()}.com`
+}
+
 export async function createSite(ownerId: string) {
-  const [site] = await createDb(env.DB)
-    .insert(sites)
-    .values({
-      ownerId,
-      name: "Test site",
-      domain: `${crypto.randomUUID()}.com`,
-    })
-    .returning()
+  const site = await insertSite(createDb(env.DB), {
+    ownerId,
+    name: "Test site",
+    domain: uniqueDomain(),
+    timezone: "UTC",
+  })
   if (!site) throw new Error("Failed to create site")
   return site
 }

@@ -4,6 +4,12 @@ Compiled with `tsc --noEmit` and run under `@cloudflare/vitest-plugin`
 against this repo. Rename `sites` to your module. Import paths assume the
 real locations shown in each heading.
 
+These are the minimal shape. The real module in
+`apps/api/src/api/v1/sites/` goes further and wins where they differ:
+shared schemas from `packages/contracts`, a capped list `limit`, a body size
+limit, a dedicated 409 code for duplicates, and rows mapped to the contract
+type before they're returned.
+
 ## apps/api/src/lib/validate.ts (create once)
 
 ```ts

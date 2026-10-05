@@ -1,4 +1,4 @@
-import { createDb, getOwnedSite } from "@workspace/db"
+import { createDb, getSiteForOwner } from "@workspace/db"
 import { createMiddleware } from "hono/factory"
 
 import type { SiteEnv } from "../config/env"
@@ -17,7 +17,7 @@ export const requireSite = createMiddleware<SiteEnv>(async (c, next) => {
     throw new Error("requireSite is mounted on a route without :siteId")
   }
 
-  const site = await getOwnedSite(createDb(c.env.DB), {
+  const site = await getSiteForOwner(createDb(c.env.DB), {
     siteId,
     ownerId: c.get("user").id,
   })

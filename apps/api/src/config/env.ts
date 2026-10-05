@@ -22,6 +22,13 @@ const envSchema = z.object({
   RESEND_API_KEY: requiredString,
   /** Sender of auth emails, e.g. `Viewtally <login@viewtally.com>`. */
   EMAIL_FROM: requiredString,
+  /**
+   * `production` in `wrangler.jsonc` vars; `bun run dev` passes
+   * `development`. Gates dev-only behavior such as `localhost` sites.
+   */
+  ENVIRONMENT: z.enum(["development", "production"], {
+    error: 'missing; must be "development" or "production"',
+  }),
 })
 
 export type Bindings = z.infer<typeof envSchema>

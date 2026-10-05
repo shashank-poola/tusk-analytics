@@ -67,8 +67,7 @@ describe("error format", () => {
   })
 
   it("uses the format for errors thrown inside /api/v1", async () => {
-    // Hits the temporary sites route; point it at a real v1 route later.
-    const res = await app.request("/api/v1/sites/vt_anything", {}, env)
+    const res = await app.request("/api/v1/sites", {}, env)
 
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({
@@ -82,7 +81,7 @@ describe("env validation", () => {
     const env = { DB: {}, BETTER_AUTH_URL: "not a url", EMAIL_FROM: "" }
 
     expect(() => assertValidEnv(env)).toThrowError(
-      /DB: missing D1 binding[\s\S]*BETTER_AUTH_URL: missing or not a valid URL[\s\S]*BETTER_AUTH_SECRET: missing[\s\S]*GOOGLE_CLIENT_ID: missing[\s\S]*GOOGLE_CLIENT_SECRET: missing[\s\S]*RESEND_API_KEY: missing[\s\S]*EMAIL_FROM: missing/
+      /DB: missing D1 binding[\s\S]*BETTER_AUTH_URL: missing or not a valid URL[\s\S]*BETTER_AUTH_SECRET: missing[\s\S]*GOOGLE_CLIENT_ID: missing[\s\S]*GOOGLE_CLIENT_SECRET: missing[\s\S]*RESEND_API_KEY: missing[\s\S]*EMAIL_FROM: missing[\s\S]*ENVIRONMENT: missing/
     )
   })
 

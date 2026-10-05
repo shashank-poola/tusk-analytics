@@ -22,6 +22,7 @@ export default defineConfig({
           GOOGLE_CLIENT_SECRET: "test-google-client-secret",
           RESEND_API_KEY: "re_test",
           EMAIL_FROM: "Viewtally <login@example.com>",
+          ENVIRONMENT: "production",
         },
       },
     })),

@@ -1,21 +1,13 @@
+import type { ErrorBody, ErrorCode } from "@workspace/contracts"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 
 const STATUS_BY_CODE = {
   bad_request: 400,
   unauthorized: 401,
   not_found: 404,
+  site_already_exists: 409,
   internal_error: 500,
-} as const satisfies Record<string, ContentfulStatusCode>
-
-export type ErrorCode = keyof typeof STATUS_BY_CODE
-
-/** Every error the API returns (outside /api/auth) has this shape. */
-export type ErrorBody = {
-  error: {
-    code: ErrorCode
-    message: string
-  }
-}
+} as const satisfies Record<ErrorCode, ContentfulStatusCode>
 
 /**
  * An error that is safe to show to the client. Throw it from routes, services

@@ -5,10 +5,10 @@ description: Scaffolds a Hono module in apps/api/src/api/v1/<module>/ (routes, s
 
 # Add an API module
 
-No module exists yet. `apps/api/src/api/v1/index.ts` holds one temporary
-route (`GET /sites/:siteId`) that the first real module, `sites`, replaces.
-The templates in [references/templates.md](references/templates.md) were
-compiled and tested against this repo.
+`apps/api/src/api/v1/sites/` is the reference module: copy its shape. The
+templates in [references/templates.md](references/templates.md) show the
+same pattern in short form. Shapes the web app also reads (request bodies,
+responses, error codes) go in `packages/contracts`, not in `.schema.ts`.
 
 ## Layout
 
@@ -26,16 +26,14 @@ apps/api/test/<module>.test.ts
    `requireUser` then `requireSite` on a `:siteId` param. Public endpoints
    (collect, webhooks) use neither; see the `ingest-pipeline` and
    `add-payment-provider` skills.
-2. **Validation helper.** If `apps/api/src/lib/validate.ts` doesn't exist,
-   create it from the template. It turns zod failures into
+2. **Validation.** Use `jsonBody`/`queryParams` from
+   `apps/api/src/lib/validate.ts`. They turn zod failures into
    `AppError("bad_request")` and malformed JSON into Hono's 400. Never call
    `schema.parse()` in a route: a `ZodError` becomes a 500.
 3. **Write schema → service → routes** from the templates. Type the router
    `Hono<UserEnv>` and start it with `.use(requireUser)`; add `requireSite` per
    route that has `:siteId`.
 4. **Mount** in `src/api/v1/index.ts`: `v1.route("/<module>", <module>Routes)`.
-   When `sites` lands, delete the temporary route and point the last test in
-   `test/errors.test.ts` at a real route.
 5. **Test** with the template: happy path, 400 on bad input, 401 signed out,
    and the cross-tenant case (user A gets 404 for user B's resource).
 6. Run `bun run typecheck`, `bun run test`, `bun run lint`.

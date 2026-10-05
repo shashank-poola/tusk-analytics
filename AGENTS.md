@@ -37,6 +37,8 @@ Local secrets: `apps/api/.dev.vars` (API) and `apps/web/.env` (copy
   first-party.
 - `packages/db`: Drizzle schema, queries and generated SQL migrations for one
   D1 database (`viewtally`). Apps import only from `@workspace/db`.
+- `packages/contracts`: zod schemas and types shared by the API and the web
+  app (request/response shapes, domain normalization, the error body).
 - `packages/ui`: shared Tailwind 4 stylesheet (`globals.css`); shadcn target.
 - `packages/tracker`: the browser script customers install (not built yet).
 
@@ -64,6 +66,69 @@ Local secrets: `apps/api/.dev.vars` (API) and `apps/web/.env` (copy
   test writing).
 - Path-scoped rules: `.claude/rules/`. Hook scripts: `.claude/scripts/`.
 - Deploys: `.github/workflows/deploy.yml`, runbook `docs/runbooks/deploy.md`.
+
+## Code standards
+
+Apply to everything you write; the `code-reviewer` subagent checks these.
+
+### Simple
+
+- Build only what the task asks for. No abstraction until there are two real
+  uses. No generic frameworks, base classes, plugin systems, or config
+  options "for later".
+- Prefer plain functions and plain data over classes. Small files with one
+  clear job; split a file when it passes ~200 lines or does two jobs.
+- If you add anything the task didn't ask for, say so in your summary and
+  justify it in one line.
+
+### Readable and maintainable
+
+- Names say what a thing is or does (`getSiteForOwner`, not `getData`). No
+  abbreviations except common ones (id, url, db).
+- Comments explain why, never what. Delete dead code, unused exports, and
+  TODOs without an owner and reason.
+- One way to do each thing: one error format, one way to read env, one
+  validation approach, one place for each constant. Reuse what exists before
+  writing a new helper.
+- Modules keep the routes → service → db layering. A function does one
+  thing, and early returns beat nesting.
+
+### Strong
+
+- Validate at every boundary (request bodies, query params, env, cookies,
+  third-party responses) with zod. Inside the boundary, trust the types.
+- Strict TypeScript, no `any`, no non-null `!` without a comment. Use
+  discriminated unions and exhaustive switches for states.
+- Never swallow errors. Catch only where you can act, and log with enough
+  context to debug (site id, route, request id), never secrets or personal
+  data. The one deliberate exception is the tracker, which must never throw
+  on a customer's page.
+- Every query that touches customer data is scoped by site, and every site
+  access goes through the ownership check.
+- External calls and loops have limits: timeouts, max body sizes, max string
+  lengths, max page sizes.
+
+### Scalable (design for it at the boundaries; don't build machinery yet)
+
+- Workers stay stateless. Any in-memory cache is bounded and has a TTL, and
+  correctness never depends on it.
+- No N+1 queries. List endpoints take a limit with a sane maximum. Every new
+  query has an index that fits its WHERE and ORDER BY, and you say which one.
+- Writes are batched (`db.batch`), idempotent where retries can happen, and
+  as few as possible per request. D1 bills per row written.
+- Public contracts (URLs, payloads, the tracker snippet) are versioned and
+  never changed in place. New fields are additive.
+
+### Developer experience
+
+- Anyone can run, test, and lint with the existing root scripts. Add a
+  script only if there's a real gap.
+- Error messages say what happened and what to do next. Environment problems
+  fail at startup with the list of what's missing.
+- Test names read as sentences. Shared test helpers live in one place, not
+  copied between files.
+- Types flow from one source (`packages/contracts`, `packages/db`). Don't
+  redefine a shape twice.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

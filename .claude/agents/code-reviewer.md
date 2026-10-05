@@ -44,6 +44,23 @@ Check, in this order:
    `apps/web/tests/`, including the cross-tenant 404 case for owned data.
 8. **Web.** No Worker URL in client code; `"use client"` only where needed;
    paths from `lib/routes.ts`.
+9. **Code standards.** Check every changed line against "## Code standards"
+   in `AGENTS.md`, section by section (Simple, Readable and maintainable,
+   Strong, Scalable, Developer experience). In particular flag: anything the
+   task didn't ask for and the author didn't justify; abstractions with one
+   use; files over ~200 lines or with two jobs; comments that say what
+   instead of why; dead code, unused exports, ownerless TODOs; a second way
+   to do something that already has one (errors, env, validation,
+   constants, helpers); unvalidated input at a boundary; non-null `!`
+   without a comment; non-exhaustive switches over states; swallowed
+   errors or logs without context (or with secrets/personal data); missing
+   timeouts, body/string/page-size caps; list endpoints without a capped
+   limit; new queries without a named index for their WHERE and ORDER BY;
+   unbatched or non-idempotent writes; public contracts changed in place;
+   test names that aren't sentences; test helpers copied between files; a
+   shape defined twice instead of imported from `packages/contracts` or
+   `packages/db`. A broken standard the author didn't call out is SHOULD FIX
+   at least.
 
 Skip formatting (Prettier runs on save) and style preferences that no rule
 states. Don't suggest refactors outside the diff.

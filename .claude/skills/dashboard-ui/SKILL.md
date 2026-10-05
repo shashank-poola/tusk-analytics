@@ -16,9 +16,12 @@ apps/web/
   app/page.tsx                   redirects to /dashboard
   app/signup/page.tsx            sign-in page (AuthShowcase + SignIn)
   app/(dashboard)/layout.tsx     session gate → redirect(routes.signIn); header
-  app/(dashboard)/dashboard/     placeholder page
+  app/(dashboard)/dashboard/     redirects to the newest site or /onboarding
+  app/(dashboard)/onboarding/    add a site; [siteId]/ shows the install snippet
+  app/(dashboard)/sites/[siteId] site page (placeholder until stats exist)
   components/<area>/*.tsx        auth/, brand/, dashboard/ (+ theme-provider.tsx)
-  lib/                           auth-client, auth-errors, env, routes, session
+  features/<area>/               sites/ (*.queries.ts), onboarding/ (form, action, snippet)
+  lib/                           api-client, auth-client, auth-errors, env, routes, session, snippets
   tests/                         Vitest + Testing Library (jsdom)
 packages/ui/src/styles/globals.css   Tailwind import + @source globs only
 ```
@@ -27,7 +30,7 @@ Not there yet: shadcn components (`packages/ui/src/components` is empty),
 the `cn` helper that `components.json` and `.prettierrc` expect at
 `@workspace/ui/lib/utils`, design tokens (no CSS variables in
 `globals.css`), icons (`lucide` is configured but not installed), a chart
-library, and client-side data fetching.
+library, and client-side data fetching (mutations go through server actions).
 
 ## Conventions in the code today
 
@@ -36,11 +39,14 @@ library, and client-side data fetching.
 - **Auth**: everything under `app/(dashboard)/` is behind the layout's
   `getSession()` check. Pages may call `getSession()` again; React `cache`
   dedupes it per request.
-- **Data**: server code calls the API with `fetch(`${apiOrigin()}/api/...`)`,
-  forwards the incoming `cookie` header and uses `cache: "no-store"`, as in
-  `lib/session.ts`. Wrap shared loaders in `cache()`. Client code uses only
-  relative `/api/...` URLs (rewritten to the Worker) or the Better Auth
-  client. Never put the Worker URL in client code.
+- **Data**: `/api/v1` calls go through `apiRequest` in `lib/api-client.ts`
+  (server only: forwards the cookie, times out, validates the response with
+  a `packages/contracts` schema, redirects to sign-in on 401). Wrap it in a
+  `features/<area>/<area>.queries.ts` function; components and pages never
+  call `fetch`. Mutations from client components call a `"use server"`
+  action that re-validates its input and calls a queries function (see
+  `features/onboarding/add-site-action.ts`). `lib/session.ts` is the one
+  direct `fetch`, for Better Auth. Never put the Worker URL in client code.
 - **Routes**: add paths to `lib/routes.ts`, link with `routes.x`. Pages get
   `searchParams` through the generated `PageProps<"/path">` type
   (`next typegen` runs in `bun run typecheck`).

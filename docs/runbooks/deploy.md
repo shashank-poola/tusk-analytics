@@ -29,7 +29,8 @@ and after a rollback an old Worker can run on it for days.
   `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
   `RESEND_API_KEY`, `EMAIL_FROM`. Use secrets, not dashboard variables:
   `wrangler deploy` overwrites dashboard variables with what's in
-  `wrangler.jsonc` (which has none), but never touches secrets.
+  `wrangler.jsonc` (only `ENVIRONMENT=production`), but never touches
+  secrets.
 
 ## Rollback
 
@@ -103,3 +104,8 @@ Both keep auth cookies first-party, because the browser only talks to the
 web origin. Either way, the IP-based auth rate limit needs a fix: behind the
 proxy, `cf-connecting-ip` is the proxy's IP (see the comment in
 `apps/api/src/auth/auth.config.ts`).
+
+Whichever host you pick, the web app needs `API_ORIGIN` and
+`NEXT_PUBLIC_SCRIPT_URL` (the public URL of the tracker's `script.js`) set
+at runtime. `next start` refuses to boot without a valid
+`NEXT_PUBLIC_SCRIPT_URL`; see `apps/web/.env.example`.

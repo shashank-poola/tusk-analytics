@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev --port 8787 --persist-to ../../.wrangler/state",
+    "dev": "wrangler dev --port 8787 --persist-to ../../.wrangler/state --var ENVIRONMENT:development",
     "lint": "eslint",
     "format": "prettier --write \"**/*.ts\"",
     "typecheck": "tsc --noEmit",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.7",
+    "@workspace/contracts": "workspace:*",
     "@workspace/db": "workspace:*",
     "better-auth": "1.7.7",
     "hono": "^4.13.13",
