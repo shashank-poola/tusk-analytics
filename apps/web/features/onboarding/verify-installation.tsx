@@ -1,10 +1,15 @@
 "use client"
 
 import type { InstallStatus } from "@workspace/contracts"
+import { cn } from "@workspace/ui/lib/utils"
+import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 
+import { TallyMarks } from "@/components/brand/tally-marks"
+import { Card } from "@/components/dashboard/card"
 import { routes } from "@/lib/routes"
 
+import { InstallChecklist } from "./install-checklist"
 import { useInstallStatus } from "./use-install-status"
 
 type VerifyInstallationProps = {
@@ -22,73 +27,61 @@ export function VerifyInstallation({
   const check = useInstallStatus(siteId, initialStatus)
 
   if (check.state === "connected") {
+    // Only a flip seen on this page celebrates: after a reload the status
+    // starts out connected, so it never replays.
+    const celebrate = !initialStatus.connected
     return (
-      <section
-        role="status"
-        className="max-w-2xl rounded-lg border border-neutral-200 p-6"
-      >
-        <h2 className="flex items-center gap-2 font-medium">
-          <span aria-hidden className="size-2 rounded-full bg-green-600" />
-          Connected
-        </h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Viewtally received the first pageview from {domain}.
-        </p>
-        <Link
-          href={routes.site(siteId)}
-          className="mt-4 inline-flex rounded-full bg-neutral-950 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
-        >
-          View analytics
-        </Link>
-      </section>
+      <Card role="status" className="max-w-2xl p-6">
+        <div className="flex items-start gap-4">
+          <span
+            className={cn(
+              "grid size-12 shrink-0 place-items-center rounded-2xl",
+              celebrate
+                ? "bg-highlight/20 text-foreground"
+                : "bg-accent-soft text-accent"
+            )}
+          >
+            <TallyMarks animate={celebrate} className="size-7" />
+          </span>
+          <div>
+            <h2 className="font-medium">
+              {celebrate ? "You're live! First visit counted." : "Connected"}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Viewtally received the first pageview from {domain}.
+            </p>
+            <Link
+              href={routes.site(siteId)}
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 sm:min-h-9"
+            >
+              View analytics
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </div>
+        </div>
+      </Card>
     )
   }
 
   const timedOut = check.state === "timed_out"
   return (
-    <section
-      aria-live="polite"
-      className="max-w-2xl rounded-lg border border-neutral-200 p-6"
-    >
-      <h2 className="flex items-center gap-2 font-medium">
-        <span
-          aria-hidden
-          className={`size-2 rounded-full bg-amber-500 ${timedOut ? "" : "animate-pulse"}`}
-        />
-        Waiting for the first visit
-      </h2>
-      <p className="mt-1 text-sm text-neutral-500">
-        {timedOut
-          ? "We stopped checking after 5 minutes. Reload this page to check again."
-          : "Open your site in another tab. This updates by itself when the pageview arrives."}
-      </p>
-      {(timedOut || check.showChecklist) && <Checklist domain={domain} />}
-    </section>
-  )
-}
-
-function Checklist({ domain }: { domain: string }) {
-  return (
-    <div className="mt-4 border-t border-neutral-200 pt-4">
-      <h3 className="text-sm font-medium">No data yet? Check that:</h3>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
-        <li>
-          The snippet is inside the &lt;head&gt; of your pages (or your root
-          layout in Next.js), and that version is deployed.
-        </li>
-        <li>
-          You opened {domain} or www.{domain} exactly. Other subdomains and
-          preview URLs are ignored.
-        </li>
-        <li>
-          No ad blocker is blocking the script. Try a private window with
-          extensions off.
-        </li>
-        <li>
-          Your browser isn&apos;t showing a cached page. Hard refresh with
-          Ctrl+Shift+R (Cmd+Shift+R on a Mac).
-        </li>
-      </ul>
-    </div>
+    <Card aria-live="polite" className="max-w-2xl p-6">
+      <div className="flex items-start gap-4">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-muted text-muted-foreground">
+          <TallyMarks className="size-7 opacity-40" />
+        </span>
+        <div>
+          <h2 className="font-medium">Waiting for the first visit</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {timedOut
+              ? "We stopped checking after 5 minutes. Reload this page to check again."
+              : "Open your site in another tab. This updates by itself, checking every few seconds."}
+          </p>
+        </div>
+      </div>
+      {(timedOut || check.showChecklist) && (
+        <InstallChecklist domain={domain} />
+      )}
+    </Card>
   )
 }

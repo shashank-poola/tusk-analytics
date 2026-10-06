@@ -24,7 +24,7 @@ export default async function InstallSnippetPage({
       <h1 className="text-2xl font-normal tracking-tight">
         Install Viewtally on {site.domain}
       </h1>
-      <p className="mt-2 mb-8 text-sm text-neutral-500">
+      <p className="mt-2 mb-8 text-sm text-muted-foreground">
         Add this script to your site. It&apos;s small and loads without blocking
         your pages.
       </p>

@@ -47,7 +47,7 @@ export function EmailForm({ onSent, onError }: EmailFormProps) {
         placeholder="you@company.com"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        className="h-10 w-full rounded-full border border-white/20 bg-transparent px-5 text-center text-sm text-white placeholder:text-neutral-500 focus:border-white/50 focus:outline-none"
+        className="h-11 w-full rounded-full border border-border bg-transparent px-5 text-center text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/50 focus:outline-none sm:h-10"
       />
       <AuthButton type="submit" variant="outline" disabled={pending}>
         {pending ? "Sending link…" : "Continue with email"}

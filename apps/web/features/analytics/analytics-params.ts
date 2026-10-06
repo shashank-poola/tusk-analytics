@@ -1,19 +1,22 @@
-import {
-  type BreakdownBy,
-  breakdownBySchema,
-  type StatsRange,
-  statsRangeSchema,
-} from "@workspace/contracts"
+import { type StatsRange, statsRangeSchema } from "@workspace/contracts"
+import * as z from "zod"
 
 export const DEFAULT_RANGE: StatsRange = "7d"
-export const DEFAULT_TAB: BreakdownBy = "source"
 
-export const RANGE_LABELS: Record<StatsRange, string> = {
-  "24h": "Last 24 hours",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
-  "90d": "Last 90 days",
+export const RANGES = statsRangeSchema.options
+
+/** For sentences: "in the last 7 days". */
+export const RANGE_PERIODS: Record<StatsRange, string> = {
+  "24h": "the last 24 hours",
+  "7d": "the last 7 days",
+  "30d": "the last 30 days",
+  "90d": "the last 90 days",
 }
+
+/** The Devices card's sub-tab, in `?tab=`. */
+const deviceTabSchema = z.enum(["device", "browser", "os"])
+export type DeviceTab = z.infer<typeof deviceTabSchema>
+export const DEFAULT_DEVICE_TAB: DeviceTab = "device"
 
 type SearchParamValue = string | string[] | undefined
 
@@ -27,8 +30,8 @@ export function parseRange(value: SearchParamValue): StatsRange {
   return result.success ? result.data : DEFAULT_RANGE
 }
 
-/** `?tab=` names the breakdown dimension; the default when missing or unknown. */
-export function parseTab(value: SearchParamValue): BreakdownBy {
-  const result = breakdownBySchema.safeParse(first(value))
-  return result.success ? result.data : DEFAULT_TAB
+/** `?tab=` picks the Devices sub-tab; the default when missing or unknown. */
+export function parseDeviceTab(value: SearchParamValue): DeviceTab {
+  const result = deviceTabSchema.safeParse(first(value))
+  return result.success ? result.data : DEFAULT_DEVICE_TAB
 }

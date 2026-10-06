@@ -1,21 +1,42 @@
+import type { Site } from "@workspace/contracts"
 import Link from "next/link"
 
-import { SignOutButton } from "@/components/auth/sign-out-button"
-import { Logo } from "@/components/brand/logo"
+import { Logo, LogoMark } from "@/components/brand/logo"
+import { SiteSwitcher } from "@/features/sites/site-switcher"
 import { routes } from "@/lib/routes"
 
-export function DashboardHeader({ email }: { email: string }) {
+import { AccountMenu } from "./account-menu"
+import { ThemeToggle } from "./theme-toggle"
+
+type DashboardHeaderProps = {
+  name: string | null
+  email: string
+  sites: Site[]
+}
+
+export function DashboardHeader({ name, email, sites }: DashboardHeaderProps) {
   return (
-    <header className="border-b border-neutral-200">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href={routes.dashboard}>
-          <Logo />
+    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
+        <Link
+          href={routes.dashboard}
+          aria-label="Viewtally home"
+          className="inline-flex min-h-11 items-center rounded-lg"
+        >
+          <Logo className="hidden sm:inline-flex" />
+          <LogoMark className="size-8 sm:hidden" />
         </Link>
-        <div className="flex items-center gap-4">
-          <span className="hidden text-sm text-neutral-500 sm:inline">
-            {email}
-          </span>
-          <SignOutButton />
+        {sites.length > 0 && (
+          <>
+            <span aria-hidden="true" className="text-border">
+              /
+            </span>
+            <SiteSwitcher sites={sites} />
+          </>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          <AccountMenu name={name} email={email} />
         </div>
       </div>
     </header>

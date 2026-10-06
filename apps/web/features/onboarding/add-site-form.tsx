@@ -87,7 +87,7 @@ export function AddSiteForm() {
       </div>
 
       {errors.form && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-negative">
           {errors.form}
         </p>
       )}
@@ -95,7 +95,7 @@ export function AddSiteForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-neutral-950 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60"
+        className="min-h-11 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-60 sm:min-h-9"
       >
         {pending ? "Adding site…" : "Add site"}
       </button>
@@ -104,7 +104,7 @@ export function AddSiteForm() {
 }
 
 const INPUT_CLASSES =
-  "mt-1.5 h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none aria-invalid:border-red-600"
+  "mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none aria-invalid:border-negative sm:h-10"
 
 function FieldMessage({
   id,
@@ -120,14 +120,14 @@ function FieldMessage({
       <p
         id={`${id}-error`}
         role="alert"
-        className="mt-1.5 text-sm text-red-600"
+        className="mt-1.5 text-sm text-negative"
       >
         {error}
       </p>
     )
   }
   return (
-    <p id={`${id}-hint`} className="mt-1.5 text-sm text-neutral-500">
+    <p id={`${id}-hint`} className="mt-1.5 text-sm text-muted-foreground">
       {children}
     </p>
   )
