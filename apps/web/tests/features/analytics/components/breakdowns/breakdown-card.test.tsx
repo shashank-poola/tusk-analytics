@@ -53,19 +53,47 @@ describe("BreakdownBody", () => {
     expect(top().getAllByRole("link")).toHaveLength(1)
   })
 
-  it("lists every row in the Details dialog", async () => {
+  it("lists every row in the Details dialog as a table, with a search", async () => {
     renderBody(breakdown("page", 12))
 
     await userEvent.click(screen.getByRole("button", { name: /Details/ }))
 
     const dialog = screen.getByRole("dialog", { name: "Pages" })
     expect(dialog).toHaveAttribute("open")
+    const table = within(dialog).getByRole("table")
     expect(
-      within(dialog).getAllByRole("listitem", { hidden: true })
-    ).toHaveLength(12)
+      within(table)
+        .getAllByRole("columnheader")
+        .map((cell) => cell.textContent)
+    ).toEqual(["Pages", "Visitors"])
+    // A header row plus one row per page.
+    expect(within(table).getAllByRole("row")).toHaveLength(13)
+
+    await userEvent.type(
+      within(dialog).getByLabelText("Search pages"),
+      "page-12"
+    )
+    const visible = within(table)
+      .getAllByRole("row")
+      .filter((row) => row.closest("tbody") && !row.hidden)
+    expect(visible).toHaveLength(1)
+    expect(visible[0]).toHaveTextContent("/page-12")
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Close" }))
     expect(dialog).not.toHaveAttribute("open")
+  })
+
+  it("filters the dashboard from a row of the Details table", async () => {
+    renderBody(breakdown("page", 3))
+
+    await userEvent.click(screen.getByRole("button", { name: /Details/ }))
+
+    const table = within(
+      screen.getByRole("dialog", { name: "Pages" })
+    ).getByRole("table")
+    expect(
+      within(table).getByRole("link", { name: "/page-2" })
+    ).toHaveAttribute("href", "/filter?key=/page-2")
   })
 
   it("shows countries with a flag and their full name", () => {

@@ -16,7 +16,7 @@ import {
 } from "@/features/analytics/utils/labels"
 import { visitorName } from "@/features/analytics/utils/visitor-name"
 import { InsightsControls } from "./insights-card"
-import { SearchFilter } from "./search-filter"
+import { SearchFilter } from "@/features/analytics/components/search-filter"
 
 const TABLE_ID = "insights-users"
 

@@ -3,6 +3,7 @@ import type { StatsBreakdownResponse } from "@workspace/contracts"
 import { NoData } from "@/features/analytics/components/empty-state"
 import { BreakdownDialog } from "./breakdown-dialog"
 import { BreakdownRows } from "./breakdown-rows"
+import { BreakdownTable } from "./breakdown-table"
 
 /** Rows in the card; "Details" lists every row the request returned. */
 export const TOP_ROWS = 10
@@ -33,8 +34,8 @@ export function BreakdownBody({
       />
       <div className="mt-auto flex justify-center pt-1">
         <BreakdownDialog title={title} count={rows.length}>
-          <BreakdownRows
-            label={`All ${title.toLowerCase()}`}
+          <BreakdownTable
+            title={title}
             breakdown={breakdown}
             hrefFor={hrefFor}
           />

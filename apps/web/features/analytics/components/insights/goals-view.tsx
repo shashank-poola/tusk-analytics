@@ -7,7 +7,7 @@ import { formatCompact, formatNumber } from "@/features/analytics/utils/format"
 import { goalColor } from "./goal-colors"
 import { GoalsChart } from "./goals-chart"
 import { InsightsControls } from "./insights-card"
-import { SearchFilter } from "./search-filter"
+import { SearchFilter } from "@/features/analytics/components/search-filter"
 
 const LIST_ID = "insights-goals"
 

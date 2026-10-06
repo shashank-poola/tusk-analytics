@@ -1,17 +1,21 @@
 "use client"
 
 import { Maximize2, X } from "lucide-react"
-import { useRef } from "react"
+import { useId, useRef } from "react"
+
+import { SearchFilter } from "@/features/analytics/components/search-filter"
 
 type BreakdownDialogProps = {
   title: string
   count: number
-  /** The full list, rendered on the server. */
+  /** The full table, rendered on the server. */
   children: React.ReactNode
 }
 
 /**
- * "View all" for a breakdown card, as a native <dialog>: focus moves in and
+ * "Details" for a breakdown card, as DataFast's: a tall modal with the
+ * title, a search box and close on top and the full table below, the same
+ * size whatever the number of rows. A native <dialog>: focus moves in and
  * back, Escape closes it, and the page behind is inert.
  */
 export function BreakdownDialog({
@@ -20,6 +24,7 @@ export function BreakdownDialog({
   children,
 }: BreakdownDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const listId = `details-${useId().replace(/[^\w-]/g, "")}`
 
   return (
     <>
@@ -41,20 +46,25 @@ export function BreakdownDialog({
           // A click on the backdrop lands on the <dialog> itself.
           if (event.target === event.currentTarget) dialogRef.current?.close()
         }}
-        className="m-auto max-h-[85svh] w-[min(36rem,calc(100vw-2rem))] rounded-2xl border border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-foreground/30 backdrop:backdrop-blur-[2px] open:animate-rise"
+        className="m-auto h-[min(42rem,85svh)] w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-black/50 backdrop:backdrop-blur-sm open:flex open:animate-rise"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
-          <h2 className="font-medium">{title}</h2>
+        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+          <h2 className="shrink-0 text-lg font-semibold">{title}</h2>
+          <SearchFilter
+            label={`Search ${title.toLowerCase()}`}
+            placeholder="Search…"
+            targetId={listId}
+          />
           <button
             type="button"
             onClick={() => dialogRef.current?.close()}
             aria-label="Close"
-            className="-mr-2 inline-grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-9"
+            className="-mr-1 ml-auto inline-grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-9"
           >
             <X aria-hidden="true" className="size-4" />
           </button>
         </div>
-        <div className="max-h-[calc(85svh-3.5rem)] overflow-y-auto p-3">
+        <div id={listId} className="min-h-0 flex-1 overflow-y-auto">
           {children}
         </div>
       </dialog>
