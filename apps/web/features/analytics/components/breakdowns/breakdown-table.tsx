@@ -28,13 +28,13 @@ export function BreakdownTable({
   hrefFor,
 }: BreakdownTableProps) {
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-[0.9375rem]">
       <thead className="sticky top-0 z-10 bg-surface text-left text-xs font-semibold text-muted-foreground">
         <tr className="border-b border-border">
-          <th scope="col" className="px-4 py-2.5 font-semibold">
+          <th scope="col" className="px-4 py-3 font-semibold">
             {title}
           </th>
-          <th scope="col" className="w-28 px-4 py-2.5 text-right font-semibold">
+          <th scope="col" className="w-36 px-4 py-3 text-center font-semibold">
             Visitors
           </th>
         </tr>
@@ -55,7 +55,7 @@ export function BreakdownTable({
               data-search={name.toLowerCase()}
               className="relative transition-colors odd:bg-muted/25 hover:bg-muted/60"
             >
-              <td className="max-w-0 px-4 py-3">
+              <td className="max-w-0 px-4 py-3.5">
                 {href ? (
                   <ViewLink
                     href={href}
@@ -69,7 +69,7 @@ export function BreakdownTable({
                   label
                 )}
               </td>
-              <td className="px-4 py-3 text-right font-medium tabular-nums">
+              <td className="px-4 py-3.5 text-center font-medium tabular-nums">
                 {formatNumber(row.visitors)}
                 <span className="sr-only">
                   {" "}

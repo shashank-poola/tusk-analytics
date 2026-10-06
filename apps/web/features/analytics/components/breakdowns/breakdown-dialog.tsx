@@ -49,7 +49,7 @@ export function BreakdownDialog({
         className="m-auto h-[min(42rem,85svh)] w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-black/50 backdrop:backdrop-blur-sm open:flex open:animate-rise"
       >
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <h2 className="shrink-0 text-lg font-semibold">{title}</h2>
+          <h2 className="shrink-0 text-lg font-bold">{title}</h2>
           <SearchFilter
             label={`Search ${title.toLowerCase()}`}
             placeholder="Search…"

@@ -109,7 +109,7 @@ export function VisitorsChart({
         role="img"
         aria-label={label}
       >
-        <ComposedChart data={data} margin={{ left: 4, right: 12, top: 32 }}>
+        <ComposedChart data={data} margin={{ left: 0, right: 12, top: 32 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop
@@ -142,8 +142,10 @@ export function VisitorsChart({
             minTickGap={28}
             tickFormatter={(t: string) => tickLabel(t, scale)}
           />
+          {/* Numbers start at the card's left edge, as on DataFast. */}
           <YAxis
-            width={36}
+            width={32}
+            tick={{ textAnchor: "start", dx: -26 }}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
