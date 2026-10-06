@@ -98,6 +98,9 @@ export const siteSchema = z.object({
 export type Site = z.infer<typeof siteSchema>
 
 export const siteResponseSchema = z.object({ site: siteSchema })
+/** Most sites one list request returns (an account holds at most 25). */
+export const SITE_LIST_MAX_LIMIT = 100
+
 export const siteListResponseSchema = z.object({ sites: z.array(siteSchema) })
 
 export type SiteResponse = z.infer<typeof siteResponseSchema>

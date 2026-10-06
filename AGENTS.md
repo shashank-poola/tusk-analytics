@@ -17,6 +17,7 @@ Run from the repo root. Bun 1.3 (`packageManager` in `package.json`), Turborepo.
 | Build                      | `bun run build`                                       |
 | New migration from schema  | `bun run db:generate`                                 |
 | Apply migrations locally   | `bun run db:migrate`                                  |
+| Seed local pageviews       | `bun run db:seed -- --site <id> --events 20000`       |
 | Agent files + hook tests   | `bun run validate:agents` · `bun run test:tooling`    |
 | Migration safety (vs main) | `bun run check:migrations`                            |
 
@@ -39,7 +40,10 @@ Local secrets: `apps/api/.dev.vars` (API) and `apps/web/.env` (copy
   D1 database (`viewtally`). Apps import only from `@workspace/db`.
 - `packages/contracts`: zod schemas and types shared by the API and the web
   app (request/response shapes, domain normalization, the error body).
-- `packages/ui`: shared Tailwind 4 stylesheet (`globals.css`); shadcn target.
+- `packages/ui`: shared Tailwind 4 stylesheet and design tokens
+  (`globals.css`), the `cn` helper and shadcn components (`chart`).
+- Dashboard metrics (visitors, sessions, bounce rate, attribution, ranges)
+  are defined in `docs/metrics.md`; the stats API and queries follow it.
 - `packages/tracker`: the browser script customers install. Its build is
   served by the API Worker as `/script.js`; it posts to `/api/v1/collect`
   (`src/api/v1/ingest/`).

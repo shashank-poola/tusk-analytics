@@ -11,28 +11,7 @@ import { describe, expect, it } from "vitest"
 import * as sitesService from "../src/api/v1/sites/sites.service"
 import { app } from "../src/app"
 import { AppError } from "../src/lib/errors"
-import { createSite, signIn, uniqueDomain } from "./helpers"
-
-function api(
-  path: string,
-  {
-    cookie,
-    environment = env,
-  }: { cookie?: string; environment?: typeof env } = {},
-  init: RequestInit = {}
-) {
-  return app.request(
-    `/api/v1${path}`,
-    {
-      ...init,
-      headers: {
-        ...(cookie ? { Cookie: cookie } : {}),
-        "Content-Type": "application/json",
-      },
-    },
-    environment
-  )
-}
+import { api, createSite, signIn, uniqueDomain } from "./helpers"
 
 function post(path: string, cookie: string, body: unknown, environment = env) {
   return api(
