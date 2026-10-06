@@ -1,6 +1,5 @@
 import type { CollectPayload } from "@workspace/contracts"
 import { and, type Database, eq, events, lt, visitors } from "@workspace/db"
-import type { BatchItem } from "drizzle-orm/batch"
 
 import { isBot } from "./bot-filter"
 import {
@@ -222,7 +221,11 @@ export async function ingestEvent(
   return { status: "recorded" }
 }
 
-type Write = BatchItem<"sqlite">
+/**
+ * One statement of a batch, taken from `Database` itself: drizzle-orm is a
+ * dependency of @workspace/db, not of this app, so it isn't imported here.
+ */
+type Write = Parameters<Database["batch"]>[0][number]
 
 /** One atomic batch; a failure names the site but none of the values. */
 async function writeOrThrow(
