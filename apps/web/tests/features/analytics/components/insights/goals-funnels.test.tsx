@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -10,15 +10,15 @@ import { parseView } from "@/features/analytics/utils/analytics-params"
 
 import { SITE } from "@/tests/fixtures/analytics"
 
-const { createFunnelAction, push } = vi.hoisted(() => ({
+const { createFunnelAction, setViewAction } = vi.hoisted(() => ({
   createFunnelAction: vi.fn(),
-  push: vi.fn(),
+  setViewAction: vi.fn(),
 }))
 
 vi.mock("@/features/analytics/server/funnel-actions", () => ({
   createFunnelAction,
 }))
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }))
+vi.mock("@/features/analytics/server/view-actions", () => ({ setViewAction }))
 
 describe("InsightsCard", () => {
   it("has Goal, Funnel and User tabs in the URL, User open by default", () => {
@@ -124,9 +124,11 @@ describe("NewFunnelDialog", () => {
         { type: "goal", value: "signup" },
       ],
     })
-    expect(push).toHaveBeenCalledWith(
-      expect.stringContaining("funnel=fn_aaaaaaaaaaaaaaaa"),
-      { scroll: false }
+    await waitFor(() =>
+      expect(setViewAction).toHaveBeenCalledWith(SITE.id, {
+        insights: "funnel",
+        funnel: "fn_aaaaaaaaaaaaaaaa",
+      })
     )
   })
 

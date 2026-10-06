@@ -98,8 +98,7 @@ export const BREAKDOWN_DETAILS_LIMIT = 50
 
 /**
  * The top rows by visitors. Cards show the first ten and "Details" the rest
- * (50 by default), so one request serves both, and the highlights reuse it
- * through `cache`. The world map asks for every country.
+ * (50 by default), so one request serves both. The world map asks for every country.
  */
 export function getBreakdown(
   siteId: string,

@@ -113,9 +113,10 @@ export function PeriodPicker({
       >
         <ChevronLeft aria-hidden="true" className="size-4" />
       </ViewLink>
-      <div className="border-x border-border">
+      <div className="flex border-x border-border">
         <Menu
           label={`Period: ${label}`}
+          className="h-full"
           triggerClassName="h-full min-h-0 rounded-none px-3 sm:min-h-0"
           panelClassName="w-auto"
           trigger={

@@ -7,10 +7,7 @@ import {
   SectionBoundary,
   SectionError,
 } from "@/features/analytics/components/section-boundary"
-import {
-  ChartSection,
-  HighlightsSection,
-} from "@/features/analytics/components/analytics-sections"
+import { ChartSection } from "@/features/analytics/components/analytics-sections"
 import {
   ChartEmptyState,
   NoData,
@@ -179,19 +176,5 @@ describe("site page states", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Waiting for the first visit")).toBeInTheDocument()
     expect(getOverview).not.toHaveBeenCalled()
-  })
-
-  it("hides the highlights when nothing is true enough to say", async () => {
-    getOverview.mockResolvedValue(overview(NO_TOTALS, NO_TOTALS))
-    getBreakdown.mockResolvedValue(breakdown("source", 0))
-
-    const { container } = render(
-      await HighlightsSection({
-        siteId: SITE.id,
-        scope: { period: { range: "7d", offset: 0 }, filters: {} },
-      })
-    )
-
-    expect(container).toBeEmptyDOMElement()
   })
 })

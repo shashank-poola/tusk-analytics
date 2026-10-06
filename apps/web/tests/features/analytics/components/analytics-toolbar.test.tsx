@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ComponentProps } from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -9,9 +9,10 @@ import { SiteFavicon } from "@/features/sites/components/site-favicon"
 
 import { SITE } from "@/tests/fixtures/analytics"
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }))
+const { setViewAction } = vi.hoisted(() => ({ setViewAction: vi.fn() }))
+vi.mock("@/features/analytics/server/view-actions", () => ({ setViewAction }))
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }))
 // next/form needs the app router; a plain GET form behaves the same here.
 vi.mock("next/form", () => ({
@@ -124,13 +125,37 @@ describe("AnalyticsToolbar", () => {
     expect(screen.getByLabelText("End")).toHaveValue("2026-10-03")
     await userEvent.click(screen.getByRole("button", { name: "Apply" }))
 
-    const url = new URL(push.mock.calls.at(-1)?.[0] ?? "", "http://x")
-    expect(withoutViewMarker(url)).toEqual({
+    expect(setViewAction).toHaveBeenLastCalledWith(SITE.id, {
       pages: "exit_link",
       range: "custom",
       from: "2026-09-28",
       to: "2026-10-03",
     })
+  })
+
+  it("sets the view through the server action, so the URL never changes", async () => {
+    renderToolbar()
+
+    await userEvent.click(screen.getByRole("link", { name: "Previous period" }))
+
+    await waitFor(() =>
+      expect(setViewAction).toHaveBeenLastCalledWith(SITE.id, {
+        range: "30d",
+        offset: "1",
+        pages: "exit_link",
+      })
+    )
+  })
+
+  it("leaves a modified click to the browser, which opens the link itself", async () => {
+    setViewAction.mockClear()
+    renderToolbar()
+
+    fireEvent.click(screen.getByRole("link", { name: "Previous period" }), {
+      ctrlKey: true,
+    })
+
+    expect(setViewAction).not.toHaveBeenCalled()
   })
 
   it("toggles the comparison with the previous period", () => {

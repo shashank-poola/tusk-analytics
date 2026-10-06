@@ -6,9 +6,9 @@ import {
   type FunnelStep,
 } from "@workspace/contracts"
 import { Plus, Trash2, X } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useId, useRef, useState, useTransition } from "react"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { createFunnelAction } from "@/features/analytics/server/funnel-actions"
 import { routes } from "@/lib/routes"
 
@@ -41,7 +41,7 @@ export function NewFunnelDialog({
   triggerClassName,
 }: NewFunnelDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const router = useRouter()
+  const { setView } = useSetView()
   const id = useId()
   const [name, setName] = useState("")
   const [steps, setSteps] = useState<Draft[]>([
@@ -67,13 +67,12 @@ export function NewFunnelDialog({
         return
       }
       dialogRef.current?.close()
-      router.push(
+      setView(
         routes.site(siteId, {
           ...view,
           insights: "funnel",
           funnel: result.funnelId,
-        }),
-        { scroll: false }
+        })
       )
     })
   }

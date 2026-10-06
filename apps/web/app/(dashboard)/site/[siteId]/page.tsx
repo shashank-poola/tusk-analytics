@@ -26,7 +26,6 @@ import { SectionBoundary } from "@/features/analytics/components/section-boundar
 import {
   BreakdownSection,
   ChartSection,
-  HighlightsSection,
   KpiSection,
 } from "@/features/analytics/components/analytics-sections"
 import { AnalyticsToolbar } from "@/features/analytics/components/analytics-toolbar"
@@ -36,7 +35,6 @@ import { OverviewCard } from "@/features/analytics/components/overview/overview-
 import {
   BreakdownSkeleton,
   ChartSkeleton,
-  HighlightsSkeleton,
   InsightsSkeleton,
   KpiStripSkeleton,
 } from "@/features/analytics/components/skeletons"
@@ -116,14 +114,6 @@ export default async function SitePage({
           </SectionBoundary>
         }
       />
-
-      <SectionBoundary
-        key={`highlights-${key}`}
-        title="the highlights"
-        fallback={<HighlightsSkeleton />}
-      >
-        <HighlightsSection {...section} />
-      </SectionBoundary>
 
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
         {BREAKDOWN_CARD_KEYS.map((card) => {

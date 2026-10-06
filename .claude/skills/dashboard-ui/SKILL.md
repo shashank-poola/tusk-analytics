@@ -56,15 +56,15 @@ through server actions).
   `live-visitors-action.ts` (the Online poller).
 - `utils/`: `analytics-params.ts` (`?range=` plus one param per breakdown
   card: `sources`, `pages`, `locations`, `devices`), `format`, `labels`,
-  `chart-axis`, `greeting-text`, `highlights`, `visitor-name`.
+  `chart-axis`, `visitor-name`.
 - `components/`: `analytics-sections.tsx` (async server sections that
   fetch), `section-boundary.tsx` (`SectionBoundary`: one `catchError` boundary with retry plus
   one `Suspense` per section), `analytics-toolbar`, `empty-state`,
   `skeletons`, and by page area: `overview/` (overview-card, kpi-strip,
-  live-count, count-up, delta-chip, metric-hint, visitors-chart),
+  live-count, count-up, change-indicator, visitors-chart),
   `breakdowns/` (fixed-height tabbed card, rows, "Details" dialog, row
-  icons), `visitors/` (recent visitors with DiceBear faces and nicknames),
-  `summary/` (greeting, highlights).
+  icons), `insights/` (the Goal / Funnel / User card, with DiceBear faces
+  and nicknames).
 
 Range and tabs live in the URL, so views are shareable and server-rendered;
 tabs are plain links. Breakdown keys and visitor fields are tracker input:

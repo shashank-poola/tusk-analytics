@@ -3,9 +3,9 @@
 import { cn } from "@workspace/ui/lib/utils"
 import { CalendarDays, ChevronDown, ChevronLeft } from "lucide-react"
 import { ViewLink } from "@/features/analytics/components/view-link"
-import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { KBD_CLASSES } from "./chip"
 import { DateRangeCalendar } from "./date-range-calendar"
 
@@ -47,23 +47,23 @@ export function PeriodMenu({
   customFrom,
   customTo,
 }: PeriodMenuProps) {
-  const router = useRouter()
+  const { setView } = useSetView()
   const ref = useRef<HTMLDivElement>(null)
-  const [view, setView] = useState<"presets" | "custom">("presets")
+  const [screen, setScreen] = useState<"presets" | "custom">("presets")
   const [showMore, setShowMore] = useState(more.some((option) => option.active))
 
   function close() {
     const menu = ref.current?.closest("details")
     if (menu) menu.open = false
-    setView("presets")
+    setScreen("presets")
   }
 
-  if (view === "custom") {
+  if (screen === "custom") {
     return (
       <div ref={ref}>
         <button
           type="button"
-          onClick={() => setView("presets")}
+          onClick={() => setScreen("presets")}
           className="mb-1 inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
@@ -79,7 +79,7 @@ export function PeriodMenu({
             url.searchParams.set("from", from)
             url.searchParams.set("to", to)
             close()
-            router.push(`${url.pathname}${url.search}`, { scroll: false })
+            setView(`${url.pathname}${url.search}`)
           }}
         />
       </div>
@@ -112,7 +112,7 @@ export function PeriodMenu({
       <div className="mt-1 border-t border-border pt-1">
         <button
           type="button"
-          onClick={() => setView("custom")}
+          onClick={() => setScreen("custom")}
           className={cn(ROW_CLASSES, customActive && "bg-muted font-semibold")}
         >
           <span className="flex-1">Custom</span>

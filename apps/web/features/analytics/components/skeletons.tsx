@@ -88,14 +88,3 @@ export function InsightsSkeleton() {
     </div>
   )
 }
-
-export function HighlightsSkeleton() {
-  return (
-    <Card role="status" className="space-y-3 p-5">
-      <Bar className="h-4 w-24" />
-      <Bar className="h-4 w-full max-w-md" />
-      <Bar className="h-4 w-full max-w-sm" />
-      <Loading label="highlights" />
-    </Card>
-  )
-}

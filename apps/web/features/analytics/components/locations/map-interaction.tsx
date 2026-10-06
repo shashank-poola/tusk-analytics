@@ -1,8 +1,8 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { formatNumber } from "@/features/analytics/utils/format"
 
 type Hovered = { name: string; visitors: number; x: number; y: number }
@@ -16,7 +16,7 @@ const TOOLTIP_OFFSET_PX = 14
  * with client-side navigation (next/link can't render inside an SVG).
  */
 export function MapInteraction({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
+  const { setView } = useSetView()
   const ref = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState<Hovered | null>(null)
 
@@ -53,7 +53,7 @@ export function MapInteraction({ children }: { children: React.ReactNode }) {
         const href = link?.getAttribute("href")
         if (!href?.startsWith("/")) return
         event.preventDefault()
-        router.push(href, { scroll: false })
+        setView(href)
       }}
     >
       {children}

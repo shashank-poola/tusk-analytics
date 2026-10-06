@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest"
 
 import { WorldMap } from "@/features/analytics/components/locations/world-map"
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }))
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }))
+const { setViewAction } = vi.hoisted(() => ({ setViewAction: vi.fn() }))
+vi.mock("@/features/analytics/server/view-actions", () => ({ setViewAction }))
 
 function renderMap() {
   return render(
@@ -45,15 +45,13 @@ describe("WorldMap", () => {
     expect(screen.getByText("0")).toBeInTheDocument()
   })
 
-  it("filters by a visited country on click, without a page load", async () => {
+  it("filters by a visited country on click, keeping the URL clean", async () => {
     renderMap()
 
     await userEvent.click(
       screen.getByRole("link", { name: "India: 26 visitors" })
     )
 
-    expect(push).toHaveBeenCalledWith("/site/x?view=1&country=IN", {
-      scroll: false,
-    })
+    expect(setViewAction).toHaveBeenCalledWith("x", { country: "IN" })
   })
 })

@@ -5,11 +5,11 @@ import {
   ChartContainer,
 } from "@workspace/ui/components/chart"
 import { ViewLink } from "@/features/analytics/components/view-link"
-import { useRouter } from "next/navigation"
 import { Cell, Pie, PieChart } from "recharts"
 
 import { Icon } from "@/components/ui/icon"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { usePrefersReducedMotion } from "@/features/analytics/hooks/use-prefers-reduced-motion"
 import { formatNumber } from "@/features/analytics/utils/format"
 
@@ -49,7 +49,7 @@ function sliceColor(index: number, count: number): string {
  * screen readers, so the drawing itself is decorative.
  */
 export function ChannelDonut({ slices }: { slices: ChannelSlice[] }) {
-  const router = useRouter()
+  const { setView } = useSetView()
   const reducedMotion = usePrefersReducedMotion()
 
   function renderLabel({
@@ -132,7 +132,7 @@ export function ChannelDonut({ slices }: { slices: ChannelSlice[] }) {
             animationDuration={300}
             onClick={(_, index) => {
               const href = slices[index]?.href
-              if (href) router.push(href, { scroll: false })
+              if (href) setView(href)
             }}
             className="cursor-pointer"
           >

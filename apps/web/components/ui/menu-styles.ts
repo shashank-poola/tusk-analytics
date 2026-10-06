@@ -4,4 +4,4 @@
 
 /** A row in a Menu, for links and buttons alike. */
 export const MENU_ITEM_CLASSES =
-  "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition-colors hover:bg-muted sm:min-h-10"
+  "flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-colors hover:bg-muted sm:min-h-9"

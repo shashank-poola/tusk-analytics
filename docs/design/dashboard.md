@@ -19,7 +19,6 @@ attention without getting in the way. Metric definitions live in
   │ ‹ chart: visitors only, smooth line over a soft gradient       ›│
   │   (dashed running bucket, source icons on the biggest peaks)    │
   └─────────────────────────────────────────────────────────────────┘
-  [ Highlights: up to three sentences ]
   [ Channel·Referrer·Campaign ]       [ Hostname·Page·Entry·Exit link ]
   [ Map·Country·Region·City ]         [ Browser·OS·Device ]
   [ Goal · Funnel · User                                    search ]
@@ -32,12 +31,15 @@ attention without getting in the way. Metric definitions live in
   the bottom card in `?insights=`. A row click adds a filter
   (`?country=IN`), shown as a removable chip in the filter row.
 - URLs stay clean: `/site/<id>` is one website's dashboard and `/sites`
-  lists all of the user's websites. A link that sets the view carries it as
-  `?view=1&range=30d&…`; `apps/web/proxy.ts` stores that query in a
-  per-site cookie (`vt_view`, 30 days) and redirects to the bare URL, so
-  the address bar never shows what was clicked. The page reads the cookie
-  and validates it like any query. Only a view too long for a cookie stays
-  in the URL. Links that set the view don't prefetch.
+  lists all of the user's websites. Clicking a link that sets the view
+  (`ViewLink`, or `useSetView` in code) calls a server action that stores
+  it in a per-site cookie (`vt_view`, 30 days) and Next re-renders the
+  page, so the address bar never shows what was clicked. The link's href
+  (`?view=1&range=30d&…`) still works for a new tab or without JavaScript:
+  `apps/web/proxy.ts` turns it into the same cookie and redirects to the
+  bare URL. The page reads the cookie and validates it like any query. Only
+  a view too long for a cookie stays in the URL. Those links don't
+  prefetch.
 - The view is made of: the period is `?range=` (+ `offset` for ‹ ›) or `custom` with
   `from`/`to`, picked on a two-month calendar (no date library); the chart
   interval is `?interval=`. Keys T, Y, H, W, M jump to Today, Yesterday,

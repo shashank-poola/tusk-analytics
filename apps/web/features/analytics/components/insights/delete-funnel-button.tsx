@@ -1,9 +1,9 @@
 "use client"
 
 import { Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { deleteFunnelAction } from "@/features/analytics/server/funnel-actions"
 import { routes } from "@/lib/routes"
 
@@ -22,7 +22,7 @@ export function DeleteFunnelButton({
   viewWithoutFunnel,
   className,
 }: DeleteFunnelButtonProps) {
-  const router = useRouter()
+  const { setView } = useSetView()
   const [deleting, startDeleting] = useTransition()
   return (
     <button
@@ -39,9 +39,7 @@ export function DeleteFunnelButton({
             window.alert(result.error ?? "Couldn't delete the funnel.")
             return
           }
-          router.push(routes.site(siteId, viewWithoutFunnel), {
-            scroll: false,
-          })
+          setView(routes.site(siteId, viewWithoutFunnel))
         })
       }}
     >

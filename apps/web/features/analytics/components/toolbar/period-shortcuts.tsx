@@ -1,8 +1,8 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
+import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { isPlainKeyPress } from "@/lib/keyboard"
 
 type PeriodShortcutsProps = {
@@ -12,17 +12,17 @@ type PeriodShortcutsProps = {
 
 /** One-key jumps between periods (T, Y, H, W, M), shown in the period menu. */
 export function PeriodShortcuts({ links }: PeriodShortcutsProps) {
-  const router = useRouter()
+  const { setView } = useSetView()
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (!isPlainKeyPress(event)) return
       const href = links[event.key.toLowerCase()]
       if (!href) return
       event.preventDefault()
-      router.push(href, { scroll: false })
+      setView(href)
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [links, router])
+  }, [links, setView])
   return null
 }

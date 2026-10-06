@@ -35,18 +35,20 @@ export function AccountMenu({ name, email, avatarSrc }: AccountMenuProps) {
     <Menu
       align="end"
       label={`Account: ${display}`}
+      triggerClassName="rounded-full p-0.5 ring-1 ring-transparent transition-shadow hover:bg-transparent hover:ring-border group-open:ring-border sm:min-h-0"
+      panelClassName="w-64"
       trigger={<Avatar src={avatarSrc} />}
     >
-      <div className="flex items-center gap-3 px-3 py-2">
-        <Avatar src={avatarSrc} className="size-10" />
+      <div className="flex items-center gap-3 px-2.5 py-2.5">
+        <Avatar src={avatarSrc} className="size-9" />
         <div className="min-w-0">
           {name?.trim() && (
-            <p className="truncate text-sm font-medium">{name}</p>
+            <p className="truncate text-sm font-semibold">{name}</p>
           )}
           <p className="truncate text-xs text-muted-foreground">{email}</p>
         </div>
       </div>
-      <div className="mt-1 border-t border-border pt-1.5">
+      <div className="mt-1 border-t border-border pt-1">
         <Link href={routes.settings} className={MENU_ITEM_CLASSES}>
           <Settings
             aria-hidden="true"

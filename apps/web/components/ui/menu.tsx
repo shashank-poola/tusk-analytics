@@ -15,6 +15,8 @@ type MenuProps = {
   triggerClassName?: string
   /** Classes for the dropdown, e.g. a narrower width. */
   panelClassName?: string
+  /** Classes for the wrapper, e.g. "h-full" to fill a pill. */
+  className?: string
   children: React.ReactNode
 }
 
@@ -28,13 +30,14 @@ export function Menu({
   align = "start",
   triggerClassName,
   panelClassName,
+  className,
   children,
 }: MenuProps) {
   const ref = useRef<HTMLDetailsElement>(null)
   useDismiss(ref)
 
   return (
-    <details ref={ref} className="group relative">
+    <details ref={ref} className={cn("group relative", className)}>
       <summary
         aria-label={label}
         className={cn(
@@ -53,7 +56,7 @@ export function Menu({
           }
         }}
         className={cn(
-          "absolute z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] animate-rise rounded-2xl border border-border bg-surface p-1.5 shadow-pop",
+          "absolute z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] animate-rise rounded-xl border border-border bg-surface p-1 shadow-pop",
           align === "end" ? "right-0" : "left-0",
           panelClassName
         )}

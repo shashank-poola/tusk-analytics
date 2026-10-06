@@ -23,7 +23,6 @@ import {
 } from "@/features/analytics/utils/breakdown-tabs"
 import { rowFilters, withRowFilters } from "@/features/analytics/utils/filters"
 import { formatNumber } from "@/features/analytics/utils/format"
-import { buildHighlights } from "@/features/analytics/utils/highlights"
 import { keyLabel } from "@/features/analytics/utils/labels"
 import { BreakdownBody } from "./breakdowns/breakdown-body"
 import { ChannelDonut } from "./breakdowns/channel-donut"
@@ -31,7 +30,6 @@ import { NoData } from "./empty-state"
 import { WorldMap } from "./locations/world-map"
 import { KpiStrip } from "./overview/kpi-strip"
 import { VisitorsChart } from "./overview/visitors-chart"
-import { HighlightsCard } from "./summary/highlights-card"
 
 // Each section fetches its own data inside its own Suspense boundary, so the
 // requests run in parallel and stream in as they finish. Shared requests are
@@ -85,21 +83,6 @@ export async function ChartSection({
       {current.pageviews === 0 && emptyState}
     </div>
   )
-}
-
-export async function HighlightsSection({ siteId, scope }: SectionProps) {
-  const [{ current, previous }, sources, pages] = await Promise.all([
-    getOverview(siteId, scope),
-    getBreakdown(siteId, scope, "source"),
-    getBreakdown(siteId, scope, "page"),
-  ])
-  const highlights = buildHighlights({
-    current,
-    previous,
-    sources: sources.rows,
-    pages: pages.rows,
-  })
-  return <HighlightsCard highlights={highlights} />
 }
 
 type Row = StatsBreakdownResponse["rows"][number]

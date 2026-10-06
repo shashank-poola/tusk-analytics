@@ -1,8 +1,8 @@
 // Generated from Natural Earth 1:110m (public domain) via world-atlas 2,
 // Mercator projection without Antarctica, coordinates rounded to whole
-// units. Not edited by hand; regenerate rather than patch.
+// units, viewBox fitted to the land. Not edited by hand; regenerate rather than patch.
 
-export const WORLD_MAP_VIEWBOX = "0 0 1000 560"
+export const WORLD_MAP_VIEWBOX = "65 -2 870 564"
 
 /** SVG path data per ISO 3166-1 alpha-2 country code. */
 export const COUNTRY_PATHS: Record<string, string> = {
