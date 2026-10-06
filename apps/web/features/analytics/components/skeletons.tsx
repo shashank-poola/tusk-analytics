@@ -17,16 +17,6 @@ function Loading({ label }: { label: string }) {
   return <span className="sr-only">Loading {label}…</span>
 }
 
-export function GreetingSkeleton() {
-  return (
-    <div role="status" className="space-y-3">
-      <Bar className="h-8 w-full max-w-xl" />
-      <Bar className="h-4 w-64" />
-      <Loading label="summary" />
-    </div>
-  )
-}
-
 export function KpiStripSkeleton() {
   return (
     <div

@@ -54,11 +54,12 @@ describe("SiteSwitcher", () => {
     domain: "blog.dev",
   }
 
-  it("names the current site and lists the others with Add site", async () => {
-    render(<SiteSwitcher sites={[SITE, BLOG]} />)
+  it("names the current site and lists the others, the snippet and Add site", async () => {
+    render(<SiteSwitcher current={SITE} sites={[SITE, BLOG]} />)
 
-    const toggle = screen.getByText("myapp.com", { selector: "summary span" })
-    await userEvent.click(toggle)
+    await userEvent.click(
+      screen.getByLabelText("Switch site, current: myapp.com")
+    )
 
     expect(screen.getByRole("link", { name: /^myapp\.com/ })).toHaveAttribute(
       "aria-current",
@@ -67,6 +68,10 @@ describe("SiteSwitcher", () => {
     expect(screen.getByRole("link", { name: "blog.dev" })).toHaveAttribute(
       "href",
       "/sites/vt_aaaaaaaaaaaaaaaa"
+    )
+    expect(screen.getByRole("link", { name: "Tracking code" })).toHaveAttribute(
+      "href",
+      `/onboarding/${SITE.id}`
     )
     expect(screen.getByRole("link", { name: "Add site" })).toHaveAttribute(
       "href",
@@ -78,36 +83,24 @@ describe("SiteSwitcher", () => {
 describe("DashboardHeader", () => {
   const AVATAR = "data:image/svg+xml;base64,AA=="
 
-  function renderHeader(sites = [SITE]) {
+  function renderHeader() {
     render(
       <DashboardHeader
         name="Ada Lovelace"
         email="ada@example.com"
         avatarSrc={AVATAR}
-        sites={sites}
       />
     )
   }
 
-  it("links home, switches site and opens the account menu", () => {
+  it("has only the logo, the theme toggle and the account menu", () => {
     renderHeader()
 
     expect(
       screen.getByRole("link", { name: "Viewtally home" })
     ).toHaveAttribute("href", "/dashboard")
-    expect(
-      screen.getByText("myapp.com", { selector: "summary span" })
-    ).toBeInTheDocument()
     expect(screen.getByLabelText("Account: Ada Lovelace")).toBeInTheDocument()
-  })
-
-  it("has no site switcher before the first site exists", () => {
-    renderHeader([])
-
-    expect(
-      screen.queryByText("myapp.com", { selector: "summary span" })
-    ).not.toBeInTheDocument()
-    expect(screen.getByLabelText("Account: Ada Lovelace")).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Switch site/)).not.toBeInTheDocument()
   })
 
   it("has no bottom border", () => {

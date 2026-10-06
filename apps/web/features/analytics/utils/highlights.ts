@@ -4,12 +4,16 @@ import type {
   StatsTotals,
 } from "@workspace/contracts"
 
+import { RANGE_PERIODS } from "./analytics-params"
 import { formatNumber, formatPercent, relativeChange } from "./format"
-import { previousPeriod } from "./greeting-text"
 import { keyLabel } from "./labels"
 
 /** Smaller changes aren't worth a sentence. */
 const MIN_HIGHLIGHT_CHANGE = 0.05
+
+function previousPeriod(range: StatsRange): string {
+  return RANGE_PERIODS[range].replace("the last", "the previous")
+}
 
 export type Highlight = { kind: "source" | "page" | "change"; text: string }
 

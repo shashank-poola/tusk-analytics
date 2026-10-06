@@ -35,14 +35,12 @@ const { getSite, getInstallStatus, getOverview, getTimeseries, getBreakdown } =
 vi.mock("@/features/sites/server/sites.queries", () => ({
   getSite,
   getInstallStatus,
+  listSites: async () => [SITE],
 }))
 vi.mock("@/features/analytics/server/analytics.queries", () => ({
   getOverview,
   getTimeseries,
   getBreakdown,
-}))
-vi.mock("@/lib/session", () => ({
-  getSession: async () => ({ user: { name: "Ada", email: "ada@example.com" } }),
 }))
 vi.mock("@/features/onboarding/server/install-status-action", () => ({
   checkInstallStatus: vi.fn(),

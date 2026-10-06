@@ -1,10 +1,6 @@
 import type { StatsTotals } from "@workspace/contracts"
 import { describe, expect, it } from "vitest"
 
-import {
-  greetingDetail,
-  greetingHeadline,
-} from "@/features/analytics/utils/greeting-text"
 import { buildHighlights } from "@/features/analytics/utils/highlights"
 
 function totals(visitors: number, pageviews = visitors, sessions = visitors) {
@@ -127,36 +123,5 @@ describe("buildHighlights", () => {
         pages: [row("/", 3), row("/docs", 2)],
       })
     ).toEqual(["source", "page", "change"])
-  })
-})
-
-describe("greeting", () => {
-  const visited = { domain: "myapp.com", range: "7d" as const }
-
-  it("greets by first name and counts people", () => {
-    expect(
-      greetingHeadline({ ...visited, name: "Ada Lovelace", visitors: 1204 })
-    ).toBe("Hey Ada, 1,204 people visited myapp.com in the last 7 days.")
-    expect(greetingHeadline({ ...visited, name: "", visitors: 1 })).toBe(
-      "Hey there, 1 person visited myapp.com in the last 7 days."
-    )
-    expect(greetingHeadline({ ...visited, name: null, visitors: 0 })).toBe(
-      "Hey there, myapp.com had no visitors in the last 7 days."
-    )
-  })
-
-  it("compares visitors with the previous period in one line", () => {
-    expect(greetingDetail("24h", totals(118), totals(100))).toBe(
-      "That's 18% more than the previous 24 hours."
-    )
-    expect(greetingDetail("7d", totals(50), totals(100))).toBe(
-      "That's 50% fewer than the previous 7 days."
-    )
-    expect(greetingDetail("7d", totals(1000), totals(1004))).toBe(
-      "About the same as the previous 7 days."
-    )
-    expect(greetingDetail("30d", totals(5), totals(0))).toBe(
-      "Nobody visited in the previous 30 days, so there's nothing to compare yet."
-    )
   })
 })

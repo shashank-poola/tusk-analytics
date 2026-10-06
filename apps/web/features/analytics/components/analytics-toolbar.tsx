@@ -1,10 +1,10 @@
 import type { Site, StatsRange } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
-import { CalendarDays, Check, ChevronDown, Settings2 } from "lucide-react"
+import { CalendarDays, Check, ChevronDown } from "lucide-react"
 import Link from "next/link"
 
 import { Menu, MENU_ITEM_CLASSES } from "@/components/ui/menu"
-import { SiteFavicon } from "@/features/sites/components/site-favicon"
+import { SiteSwitcher } from "@/features/sites/components/site-switcher"
 import { routes } from "@/lib/routes"
 
 import {
@@ -18,27 +18,23 @@ const CHIP_CLASSES =
 
 type AnalyticsToolbarProps = {
   site: Site
+  /** Every site of the signed-in user, for the site menu. */
+  sites: Site[]
   range: StatsRange
   /** Kept in the range links so switching range keeps the open tabs. */
   tabs: BreakdownTabs
 }
 
 /** The site (with its own favicon) and the date range, above the numbers. */
-export function AnalyticsToolbar({ site, range, tabs }: AnalyticsToolbarProps) {
+export function AnalyticsToolbar({
+  site,
+  sites,
+  range,
+  tabs,
+}: AnalyticsToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className={cn(CHIP_CLASSES, "pr-1")}>
-        <SiteFavicon siteId={site.id} domain={site.domain} />
-        <span className="max-w-[14rem] truncate">{site.domain}</span>
-        <Link
-          href={routes.installSnippet(site.id)}
-          aria-label={`Tracking code for ${site.domain}`}
-          title="Tracking code"
-          className="ml-1 inline-grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:size-8"
-        >
-          <Settings2 aria-hidden="true" className="size-4" />
-        </Link>
-      </div>
+      <SiteSwitcher current={site} sites={sites} chipClassName={CHIP_CLASSES} />
 
       <Menu
         label={`Date range: ${RANGE_LABELS[range]}`}

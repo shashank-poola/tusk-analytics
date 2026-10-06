@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { SITE_LIST_MAX_LIMIT } from "@workspace/contracts"
 import { notFound } from "next/navigation"
 
 import {
@@ -11,7 +12,6 @@ import { SectionBoundary } from "@/features/analytics/components/section-boundar
 import {
   BreakdownSection,
   ChartSection,
-  GreetingSection,
   HighlightsSection,
   KpiSection,
   VisitorsSection,
@@ -22,7 +22,6 @@ import { OverviewCard } from "@/features/analytics/components/overview/overview-
 import {
   BreakdownSkeleton,
   ChartSkeleton,
-  GreetingSkeleton,
   HighlightsSkeleton,
   KpiStripSkeleton,
   VisitorsSkeleton,
@@ -32,8 +31,8 @@ import { WaitingForFirstVisit } from "@/features/onboarding/components/waiting-f
 import {
   getInstallStatus,
   getSite,
+  listSites,
 } from "@/features/sites/server/sites.queries"
-import { getSession } from "@/lib/session"
 
 export const metadata: Metadata = {
   title: "Site · Viewtally",
@@ -43,12 +42,11 @@ export default async function SitePage({
   params,
   searchParams,
 }: PageProps<"/sites/[siteId]">) {
-  const [{ siteId }, search, session] = await Promise.all([
-    params,
-    searchParams,
-    getSession(),
+  const [{ siteId }, search] = await Promise.all([params, searchParams])
+  const [site, sites] = await Promise.all([
+    getSite(siteId),
+    listSites({ limit: SITE_LIST_MAX_LIMIT }),
   ])
-  const site = await getSite(siteId)
   if (!site) notFound()
 
   const installStatus = await getInstallStatus(site.id)
@@ -63,19 +61,7 @@ export default async function SitePage({
   // skeleton (and replays the count-up) instead of stale numbers.
   return (
     <div className="space-y-4 sm:space-y-5">
-      <SectionBoundary
-        key={`greeting-${range}`}
-        title="the summary"
-        fallback={<GreetingSkeleton />}
-      >
-        <GreetingSection
-          {...section}
-          name={session?.user.name ?? null}
-          domain={site.domain}
-        />
-      </SectionBoundary>
-
-      <AnalyticsToolbar site={site} range={range} tabs={tabs} />
+      <AnalyticsToolbar site={site} sites={sites} range={range} tabs={tabs} />
 
       <OverviewCard
         totals={

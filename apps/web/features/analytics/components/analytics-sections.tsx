@@ -11,7 +11,6 @@ import {
 import { BreakdownBody } from "@/features/analytics/components/breakdowns/breakdown-card"
 import { ChartEmptyState, NoData } from "./empty-state"
 import { formatNumber } from "@/features/analytics/utils/format"
-import { Greeting } from "@/features/analytics/components/summary/greeting"
 import { buildHighlights } from "@/features/analytics/utils/highlights"
 import { HighlightsCard } from "@/features/analytics/components/summary/highlights-card"
 import { KpiStrip } from "@/features/analytics/components/overview/kpi-strip"
@@ -23,18 +22,6 @@ import { VisitorsList } from "@/features/analytics/components/visitors/visitors-
 // deduped by `cache` in analytics.queries.ts.
 
 type SectionProps = { siteId: string; range: StatsRange }
-
-export async function GreetingSection({
-  siteId,
-  range,
-  name,
-  domain,
-}: SectionProps & { name: string | null; domain: string }) {
-  const overview = await getOverview(siteId, range)
-  return (
-    <Greeting name={name} domain={domain} range={range} overview={overview} />
-  )
-}
 
 export async function KpiSection({ siteId, range }: SectionProps) {
   const [overview, live] = await Promise.all([

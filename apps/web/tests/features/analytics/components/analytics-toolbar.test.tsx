@@ -12,22 +12,24 @@ const tabs = parseBreakdownTabs({ pages: "exit_page", devices: "os" })
 
 describe("AnalyticsToolbar", () => {
   function renderToolbar() {
-    render(<AnalyticsToolbar site={SITE} range="7d" tabs={tabs} />)
+    render(
+      <AnalyticsToolbar site={SITE} sites={[SITE]} range="7d" tabs={tabs} />
+    )
   }
 
   it("names the site and the current range", () => {
     renderToolbar()
 
-    expect(screen.getByText("myapp.com")).toBeInTheDocument()
+    expect(screen.getAllByText("myapp.com")[0]).toBeInTheDocument()
     expect(screen.getByLabelText("Date range: Last 7 days")).toBeInTheDocument()
   })
 
-  it("links the settings icon to the install snippet", () => {
+  it("puts the site switcher in the site chip", () => {
     renderToolbar()
 
     expect(
-      screen.getByRole("link", { name: "Tracking code for myapp.com" })
-    ).toHaveAttribute("href", `/onboarding/${SITE.id}`)
+      screen.getByLabelText("Switch site, current: myapp.com")
+    ).toBeInTheDocument()
   })
 
   it("lists every range, marks the current one and keeps the open tabs", async () => {
