@@ -29,9 +29,10 @@ export function SiteFavicon({ siteId, domain, className }: SiteFaviconProps) {
     return (
       <span
         aria-hidden="true"
+        // `className` last, so a bigger favicon can also size its letter.
         className={cn(
-          classes,
-          "grid place-items-center bg-accent text-[0.65rem] font-bold text-accent-foreground uppercase"
+          "grid size-5 shrink-0 place-items-center rounded-md bg-accent text-[0.65rem] font-bold text-accent-foreground uppercase",
+          className
         )}
       >
         {domain[0]}
