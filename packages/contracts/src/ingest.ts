@@ -4,6 +4,24 @@ import { siteIdSchema } from "./sites"
 
 const MAX_URL_LENGTH = 2048
 
+/** Event names the tracker uses itself; a goal can't take them. */
+const RESERVED_EVENT_NAMES = ["pageview", "outbound"]
+
+/**
+ * A goal's name, as sent by `window.viewtally("signup")` or
+ * `data-vt-goal="signup"`: lowercase letters, digits, `_` and `-`, up to
+ * 64 characters. Stored as the event's name.
+ */
+export const goalNameSchema = z
+  .string()
+  .regex(
+    /^[a-z0-9][a-z0-9_-]{0,63}$/,
+    "Use lowercase letters, digits, _ and -, up to 64 characters"
+  )
+  .refine((name) => !RESERVED_EVENT_NAMES.includes(name), {
+    error: "pageview and outbound are reserved",
+  })
+
 const httpUrl = z.url({ protocol: /^https?$/ }).max(MAX_URL_LENGTH)
 
 /** Fields every event carries. */
@@ -33,6 +51,8 @@ export const collectPayloadSchema = z.discriminatedUnion("name", [
     /** The link's URL; the server keeps its host and path only. */
     href: httpUrl,
   }),
+  /** A goal the site owner tracks: a signup, a checkout, a scroll. */
+  z.object({ ...eventFields, name: z.literal("goal"), goal: goalNameSchema }),
 ])
 
 export type CollectPayload = z.infer<typeof collectPayloadSchema>

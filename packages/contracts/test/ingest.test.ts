@@ -32,6 +32,19 @@ describe("collectPayloadSchema", () => {
     ).toBe(false)
   })
 
+  it("accepts a goal with a lowercase slug name, never a reserved one", () => {
+    const goal = (name: string) =>
+      collectPayloadSchema.safeParse({ ...VALID, name: "goal", goal: name })
+        .success
+
+    expect(goal("checkout_started")).toBe(true)
+    expect(goal("Signup")).toBe(false)
+    expect(goal("sign up")).toBe(false)
+    expect(goal("x".repeat(65))).toBe(false)
+    expect(goal("pageview")).toBe(false)
+    expect(goal("outbound")).toBe(false)
+  })
+
   it("ignores fields it doesn't know, so new tracker fields stay compatible", () => {
     expect(collectPayloadSchema.parse({ ...VALID, extra: 1 })).toEqual(VALID)
   })

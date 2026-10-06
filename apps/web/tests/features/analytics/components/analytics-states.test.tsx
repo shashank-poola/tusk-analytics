@@ -43,6 +43,13 @@ vi.mock("@/features/analytics/server/analytics.queries", () => ({
   getTimeseries,
   getBreakdown,
 }))
+vi.mock("@/features/analytics/server/funnels.queries", () => ({
+  listFunnels: vi.fn(),
+}))
+vi.mock("@/features/analytics/server/funnel-actions", () => ({
+  createFunnelAction: vi.fn(),
+  deleteFunnelAction: vi.fn(),
+}))
 vi.mock("@/features/onboarding/server/install-status-action", () => ({
   checkInstallStatus: vi.fn(),
 }))

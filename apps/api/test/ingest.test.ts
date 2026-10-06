@@ -251,6 +251,27 @@ describe("POST /api/v1/collect", () => {
     expect(await visitorRows(site.id)).toEqual([])
   })
 
+  it("records a goal as one event named after it", async () => {
+    const site = await siteForNewUser()
+    const payload = {
+      ...pageview(site.id, { url: `https://${site.domain}/signup` }),
+      name: "goal" as const,
+      goal: "signup",
+    }
+
+    const res = await collect(payload, { Origin: `https://${site.domain}` })
+
+    expect(res.status).toBe(202)
+    const [event, ...others] = await eventRows(site.id)
+    expect(others).toEqual([])
+    expect(event).toMatchObject({
+      name: "signup",
+      path: "/signup",
+      source: null,
+    })
+    expect(await visitorRows(site.id)).toEqual([])
+  })
+
   it("answers 400 for an outbound click without a link", async () => {
     const site = await siteForNewUser()
 

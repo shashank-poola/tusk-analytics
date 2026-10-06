@@ -1,5 +1,6 @@
 export * from "./account"
 export * from "./errors"
+export * from "./funnels"
 export * from "./ingest"
 export * from "./referrers"
 export * from "./sites"

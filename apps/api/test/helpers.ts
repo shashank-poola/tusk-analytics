@@ -1,4 +1,11 @@
-import { createDb, eq, insertSite, user } from "@workspace/db"
+import {
+  createDb,
+  eq,
+  events,
+  insertSite,
+  type NewEvent,
+  user,
+} from "@workspace/db"
 import { env } from "cloudflare:workers"
 import { Hono } from "hono"
 import { expect, vi } from "vitest"
@@ -134,4 +141,48 @@ export async function createSite(ownerId: string) {
   })
   if (!site) throw new Error("Failed to create site")
   return site
+}
+
+/** Events for the stats tests: a pageview unless `name` says otherwise. */
+export type Pageview = {
+  visitor: string
+  session: string
+  at: string
+} & Partial<
+  Pick<
+    NewEvent,
+    | "path"
+    | "hostname"
+    | "name"
+    | "props"
+    | "campaignParams"
+    | "source"
+    | "referrer"
+    | "utmMedium"
+    | "utmCampaign"
+    | "country"
+    | "region"
+    | "city"
+    | "device"
+    | "browser"
+    | "os"
+  >
+>
+
+/** One insert per row: a multi-row insert would pass D1's 100-parameter cap. */
+export async function insertPageviews(siteId: string, pageviews: Pageview[]) {
+  const [first, ...rest] = pageviews.map(({ visitor, session, at, ...row }) =>
+    createDb(env.DB)
+      .insert(events)
+      .values({
+        path: "/",
+        source: "direct",
+        ...row,
+        siteId,
+        visitorId: visitor,
+        sessionId: session,
+        createdAt: new Date(at),
+      } satisfies NewEvent)
+  )
+  if (first) await createDb(env.DB).batch([first, ...rest])
 }

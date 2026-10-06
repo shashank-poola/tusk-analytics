@@ -121,17 +121,20 @@ export async function ingestEvent(
   const hostname = url.hostname.slice(0, MAX_HOSTNAME_LENGTH)
   const visitorKey = { siteId: site.id, visitorId: payload.visitorId }
 
-  if (payload.name === "outbound") {
-    // One row: a click needs no visitor write and no source or location.
+  if (payload.name !== "pageview") {
+    // One row: a click or a goal needs no visitor write, source or
+    // location; filters and funnels reach those through its session.
+    // A goal is stored under its own name (never pageview or outbound).
     await writeOrThrow(db, site.id, [
       db.insert(events).values({
         ...visitorKey,
         sessionId: payload.sessionId,
-        name: payload.name,
         path,
         hostname,
-        props: { url: outboundUrlOf(payload.href) },
         createdAt: now,
+        ...(payload.name === "outbound"
+          ? { name: "outbound", props: { url: outboundUrlOf(payload.href) } }
+          : { name: payload.goal }),
       }),
     ])
     return { status: "recorded" }

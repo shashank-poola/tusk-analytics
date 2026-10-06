@@ -1,6 +1,7 @@
 import {
   allowedIntervals,
   defaultInterval,
+  funnelIdSchema,
   periodDays,
   type PresetRange,
   STATS_FILTER_KEYS,
@@ -43,12 +44,25 @@ export const INTERVAL_LABELS: Record<StatsInterval, string> = {
   month: "Monthly",
 }
 
+/** The bottom card's tabs (`?insights=`); DataFast's Journey waits for revenue. */
+export const INSIGHT_TABS = [
+  { id: "goal", label: "Goal" },
+  { id: "funnel", label: "Funnel" },
+  { id: "user", label: "User" },
+] as const
+export type InsightTab = (typeof INSIGHT_TABS)[number]["id"]
+/** Users work without any setup; goals and funnels need some. */
+const DEFAULT_INSIGHT_TAB: InsightTab = "user"
+
 /** What the page shows, parsed from its search params. */
 export type DashboardView = {
   period: StatsPeriod
   interval: StatsInterval
   tabs: BreakdownTabs
   filters: StatsFilters
+  insights: InsightTab
+  /** The funnel the Funnel tab shows (`?funnel=`); its first when null. */
+  funnel: string | null
 }
 
 /** What every stats request is narrowed to. */
@@ -95,11 +109,17 @@ export function parseFilters(search: SearchParams): StatsFilters {
 
 export function parseView(search: SearchParams): DashboardView {
   const period = parsePeriod(search)
+  const insights = first(search.insights)
+  const funnel = funnelIdSchema.safeParse(first(search.funnel))
   return {
     period,
     interval: parseInterval(search.interval, period),
     tabs: parseBreakdownTabs(search),
     filters: parseFilters(search),
+    insights:
+      INSIGHT_TABS.find((tab) => tab.id === insights)?.id ??
+      DEFAULT_INSIGHT_TAB,
+    funnel: funnel.success ? funnel.data : null,
   }
 }
 
@@ -147,6 +167,8 @@ export function viewSearch(
       search[card] = next.tabs[card]
     }
   }
+  if (next.insights !== DEFAULT_INSIGHT_TAB) search.insights = next.insights
+  if (next.funnel) search.funnel = next.funnel
   return search
 }
 

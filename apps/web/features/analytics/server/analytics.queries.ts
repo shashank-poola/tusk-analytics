@@ -5,6 +5,10 @@ import {
   type BreakdownBy,
   type StatsBreakdownResponse,
   statsBreakdownResponseSchema,
+  type StatsFunnelResponse,
+  statsFunnelResponseSchema,
+  type StatsGoalsResponse,
+  statsGoalsResponseSchema,
   type StatsInterval,
   type StatsLiveResponse,
   statsLiveResponseSchema,
@@ -31,7 +35,14 @@ import {
 // summary share one overview request). It compares arguments by identity,
 // so the cached functions take the query as a string.
 
-type Endpoint = "overview" | "timeseries" | "breakdown" | "live" | "visitors"
+type Endpoint =
+  | "overview"
+  | "timeseries"
+  | "breakdown"
+  | "live"
+  | "visitors"
+  | "goals"
+  | "funnel"
 
 async function getStats<T extends z.ZodType>(
   siteId: string,
@@ -119,5 +130,33 @@ export function getRecentVisitors(
   return recentVisitors(
     siteId,
     toQuery(scope, { limit: String(VISITORS_DEFAULT_LIMIT) })
+  )
+}
+
+/** Goals completed in the scope, with a line per bucket for the top ten. */
+export function getGoals(
+  siteId: string,
+  scope: StatsScope,
+  interval: StatsInterval
+): Promise<StatsGoalsResponse> {
+  return getStats(
+    siteId,
+    "goals",
+    toQuery(scope, { interval }),
+    statsGoalsResponseSchema
+  )
+}
+
+/** Visitors per step of one of the site's funnels. */
+export function getFunnelStats(
+  siteId: string,
+  scope: StatsScope,
+  funnelId: string
+): Promise<StatsFunnelResponse> {
+  return getStats(
+    siteId,
+    "funnel",
+    toQuery(scope, { funnel: funnelId }),
+    statsFunnelResponseSchema
   )
 }

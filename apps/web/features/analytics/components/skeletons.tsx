@@ -72,7 +72,7 @@ export function BreakdownSkeleton() {
   )
 }
 
-export function VisitorsSkeleton() {
+export function InsightsSkeleton() {
   return (
     <div role="status" className="space-y-1 px-3">
       {["a", "b", "c", "d", "e", "f"].map((key) => (
@@ -84,7 +84,7 @@ export function VisitorsSkeleton() {
           </div>
         </div>
       ))}
-      <Loading label="visitors" />
+      <Loading label="this tab" />
     </div>
   )
 }

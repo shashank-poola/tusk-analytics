@@ -10,7 +10,6 @@ import {
   getBreakdown,
   getLiveVisitors,
   getOverview,
-  getRecentVisitors,
   getTimeseries,
 } from "@/features/analytics/server/analytics.queries"
 import {
@@ -33,7 +32,6 @@ import { WorldMap } from "./locations/world-map"
 import { KpiStrip } from "./overview/kpi-strip"
 import { VisitorsChart } from "./overview/visitors-chart"
 import { HighlightsCard } from "./summary/highlights-card"
-import { VisitorsList } from "./visitors/visitors-card"
 
 // Each section fetches its own data inside its own Suspense boundary, so the
 // requests run in parallel and stream in as they finish. Shared requests are
@@ -159,10 +157,4 @@ export async function BreakdownSection({
         />
       )
   }
-}
-
-export async function VisitorsSection({ siteId, scope }: SectionProps) {
-  const { visitors } = await getRecentVisitors(siteId, scope)
-  if (visitors.length === 0) return <NoData label="No visitors yet" />
-  return <VisitorsList visitors={visitors} now={new Date()} />
 }

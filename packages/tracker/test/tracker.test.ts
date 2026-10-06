@@ -169,6 +169,49 @@ describe("outbound clicks", () => {
   })
 })
 
+describe("goals", () => {
+  type Host = { viewtally?: ((goal: unknown) => void) & { q?: unknown[][] } }
+  const host = () => window as unknown as Host
+
+  afterEach(() => {
+    delete host().viewtally
+  })
+
+  it("sends window.viewtally calls, including ones queued before load", async () => {
+    const queue = Object.assign(() => {}, { q: [["Signup"]] })
+    host().viewtally = queue
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    host().viewtally?.("checkout_started")
+
+    const goals = (await sentPayloads(beacon)).filter(
+      (payload) => payload.name === "goal"
+    )
+    expect(
+      goals.map((payload) => payload.name === "goal" && payload.goal)
+    ).toEqual(["signup", "checkout_started"])
+  })
+
+  it("sends clicks on data-vt-goal elements and ignores invalid names", async () => {
+    const beacon = mockBeacon()
+    await loadTracker()
+    const button = document.createElement("button")
+    button.dataset.vtGoal = "upgrade"
+    document.body.append(button)
+
+    button.click()
+    host().viewtally?.("not valid!")
+    host().viewtally?.(42)
+    host().viewtally?.("pageview")
+    button.remove()
+
+    const payloads = await sentPayloads(beacon)
+    expect(payloads).toHaveLength(2)
+    expect(payloads[1]).toMatchObject({ name: "goal", goal: "upgrade" })
+  })
+})
+
 describe("visitor and session ids", () => {
   it("sets the visitor and session cookies and reuses them on the next load", async () => {
     const beacon = mockBeacon()

@@ -131,11 +131,33 @@ default, at most 50). For each `visitor_id` with a pageview in the range:
 - `pageviews` and `sessions` (distinct `session_id`) in the range.
 - `firstSeenAt` / `lastSeenAt`: their first and latest pageview in the range.
 - `lastPage`: the `path` of their latest pageview in the range.
+- `activeDays`: seven booleans, oldest first, for today and the 6 days
+  before it in the site's time zone (whatever the range and filters):
+  whether the visitor had a pageview that day. Shown as dots.
 
 Region and city here are the same Cloudflare IP-derived values as in the
 breakdowns; the IP is not stored.
 
 Ties on `lastSeenAt` are ordered by `visitor_id`.
+
+## Goals
+
+A goal is an event the site sends with `window.viewtally("signup")` or a
+click on an element with `data-vt-goal="signup"`; it's stored with the
+goal as its `name`. Goals are listed by distinct visitors who completed them
+in the range (then name), with `completions` (every event), at most 50. The
+top 10 also get `series`: distinct visitors per bucket of the chart's
+interval. Filters apply as everywhere: goals of matching sessions.
+
+## Funnels
+
+A funnel is 2–8 ordered steps saved per site (at most 20 funnels), each a
+page (`path` equals the value) or a goal (`name` equals it). A visitor
+reaches step 1 with any matching event in the range, and step n with a
+matching event at or after the moment they first reached step n − 1, in any
+session within the range. Each step counts distinct visitors. The drop
+between steps is `(step n − step n−1) / step n−1`; the conversion rate is
+the last step over the first.
 
 ## Ranges
 

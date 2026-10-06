@@ -41,6 +41,7 @@ function errorsForCode(code: ErrorCode, message: string): AddSiteErrors {
     case "site_already_exists":
       return { domain: message }
     case "site_limit_reached":
+    case "funnel_limit_reached":
     case "bad_request":
     case "unauthorized":
     case "not_found":

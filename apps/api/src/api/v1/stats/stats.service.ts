@@ -187,20 +187,44 @@ export async function getStatsVisitors(
   now: Date
 ): Promise<StatsVisitorsResponse> {
   const window = siteWindow(query, site.timezone, now)
+  const activity = activityWindow(window.offsetMs, now)
   const [rows, pseudonymOf] = await Promise.all([
     getRecentVisitors(db, site.id, window.fromMs, window.toMs, {
       limit,
       filters: filtersOf(query),
+      activity: { ...activity, offsetMs: window.offsetMs },
     }),
     createVisitorPseudonymizer(secret, site.id),
   ])
   const visitors = await Promise.all(
-    rows.map(async ({ visitorId, firstSeenAt, lastSeenAt, ...row }) => ({
-      ...row,
-      id: await pseudonymOf(visitorId),
-      firstSeenAt: toIso(firstSeenAt),
-      lastSeenAt: toIso(lastSeenAt),
-    }))
+    rows.map(
+      async ({ visitorId, firstSeenAt, lastSeenAt, activeDays, ...row }) => ({
+        ...row,
+        id: await pseudonymOf(visitorId),
+        firstSeenAt: toIso(firstSeenAt),
+        lastSeenAt: toIso(lastSeenAt),
+        activeDays: activity.days.map((day) =>
+          (activeDays ?? "").split(",").includes(String(day))
+        ),
+      })
+    )
   )
   return { visitors }
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const ACTIVITY_DAYS = 7
+
+/** Today and the 6 days before it, local: the visitors list's activity dots. */
+function activityWindow(offsetMs: number, now: Date) {
+  const today = Math.floor((now.getTime() + offsetMs) / DAY_MS)
+  const days = Array.from(
+    { length: ACTIVITY_DAYS },
+    (_, index) => today - (ACTIVITY_DAYS - 1) + index
+  )
+  return {
+    days,
+    fromMs: (today - (ACTIVITY_DAYS - 1)) * DAY_MS - offsetMs,
+    toMs: now.getTime(),
+  }
 }

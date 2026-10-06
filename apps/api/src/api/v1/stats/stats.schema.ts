@@ -2,6 +2,7 @@ import {
   BREAKDOWN_DEFAULT_LIMIT,
   BREAKDOWN_MAX_LIMIT,
   breakdownBySchema,
+  funnelIdSchema,
   statsFiltersSchema,
   statsIntervalSchema,
   statsPeriodSchema,
@@ -45,4 +46,11 @@ export const visitorsQuerySchema = z.intersection(
       .max(VISITORS_MAX_LIMIT)
       .default(VISITORS_DEFAULT_LIMIT),
   })
+)
+
+export const goalsQuerySchema = timeseriesQuerySchema
+
+export const funnelQuerySchema = z.intersection(
+  scopeSchema,
+  z.object({ funnel: funnelIdSchema })
 )

@@ -1,4 +1,5 @@
 import { type Config, readConfig } from "./config"
+import { onGoal } from "./goals"
 import { onOutboundClick } from "./outbound"
 import { send } from "./send"
 import { getSession } from "./session"
@@ -49,6 +50,9 @@ function start(config: Config): void {
   onHistoryChange(trackPageview)
   onOutboundClick((href) =>
     send(config.endpoint, { ...eventFields(""), name: "outbound", href })
+  )
+  onGoal((goal) =>
+    send(config.endpoint, { ...eventFields(""), name: "goal", goal })
   )
 }
 

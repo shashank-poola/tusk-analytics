@@ -9,25 +9,31 @@ attention without getting in the way. Metric definitions live in
 
 ```
 ┌ header (no bottom rule) ────────────────────────────────────────────┐
-│ ▮ viewtally / [favicon site ▾]                   [☾] [photo/face ▾] │
+│ ▮ viewtally                                      [☾] [photo/face ▾] │
 └─────────────────────────────────────────────────────────────────────┘
-  Hey Shashank, 1,204 people visited myapp.com in the last 7 days.
-  [favicon myapp.com ⚙] [📅 Last 7 days ▾] [Daily]
+  [favicon site ▾] [‹ | Last 7 days ▾ | ›] [Daily ▾] [⟳] [Country: India ×]
 
   ┌ Overview card ──────────────────────────────────────────────────┐
   │ Visitors │ Pageviews │ Bounce rate │ Session time │ Online ●    │
-  │ chart: visitors line (dashed while the bucket runs) + bars      │
+  │ 38% ↑    │ …         │ 4% ↑        │ 32% ↓        │             │
+  │ ‹ chart: visitors line + faint previous period + pageview bars ›│
+  │   (dashed running bucket, source icons on the biggest peaks)    │
   └─────────────────────────────────────────────────────────────────┘
   [ Highlights: up to three sentences ]
-  [ Source·Channel·Referrer·Campaign ] [ Page·Entry·Exit ]   fixed height
-  [ Country·Region·City ]              [ Browser·OS·Device ]
-  [ Recent visitors: face, nickname, place, device, source, last seen ]
+  [ Channel·Referrer·Campaign ]       [ Hostname·Page·Entry·Exit link ]
+  [ Map·Country·Region·City ]         [ Browser·OS·Device ]
+  [ Goal · Funnel · User                                    search ]
 ```
 
 - One container: `max-w-6xl`, `px-4 sm:px-6`, sections `space-y-5`.
-- Breakdown cards are a fixed `h-[28rem]` with 8 rows and a "Details"
+- Breakdown cards are a fixed `h-[31rem]` with 10 rows and a "Details"
   dialog for up to 50: empty, half-full and full cards are the same size.
-  Each card keeps its tab in its own search param (`?sources=referrer`).
+  Each card keeps its tab in its own search param (`?sources=campaign`),
+  the bottom card in `?insights=`. A row click adds a filter
+  (`?country=IN`), shown as a removable chip in the filter row.
+- The period is `?range=` (+ `offset` for ‹ ›) or `custom` with
+  `from`/`to`; the chart interval is `?interval=`. Keys T, Y, H, W, M jump
+  to Today, Yesterday, 24 hours, 7 and 30 days.
 - KPI strip: 2 columns on phones, 3 on `sm`, one row of 5 on `lg`. With no
   visits in the range values show "–", and the chart stays (flat) with a
   "No visits in this period" overlay.
@@ -46,22 +52,23 @@ use token utilities only, never palette colours.
 
 | Token                    | Light               | Dark                | Use                                     |
 | ------------------------ | ------------------- | ------------------- | --------------------------------------- |
-| `background`             | `#F1F4F9`           | `#0A0A0C`           | page                                    |
-| `surface`                | `#FFFFFF`           | `#141417`           | cards, menus, dialogs                   |
-| `foreground`             | `#0B0D12`           | `#F1F4F9`           | text                                    |
-| `muted` / `-foreground`  | `#E9EDF4`/`#5D6472` | `#1E1F24`/`#9B9FAB` | quiet fills, secondary text             |
-| `border`                 | `#E0E5EE`           | `#25262C`           | 1 px hairlines                          |
-| `accent` / `-foreground` | `#1E61F0` / white   | `#5C8FF7` / black   | the brand blue: focus, active, visitors |
-| `accent-soft`            | `#E2EBFD`           | `#19284A`           | breakdown bars, selected backgrounds    |
-| `chart-1` / `chart-2`    | accent / `#B4CBFA`  | accent / `#24407C`  | visitors line / pageview bars           |
+| `background`             | `#F1F4F9`           | `#1C1C1C`           | page, tab tracks                        |
+| `surface`                | `#FFFFFF`           | `#242424`           | cards, menus, dialogs                   |
+| `foreground`             | `#0B0D12`           | `#F2F2F2`           | text                                    |
+| `muted` / `-foreground`  | `#E9EDF4`/`#5D6472` | `#303030`/`#A3A3A3` | quiet fills, active tab, secondary text |
+| `border`                 | `#E0E5EE`           | `#323232`           | 1 px hairlines                          |
+| `accent` / `-foreground` | `#1E61F0` / white   | `#5C8FF7` / black   | the brand blue: focus, active, buttons  |
+| `accent-soft`            | `#E2EBFD`           | `#2F4A61`           | breakdown bars (steel blue), chips      |
+| `chart-1` / `chart-2`    | accent / `#B4CBFA`  | `#8CC8F5`/`#3A4C5C` | visitors line, map, funnel / pageviews  |
 | `live`                   | green               | green               | the Online dot only                     |
 | `highlight`              | marigold            | marigold            | celebration only                        |
 | `positive` / `negative`  | green / red         | green / red         | delta chips, next to an arrow + sign    |
 
 - Dark accent is lighter than the brand blue so text and thin lines pass
   contrast; buttons on it use dark text.
-- Radii: cards `rounded-3xl`; controls `rounded-xl` or `rounded-full`; bars
-  `rounded-lg`.
+- Dark greys and steel blues follow DataFast's dark dashboard.
+- Radii: cards `rounded-[1.25rem]`; filter-row controls and tabs
+  `rounded-lg` on a `rounded-xl` track; bars `rounded-md`.
 - Faces: the signed-in user's Google photo, otherwise a DiceBear "Micah"
   face (CC BY 4.0, credited on /settings) generated on the server from the
   user id. Visitors get a Micah face and a stable nickname ("Curious Otter")
@@ -96,13 +103,16 @@ use token utilities only, never palette colours.
 
 ## From the references, and what's different
 
-Taken from DataFast: the numbers row directly on top of one large chart,
-dashed line for the running bucket, breakdown cards with tabs and
-proportional bars, fixed card heights, a details dialog for the long tail,
-"Direct / None", faces in the visitors list.
+Taken from DataFast: the filter row (site, period with ‹ ›, interval,
+refresh), the numbers row directly on top of one large chart, dashed
+running bucket, breakdown cards with tab pills, steel-blue bars and fixed
+heights, the channel donut, the world map, a details dialog for the long
+tail, "Direct/None", the Goal / Funnel / User card with faces and activity
+dots, dark greys.
 
-Different on purpose: light and dark both first class; a sentence first
-(greeting, highlights); every number explains itself on hover and focus;
-change is never colour alone; one
-brand blue instead of blue plus orange; tally marks for loading and empty
-states.
+Different on purpose: light and dark both first class; the chart shows the
+previous period, the change per bucket on hover and the top source on its
+peaks; every number explains itself on hover and focus; change is never
+colour alone; filters are visible chips; tally marks for loading and empty
+states. Revenue (bars, revenue metrics, the $ axis, Spent, Journey,
+Keyword) waits for payments.

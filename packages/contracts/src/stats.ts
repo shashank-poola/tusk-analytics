@@ -1,5 +1,6 @@
 import * as z from "zod"
 
+import { funnelSchema } from "./funnels"
 import { statsIntervalSchema } from "./stats-period"
 
 // Definitions of every metric: docs/metrics.md.
@@ -154,8 +155,45 @@ export const statsVisitorsResponseSchema = z.object({
       lastSeenAt: z.iso.datetime(),
       /** Path of the latest pageview in the range. */
       lastPage: z.string(),
+      /**
+       * Whether they viewed a page on each of the last 7 local days, oldest
+       * first, today last, whatever the period.
+       */
+      activeDays: z.array(z.boolean()).length(7),
     })
   ),
 })
 export type StatsVisitorsResponse = z.infer<typeof statsVisitorsResponseSchema>
 export type StatsVisitor = StatsVisitorsResponse["visitors"][number]
+
+/** Goals in the goal list; lines in the goal chart. */
+export const GOALS_LIMIT = 50
+export const GOAL_SERIES_LIMIT = 10
+
+/** Goals completed in the period, most visitors first. */
+export const statsGoalsResponseSchema = z.object({
+  interval: statsIntervalSchema,
+  /** Bucket starts, as the timeseries' `t`. */
+  buckets: z.array(z.iso.datetime({ offset: true })),
+  goals: z.array(
+    z.object({
+      name: z.string(),
+      /** Distinct visitors who completed it. */
+      visitors: count,
+      completions: count,
+      /**
+       * Visitors per bucket, aligned with `buckets`; only for the first
+       * GOAL_SERIES_LIMIT goals, empty for the rest.
+       */
+      series: z.array(count),
+    })
+  ),
+})
+export type StatsGoalsResponse = z.infer<typeof statsGoalsResponseSchema>
+
+/** How many visitors reached each step of a funnel, in order. */
+export const statsFunnelResponseSchema = z.object({
+  funnel: funnelSchema,
+  steps: z.array(z.object({ visitors: count })),
+})
+export type StatsFunnelResponse = z.infer<typeof statsFunnelResponseSchema>

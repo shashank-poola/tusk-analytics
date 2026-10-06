@@ -69,6 +69,7 @@ export function visitor(overrides: Partial<StatsVisitor> = {}): StatsVisitor {
     firstSeenAt: "2026-10-05T10:00:00.000Z",
     lastSeenAt: "2026-10-06T11:55:00.000Z",
     lastPage: "/pricing",
+    activeDays: [false, false, false, false, false, true, true],
     ...overrides,
   }
 }

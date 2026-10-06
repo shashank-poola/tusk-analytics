@@ -25,7 +25,6 @@ import {
   ChartSection,
   HighlightsSection,
   KpiSection,
-  VisitorsSection,
 } from "@/features/analytics/components/analytics-sections"
 import { AnalyticsToolbar } from "@/features/analytics/components/analytics-toolbar"
 import { ChartEmptyState } from "@/features/analytics/components/empty-state"
@@ -35,10 +34,11 @@ import {
   BreakdownSkeleton,
   ChartSkeleton,
   HighlightsSkeleton,
+  InsightsSkeleton,
   KpiStripSkeleton,
-  VisitorsSkeleton,
 } from "@/features/analytics/components/skeletons"
-import { VisitorsCard } from "@/features/analytics/components/visitors/visitors-card"
+import { InsightsCard } from "@/features/analytics/components/insights/insights-card"
+import { InsightsSection } from "@/features/analytics/components/insights/insights-section"
 import { WaitingForFirstVisit } from "@/features/onboarding/components/waiting-for-first-visit"
 import {
   getInstallStatus,
@@ -135,15 +135,20 @@ export default async function SitePage({
         })}
       </div>
 
-      <VisitorsCard>
+      <InsightsCard siteId={site.id} view={view}>
         <SectionBoundary
-          key={`visitors-${key}`}
-          title="recent visitors"
-          fallback={<VisitorsSkeleton />}
+          key={`${view.insights}-${view.funnel ?? ""}-${view.interval}-${key}`}
+          title={`the ${view.insights} tab`}
+          fallback={<InsightsSkeleton />}
         >
-          <VisitorsSection {...section} />
+          <InsightsSection
+            siteId={site.id}
+            view={view}
+            periodLabel={periodLabel(view.period, site.timezone, now)}
+            now={now}
+          />
         </SectionBoundary>
-      </VisitorsCard>
+      </InsightsCard>
     </div>
   )
 }

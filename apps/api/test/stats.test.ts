@@ -5,7 +5,7 @@ import {
   statsTimeseriesResponseSchema,
   statsVisitorsResponseSchema,
 } from "@workspace/contracts"
-import { createDb, createId, events, type NewEvent } from "@workspace/db"
+import { createDb, createId } from "@workspace/db"
 import { env } from "cloudflare:workers"
 import { describe, expect, it } from "vitest"
 
@@ -16,7 +16,13 @@ import {
   getStatsTimeseries,
   getStatsVisitors,
 } from "../src/api/v1/stats/stats.service"
-import { api, createSite, signIn } from "./helpers"
+import {
+  api,
+  createSite,
+  insertPageviews,
+  type Pageview,
+  signIn,
+} from "./helpers"
 
 // Expected numbers follow docs/metrics.md.
 
@@ -31,47 +37,6 @@ function preset(range: "24h" | "7d" | "30d" | "90d") {
 
 function newSite(timezone = "UTC") {
   return { id: createId("vt"), timezone }
-}
-
-type Pageview = {
-  visitor: string
-  session: string
-  at: string
-} & Partial<
-  Pick<
-    NewEvent,
-    | "path"
-    | "hostname"
-    | "name"
-    | "props"
-    | "campaignParams"
-    | "source"
-    | "referrer"
-    | "utmMedium"
-    | "utmCampaign"
-    | "country"
-    | "region"
-    | "city"
-    | "device"
-    | "browser"
-    | "os"
-  >
->
-
-/** One insert per row: a multi-row insert would pass D1's 100-parameter cap. */
-async function insertPageviews(siteId: string, pageviews: Pageview[]) {
-  const [first, ...rest] = pageviews.map(({ visitor, session, at, ...row }) =>
-    db.insert(events).values({
-      path: "/",
-      source: "direct",
-      ...row,
-      siteId,
-      visitorId: visitor,
-      sessionId: session,
-      createdAt: new Date(at),
-    } satisfies NewEvent)
-  )
-  if (first) await db.batch([first, ...rest])
 }
 
 describe("stats overview", () => {
@@ -1254,11 +1219,15 @@ describe("stats visitors", () => {
       firstSeenAt: "2026-10-05T09:00:00.000Z",
       lastSeenAt: "2026-10-06T10:00:00.000Z",
       lastPage: "/docs",
+      // Sep 30 → Oct 6: pageviews on Oct 5 and 6.
+      activeDays: [false, false, false, false, false, true, true],
     })
     expect(visitors[2]).toMatchObject({
       source: "direct",
       pageviews: 1,
       firstSeenAt: "2026-10-01T08:00:00.000Z",
+      // Sep 29 is before the week; Oct 1 is its second day.
+      activeDays: [false, true, false, false, false, false, false],
     })
   })
 
