@@ -229,6 +229,35 @@ describe("visitor and session ids", () => {
     })
   })
 
+  it("starts a new session when the visitor arrives from another site or a tagged link", async () => {
+    const beacon = mockBeacon()
+    // Earlier instances also react to history changes, so read the payload
+    // the latest load sent.
+    const load = async () => {
+      await loadTracker()
+      return (await sentPayloads(beacon)).at(-1)
+    }
+
+    const first = await load()
+    Object.defineProperty(document, "referrer", {
+      value: "https://www.google.com/",
+      configurable: true,
+    })
+    const fromGoogle = await load()
+    Reflect.deleteProperty(document, "referrer")
+    history.replaceState(null, "", "/?ref=producthunt")
+    const tagged = await load()
+
+    expect(fromGoogle?.sessionId).not.toBe(first?.sessionId)
+    expect(fromGoogle?.newSession).toBe(true)
+    expect(tagged?.sessionId).not.toBe(fromGoogle?.sessionId)
+    // A plain page load (no referrer, no tag) keeps the visit going.
+    history.replaceState(null, "", "/")
+    const plain = await load()
+    expect(plain?.sessionId).toBe(tagged?.sessionId)
+    expect(plain?.newSession).toBe(false)
+  })
+
   it("starts a new session after 30 minutes without events, keeping the visitor", async () => {
     vi.useFakeTimers({ toFake: ["Date"] })
     const beacon = mockBeacon()

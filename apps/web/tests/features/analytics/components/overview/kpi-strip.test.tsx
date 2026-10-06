@@ -91,27 +91,27 @@ describe("KpiStrip", () => {
     )
   })
 
-  it("shows dashes instead of numbers when the period has no pageviews", () => {
+  it("shows zeros and the fall when the period has no pageviews", () => {
     renderStrip(NO_TOTALS, PREVIOUS, 0)
 
-    for (const name of [
-      /^Visitors/,
-      /^Pageviews/,
-      /^Bounce rate/,
-      /^Session time/,
-    ]) {
-      expect(metric(name).getByText("No data")).toBeInTheDocument()
-    }
-    expect(
-      screen.queryByText(/versus the previous period/)
-    ).not.toBeInTheDocument()
+    expect(metric(/^Visitors/).getAllByText("0")).not.toHaveLength(0)
+    expect(item(/^Visitors/)).toHaveTextContent(
+      "down 100% versus the previous period"
+    )
   })
 
-  it("has no change to compare when the previous period was empty", () => {
+  it("counts any number after an empty previous period as up 100%", () => {
     renderStrip(CURRENT, NO_TOTALS)
 
-    expect(
-      metric(/^Bounce rate/).getByText("No data for the previous period")
-    ).toBeInTheDocument()
+    expect(item(/^Visitors/)).toHaveTextContent(
+      "up 100% versus the previous period"
+    )
+    expect(screen.queryByText("–")).not.toBeInTheDocument()
+  })
+
+  it("has no info buttons next to the labels", () => {
+    renderStrip()
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
 })

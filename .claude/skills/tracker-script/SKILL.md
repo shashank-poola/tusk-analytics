@@ -13,7 +13,8 @@ packages/tracker/
   src/config.ts      data-* attributes, localhost and opt-out skips
   src/cookie.ts      read/write first-party id cookies (try/catch)
   src/visitor.ts     vt_vid visitor id
-  src/session.ts     vt_sid session id, rolling 30 minutes
+  src/session.ts     vt_sid session id, rolling 30 minutes; a load from
+                     another site or a tagged link starts a new one
   src/send.ts        sendBeacon, fetch keepalive fallback
   src/spa.ts         pushState/replaceState/popstate hook
   src/outbound.ts    clicks on links to other sites (origin + path only)

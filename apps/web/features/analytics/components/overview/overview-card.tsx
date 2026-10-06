@@ -64,36 +64,6 @@ export function OverviewCard({
           </span>
         )}
         {chart}
-        <ul className="mt-2 flex flex-wrap justify-end gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="h-0.5 w-3 rounded-full bg-chart-1"
-            />
-            Visitors
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="h-0.5 w-3 rounded-full bg-chart-1 opacity-35"
-            />
-            Previous period
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="size-2 rounded-[2px] bg-chart-2"
-            />
-            Pageviews
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="w-3 border-t-2 border-dashed border-chart-1"
-            />
-            In progress
-          </li>
-        </ul>
       </div>
     </Card>
   )

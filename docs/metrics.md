@@ -13,14 +13,14 @@ Only events with `name = 'pageview'`. Outbound clicks (`name =
 'outbound'`) only feed the `exit_link` breakdown and its filter; they never
 count towards these metrics.
 
-| Metric       | Definition                                                                                                                 |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Pageviews    | Number of pageview events.                                                                                                 |
-| Visitors     | Distinct `visitor_id`.                                                                                                     |
-| Sessions     | Distinct `session_id`.                                                                                                     |
-| Bounce rate  | Sessions with exactly one pageview ÷ sessions. 0 with no sessions.                                                         |
-| Session time | Mean over sessions of (last pageview's `created_at` − first pageview's), in seconds. A one-pageview session counts as 0 s. |
-| Online       | Distinct `visitor_id` with a pageview in the last 5 minutes (`now − 5 min <= created_at < now`), whatever the range.       |
+| Metric       | Definition                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pageviews    | Number of pageview events.                                                                                                                                          |
+| Visitors     | Distinct `visitor_id`.                                                                                                                                              |
+| Sessions     | Distinct `session_id`. The tracker starts a session after 30 minutes without events, or when a page loads from another site or with a `utm_source`/`ref`/`via` tag. |
+| Bounce rate  | Sessions with exactly one pageview ÷ sessions. 0 with no sessions.                                                                                                  |
+| Session time | Mean over sessions of (last pageview's `created_at` − first pageview's), in seconds. A one-pageview session counts as 0 s.                                          |
+| Online       | Distinct `visitor_id` with a pageview in the last 5 minutes (`now − 5 min <= created_at < now`), whatever the range.                                                |
 
 Every metric except online is computed over events with `range.from <=
 created_at < range.to`. A session that started before the range counts only

@@ -9,7 +9,6 @@ import {
 import { useId } from "react"
 import {
   Area,
-  Bar,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -27,7 +26,6 @@ import { type ChartDatum, ChartTooltipBody } from "./chart-tooltip"
 
 const chartConfig = {
   visitors: { label: "Visitors", color: "var(--chart-1)" },
-  pageviews: { label: "Pageviews", color: "var(--chart-2)" },
 } satisfies ChartConfig
 
 const ANIMATION_MS = 300
@@ -35,27 +33,19 @@ const PEAK_ICON_PX = 20
 
 type VisitorsChartProps = {
   timeseries: StatsTimeseriesResponse
-  /** Short name for the chart, e.g. "Visitors and pageviews, last 7 days". */
+  /** Short name for the chart, e.g. "Visitors, last 7 days". */
   label: string
   /** The totals in words, for screen readers. */
   summary: string
 }
 
-type BarShapeProps = {
-  x?: number
-  y?: number
-  width?: number
-  height?: number
-  index?: number
-}
-
 type DotProps = { cx?: number; cy?: number; index?: number }
 
 /**
- * Visitors as a smooth line over a soft fill, the previous period as a
- * faint line behind it, pageviews as bars on their own scale. A running
- * last bucket is dashed (line and bar). The biggest peaks carry the icon of
- * the source that brought most of their visitors.
+ * Visitors only: one smooth line over a soft gradient, dashed for the
+ * bucket still running. The biggest peaks carry the icon of the source
+ * that brought most of their visitors; the tooltip adds pageviews and the
+ * change versus the same bucket of the previous period.
  */
 export function VisitorsChart({
   timeseries: { points, previousPoints, interval, inProgress },
@@ -81,38 +71,12 @@ export function VisitorsChart({
     finished: !inProgress || index < last ? point.visitors : undefined,
     running: inProgress && index >= last - 1 ? point.visitors : undefined,
   })) satisfies (ChartDatum & Record<string, unknown>)[]
-  const maxPageviews = Math.max(1, ...points.map((point) => point.pageviews))
   const peaks = new Set(
     peakIndexes(
       points.map((point) => point.visitors),
       (index) => Boolean(points[index]?.topSource)
     )
   )
-
-  function renderBar({
-    x = 0,
-    y = 0,
-    width = 0,
-    height = 0,
-    index,
-  }: BarShapeProps) {
-    if (height <= 0) return <g />
-    const running = inProgress && index === last
-    return (
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        rx={4}
-        fill="var(--color-pageviews)"
-        fillOpacity={running ? 0.35 : 1}
-        stroke={running ? "var(--color-visitors)" : "none"}
-        strokeOpacity={0.6}
-        strokeDasharray={running ? "3 3" : undefined}
-      />
-    )
-  }
 
   function renderPeak({ cx, cy, index }: DotProps) {
     const source = index === undefined ? null : points[index]?.topSource
@@ -128,7 +92,7 @@ export function VisitorsChart({
       <foreignObject
         key={`peak-${index}`}
         x={cx - PEAK_ICON_PX / 2}
-        y={cy - PEAK_ICON_PX - 6}
+        y={cy - PEAK_ICON_PX - 8}
         width={PEAK_ICON_PX}
         height={PEAK_ICON_PX}
         className="overflow-visible"
@@ -148,47 +112,49 @@ export function VisitorsChart({
         role="img"
         aria-label={label}
       >
-        <ComposedChart data={data} margin={{ left: 4, right: 4, top: 28 }}>
+        <ComposedChart data={data} margin={{ left: 4, right: 12, top: 32 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
                 stopColor="var(--color-visitors)"
-                stopOpacity={0.22}
+                stopOpacity={0.35}
               />
               <stop
                 offset="100%"
                 stopColor="var(--color-visitors)"
-                stopOpacity={0}
+                stopOpacity={0.02}
               />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} strokeDasharray="4 4" />
+          <CartesianGrid
+            vertical={false}
+            strokeDasharray="3 6"
+            strokeOpacity={0.6}
+          />
           <XAxis
             dataKey="t"
             tickLine={false}
             axisLine={false}
-            tickMargin={10}
+            tickMargin={12}
             minTickGap={28}
             tickFormatter={(t: string) => tickLabel(t, scale)}
           />
           <YAxis
-            yAxisId="visitors"
             width={36}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
+            tickCount={5}
+            domain={[0, (max: number) => Math.max(4, Math.ceil(max * 1.15))]}
             tickFormatter={formatCompact}
           />
-          {/* Bars top out at ~60% of the height so the line stays readable. */}
-          <YAxis
-            yAxisId="pageviews"
-            orientation="right"
-            hide
-            domain={[0, Math.ceil(maxPageviews * 1.6)]}
-          />
           <ChartTooltip
-            cursor={{ fill: "var(--color-border)", opacity: 0.35 }}
+            cursor={{
+              stroke: "var(--color-visitors)",
+              strokeOpacity: 0.4,
+              strokeDasharray: "3 3",
+            }}
             content={
               <ChartTooltipBody
                 interval={interval}
@@ -196,47 +162,31 @@ export function VisitorsChart({
               />
             }
           />
-          <Bar
-            yAxisId="pageviews"
-            dataKey="pageviews"
-            shape={renderBar}
-            maxBarSize={28}
-            {...animation}
-          />
-          <Line
-            yAxisId="visitors"
-            dataKey="previous"
-            type="monotone"
-            stroke="var(--color-visitors)"
-            strokeOpacity={0.3}
-            strokeWidth={1.5}
-            dot={false}
-            activeDot={false}
-            tooltipType="none"
-            {...animation}
-          />
           <Area
-            yAxisId="visitors"
             dataKey="visitors"
             type="monotone"
             stroke="none"
             fill={`url(#${gradientId})`}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }}
+            activeDot={{
+              r: 5,
+              strokeWidth: 3,
+              stroke: "var(--surface)",
+              fill: "var(--color-visitors)",
+            }}
             {...animation}
           />
           <Line
-            yAxisId="visitors"
             dataKey="finished"
             type="monotone"
             stroke="var(--color-visitors)"
             strokeWidth={2.5}
+            strokeLinecap="round"
             dot={false}
             activeDot={false}
             tooltipType="none"
             {...animation}
           />
           <Line
-            yAxisId="visitors"
             dataKey="running"
             type="monotone"
             stroke="var(--color-visitors)"
@@ -249,7 +199,6 @@ export function VisitorsChart({
           />
           {/* Invisible line whose dots are the peak icons. */}
           <Line
-            yAxisId="visitors"
             dataKey="visitors"
             stroke="none"
             dot={renderPeak}

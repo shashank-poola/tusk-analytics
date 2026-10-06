@@ -18,14 +18,6 @@ export function ChangeIndicator({
   change,
   lowerIsBetter = false,
 }: ChangeIndicatorProps) {
-  if (change.direction === "none") {
-    return (
-      <span className="h-4 text-xs text-muted-foreground">
-        <span aria-hidden="true">–</span>
-        <span className="sr-only">No data for the previous period</span>
-      </span>
-    )
-  }
   const good =
     change.direction !== "flat" && (change.direction === "up") !== lowerIsBetter
   const Arrow = change.direction === "down" ? ArrowDown : ArrowUp

@@ -71,8 +71,9 @@ describe("change versus the previous period", () => {
     expect(countChange(100, 100)).toEqual({ direction: "flat", text: "0%" })
   })
 
-  it("has no change when the previous value is 0", () => {
-    expect(countChange(40, 0)).toEqual({ direction: "none" })
+  it("counts a rise from 0 as 100% and 0 to 0 as flat", () => {
+    expect(countChange(40, 0)).toEqual({ direction: "up", text: "100%" })
+    expect(countChange(0, 0)).toEqual({ direction: "flat", text: "0%" })
   })
 })
 

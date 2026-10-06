@@ -25,17 +25,21 @@ function start(config: Config): void {
       // the previous page instead of repeating the external referrer.
       const referrer =
         lastPage === undefined ? document.referrer : location.origin + lastPage
-      lastPage = page
 
-      send(config.endpoint, { ...eventFields(referrer), name: "pageview" })
+      const arrival = lastPage === undefined
+      lastPage = page
+      send(config.endpoint, {
+        ...eventFields(referrer, arrival && isNewArrival(referrer)),
+        name: "pageview",
+      })
     } catch {
       // Swallowed on purpose; see above.
     }
   }
 
   /** What every event carries; extends the session like any event. */
-  function eventFields(referrer: string) {
-    const session = getSession()
+  function eventFields(referrer: string, newSession = false) {
+    const session = getSession(newSession)
     return {
       siteId: config.siteId,
       url: location.origin + location.pathname + location.search,
@@ -54,6 +58,19 @@ function start(config: Config): void {
   onGoal((goal) =>
     send(config.endpoint, { ...eventFields(""), name: "goal", goal })
   )
+}
+
+const bareHost = (host: string) => host.replace(/^www\./, "")
+
+/**
+ * A page load from another site (Google, a newsletter) or from a tagged
+ * link starts a new visit, so it's credited to that source even when the
+ * visitor was here a few minutes ago. Same rule as Google Analytics.
+ */
+function isNewArrival(referrer: string): boolean {
+  if (/[?&](utm_source|ref|via)=/.test(location.search)) return true
+  if (!referrer) return false
+  return bareHost(new URL(referrer).hostname) !== bareHost(location.hostname)
 }
 
 try {

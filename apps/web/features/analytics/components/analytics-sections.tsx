@@ -75,7 +75,7 @@ export async function ChartSection({
     <div className="relative">
       <VisitorsChart
         timeseries={timeseries}
-        label={`Visitors and pageviews, ${label}`}
+        label={`Visitors, ${label}`}
         summary={`${label}: ${formatNumber(current.visitors)} visitors and ${formatNumber(current.pageviews)} pageviews.`}
       />
       {current.pageviews === 0 && emptyState}

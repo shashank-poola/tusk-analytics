@@ -50,8 +50,7 @@ export function formatTimeAgo(iso: string, now: Date): string {
   return relativeTime.format(Math.round(hours / 24), "day")
 }
 
-export type Change =
-  { direction: "none" } | { direction: "up" | "down" | "flat"; text: string }
+export type Change = { direction: "up" | "down" | "flat"; text: string }
 
 function direction(delta: number): "up" | "down" | "flat" {
   if (delta > 0) return "up"
@@ -69,11 +68,11 @@ export function relativeChange(
 
 /**
  * "20%" and its direction versus the previous period: the arrow carries the
- * sign, as on DataFast. `none` when the previous value is 0.
+ * sign, as on DataFast. From nothing, any value is "100% ↑"; nothing to
+ * nothing is "0%".
  */
 export function countChange(current: number, previous: number): Change {
-  const change = relativeChange(current, previous)
-  if (change === null) return { direction: "none" }
+  const change = relativeChange(current, previous) ?? (current > 0 ? 1 : 0)
   return {
     direction: direction(change),
     text: percent.format(Math.abs(change)),

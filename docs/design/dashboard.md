@@ -16,7 +16,7 @@ attention without getting in the way. Metric definitions live in
   ┌ Overview card ──────────────────────────────────────────────────┐
   │ Visitors │ Pageviews │ Bounce rate │ Session time │ Online ●    │
   │ 38% ↑    │ …         │ 4% ↑        │ 32% ↓        │             │
-  │ ‹ chart: visitors line + faint previous period + pageview bars ›│
+  │ ‹ chart: visitors only, smooth line over a soft gradient       ›│
   │   (dashed running bucket, source icons on the biggest peaks)    │
   └─────────────────────────────────────────────────────────────────┘
   [ Highlights: up to three sentences ]
@@ -34,9 +34,12 @@ attention without getting in the way. Metric definitions live in
 - The period is `?range=` (+ `offset` for ‹ ›) or `custom` with
   `from`/`to`; the chart interval is `?interval=`. Keys T, Y, H, W, M jump
   to Today, Yesterday, 24 hours, 7 and 30 days.
-- KPI strip: 2 columns on phones, 3 on `sm`, one row of 5 on `lg`. With no
-  visits in the range values show "–", and the chart stays (flat) with a
-  "No visits in this period" overlay.
+- KPI strip: 2 columns on phones, 3 on `sm`, one row of 5 on `lg`; no info
+  icons. Every number has its change under it ("38% ↑"); from an empty
+  previous period that's "100% ↑". With no visits the chart stays (flat)
+  with a "No visits in this period" overlay.
+- The map is interactive: a card with the country and its visitors follows
+  the pointer, and a click on a visited country filters by it.
 - 375 px: everything stacks; tabs scroll horizontally; every tap target is
   at least 44 px (`h-11`, `sm:h-9`).
 

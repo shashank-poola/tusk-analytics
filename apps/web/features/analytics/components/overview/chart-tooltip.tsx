@@ -65,13 +65,8 @@ export function ChartTooltipBody({
             )}
           </span>
         </Row>
-        <Row swatch="size-2 rounded-[2px] bg-chart-2" label="Pageviews">
-          {formatNumber(datum.pageviews)}
-        </Row>
-        <Row
-          swatch="h-0.5 w-3 rounded-full bg-chart-1 opacity-35"
-          label={`Visitors, ${tooltipLabel(datum.previousT, interval)}`}
-        >
+        <Row label="Pageviews">{formatNumber(datum.pageviews)}</Row>
+        <Row label={`Visitors, ${tooltipLabel(datum.previousT, interval)}`}>
           {formatNumber(datum.previous)}
         </Row>
       </dl>
@@ -88,13 +83,18 @@ export function ChartTooltipBody({
   )
 }
 
-type RowProps = { swatch: string; label: string; children: React.ReactNode }
+type RowProps = {
+  /** Classes of the series mark, for rows drawn on the chart. */
+  swatch?: string
+  label: string
+  children: React.ReactNode
+}
 
 function Row({ swatch, label, children }: RowProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <dt className="flex items-center gap-1.5 text-muted-foreground">
-        <span aria-hidden="true" className={swatch} />
+        <span aria-hidden="true" className={swatch ?? "w-3"} />
         {label}
       </dt>
       <dd className="font-semibold tabular-nums">{children}</dd>
