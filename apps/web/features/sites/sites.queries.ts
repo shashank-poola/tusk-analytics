@@ -9,6 +9,7 @@ import {
   siteListResponseSchema,
   siteResponseSchema,
 } from "@workspace/contracts"
+import { cache } from "react"
 
 import { type ApiResult, apiRequest } from "@/lib/api-client"
 
@@ -28,9 +29,10 @@ export async function listSites({ limit }: { limit: number }): Promise<Site[]> {
 
 /**
  * The signed-in user's site, or null when it doesn't exist or belongs to
- * someone else (the API answers 404 for both).
+ * someone else (the API answers 404 for both). Cached per request: the site
+ * layout and page both need it.
  */
-export async function getSite(siteId: string): Promise<Site | null> {
+export const getSite = cache(async (siteId: string): Promise<Site | null> => {
   if (!siteIdSchema.safeParse(siteId).success) return null
 
   const result = await apiRequest(`/api/v1/sites/${siteId}`, siteResponseSchema)
@@ -39,7 +41,7 @@ export async function getSite(siteId: string): Promise<Site | null> {
   throw new Error(
     `Loading site ${siteId} failed (${result.error.code}): ${result.error.message}`
   )
-}
+})
 
 export async function createSite(
   input: CreateSiteInput
@@ -54,16 +56,19 @@ export async function createSite(
 /**
  * Whether the signed-in user's site has received its first event. An API
  * error counts as "not yet": the verify panel keeps polling and recovers,
- * instead of a secondary check taking the whole page down.
+ * instead of a secondary check taking the whole page down. Cached per
+ * request: the site layout and page both need it.
  */
-export async function getInstallStatus(siteId: string): Promise<InstallStatus> {
-  const result = await apiRequest(
-    `/api/v1/sites/${siteId}/install-status`,
-    installStatusSchema
-  )
-  if (result.ok) return result.data
-  console.error(
-    `Checking the install status of ${siteId} failed (${result.error.code}): ${result.error.message}`
-  )
-  return { connected: false, firstEventAt: null }
-}
+export const getInstallStatus = cache(
+  async (siteId: string): Promise<InstallStatus> => {
+    const result = await apiRequest(
+      `/api/v1/sites/${siteId}/install-status`,
+      installStatusSchema
+    )
+    if (result.ok) return result.data
+    console.error(
+      `Checking the install status of ${siteId} failed (${result.error.code}): ${result.error.message}`
+    )
+    return { connected: false, firstEventAt: null }
+  }
+)

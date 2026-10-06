@@ -18,7 +18,8 @@
     "db:generate": "bun run --filter @workspace/db db:generate",
     "db:migrate": "bun run --filter @workspace/db db:migrate",
     "db:migrate:remote": "bun run --filter @workspace/db db:migrate:remote",
-    "db:studio": "bun run --filter @workspace/db db:studio"
+    "db:studio": "bun run --filter @workspace/db db:studio",
+    "db:seed": "bun scripts/seed-events.ts"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

@@ -1,6 +1,5 @@
+import { SITE_LIST_MAX_LIMIT } from "@workspace/contracts"
 import * as z from "zod"
-
-const SITE_LIST_MAX_LIMIT = 100
 
 export const listSitesQuerySchema = z.object({
   limit: z.coerce

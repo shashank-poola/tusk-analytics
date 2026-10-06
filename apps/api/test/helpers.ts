@@ -17,6 +17,28 @@ export const middlewareApp = new Hono<AppEnv>()
   )
   .onError(errorHandler)
 
+/** Calls `/api/v1${path}` on the app, signed in when `cookie` is given. */
+export function api(
+  path: string,
+  {
+    cookie,
+    environment = env,
+  }: { cookie?: string; environment?: typeof env } = {},
+  init: RequestInit = {}
+) {
+  return app.request(
+    `/api/v1${path}`,
+    {
+      ...init,
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        "Content-Type": "application/json",
+      },
+    },
+    environment
+  )
+}
+
 export function uniqueEmail(): string {
   return `${crypto.randomUUID()}@example.com`
 }

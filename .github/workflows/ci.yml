@@ -66,10 +66,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      # TODO: drop the filter once packages/ui has a .ts/.tsx file. Today its
-      # `tsc --noEmit` fails with TS18003 (no inputs), so it's skipped and
-      # --only stops web's ^typecheck from pulling it back in.
-      - run: bunx turbo run typecheck --filter='!@workspace/ui' --only
+      - run: bunx turbo run typecheck
 
   test:
     name: Test
