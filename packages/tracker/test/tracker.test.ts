@@ -117,6 +117,101 @@ describe("pageviews", () => {
   })
 })
 
+describe("outbound clicks", () => {
+  function clickLink(href: string, button = 0) {
+    const link = document.createElement("a")
+    link.href = href
+    const label = document.createElement("span")
+    link.append(label)
+    document.body.append(link)
+    // Not followed: jsdom doesn't navigate, and the test page must stay.
+    link.addEventListener("click", (event) => event.preventDefault())
+    label.dispatchEvent(
+      new MouseEvent(button === 0 ? "click" : "auxclick", {
+        bubbles: true,
+        button,
+      })
+    )
+    link.remove()
+  }
+
+  it("sends the link of a click to another site, in the same session", async () => {
+    history.replaceState(null, "", "/pricing")
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    clickLink("https://github.com/acme?ref=x")
+    clickLink("https://github.com/acme", 1)
+
+    const [pageview, click, middleClick] = await sentPayloads(beacon)
+    expect(click).toEqual({
+      siteId: SITE_ID,
+      name: "outbound",
+      url: "https://example.com/pricing",
+      href: "https://github.com/acme",
+      referrer: "",
+      visitorId: pageview?.visitorId,
+      sessionId: pageview?.sessionId,
+      newSession: false,
+    })
+    expect(middleClick).toMatchObject({ name: "outbound" })
+  })
+
+  it("ignores links within the site, its www host and non-web links", async () => {
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    clickLink("/pricing")
+    clickLink("https://www.example.com/blog")
+    clickLink("mailto:hi@example.org")
+
+    expect(beacon).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("goals", () => {
+  type Host = { viewtally?: ((goal: unknown) => void) & { q?: unknown[][] } }
+  const host = () => window as unknown as Host
+
+  afterEach(() => {
+    delete host().viewtally
+  })
+
+  it("sends window.viewtally calls, including ones queued before load", async () => {
+    const queue = Object.assign(() => {}, { q: [["Signup"]] })
+    host().viewtally = queue
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    host().viewtally?.("checkout_started")
+
+    const goals = (await sentPayloads(beacon)).filter(
+      (payload) => payload.name === "goal"
+    )
+    expect(
+      goals.map((payload) => payload.name === "goal" && payload.goal)
+    ).toEqual(["signup", "checkout_started"])
+  })
+
+  it("sends clicks on data-vt-goal elements and ignores invalid names", async () => {
+    const beacon = mockBeacon()
+    await loadTracker()
+    const button = document.createElement("button")
+    button.dataset.vtGoal = "upgrade"
+    document.body.append(button)
+
+    button.click()
+    host().viewtally?.("not valid!")
+    host().viewtally?.(42)
+    host().viewtally?.("pageview")
+    button.remove()
+
+    const payloads = await sentPayloads(beacon)
+    expect(payloads).toHaveLength(2)
+    expect(payloads[1]).toMatchObject({ name: "goal", goal: "upgrade" })
+  })
+})
+
 describe("visitor and session ids", () => {
   it("sets the visitor and session cookies and reuses them on the next load", async () => {
     const beacon = mockBeacon()
@@ -132,6 +227,35 @@ describe("visitor and session ids", () => {
       sessionId: first?.sessionId,
       newSession: false,
     })
+  })
+
+  it("starts a new session when the visitor arrives from another site or a tagged link", async () => {
+    const beacon = mockBeacon()
+    // Earlier instances also react to history changes, so read the payload
+    // the latest load sent.
+    const load = async () => {
+      await loadTracker()
+      return (await sentPayloads(beacon)).at(-1)
+    }
+
+    const first = await load()
+    Object.defineProperty(document, "referrer", {
+      value: "https://www.google.com/",
+      configurable: true,
+    })
+    const fromGoogle = await load()
+    Reflect.deleteProperty(document, "referrer")
+    history.replaceState(null, "", "/?ref=producthunt")
+    const tagged = await load()
+
+    expect(fromGoogle?.sessionId).not.toBe(first?.sessionId)
+    expect(fromGoogle?.newSession).toBe(true)
+    expect(tagged?.sessionId).not.toBe(fromGoogle?.sessionId)
+    // A plain page load (no referrer, no tag) keeps the visit going.
+    history.replaceState(null, "", "/")
+    const plain = await load()
+    expect(plain?.sessionId).toBe(tagged?.sessionId)
+    expect(plain?.newSession).toBe(false)
   })
 
   it("starts a new session after 30 minutes without events, keeping the visitor", async () => {

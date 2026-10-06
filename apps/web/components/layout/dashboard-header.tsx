@@ -1,8 +1,6 @@
-import type { Site } from "@workspace/contracts"
 import Link from "next/link"
 
 import { Logo, LogoMark } from "@/components/brand/logo"
-import { SiteSwitcher } from "@/features/sites/components/site-switcher"
 import { routes } from "@/lib/routes"
 
 import { AccountMenu } from "./account-menu"
@@ -13,14 +11,12 @@ type DashboardHeaderProps = {
   email: string
   /** From `userAvatar` in lib/avatar.ts. */
   avatarSrc: string
-  sites: Site[]
 }
 
 export function DashboardHeader({
   name,
   email,
   avatarSrc,
-  sites,
 }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-20 bg-background/85 backdrop-blur">
@@ -33,14 +29,6 @@ export function DashboardHeader({
           <Logo className="hidden sm:inline-flex" />
           <LogoMark className="size-8 sm:hidden" />
         </Link>
-        {sites.length > 0 && (
-          <>
-            <span aria-hidden="true" className="text-border">
-              /
-            </span>
-            <SiteSwitcher sites={sites} />
-          </>
-        )}
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
           <AccountMenu name={name} email={email} avatarSrc={avatarSrc} />

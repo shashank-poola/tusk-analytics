@@ -7,6 +7,7 @@ const STATUS_BY_CODE = {
   not_found: 404,
   site_already_exists: 409,
   site_limit_reached: 409,
+  funnel_limit_reached: 409,
   internal_error: 500,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>
 

@@ -8,13 +8,15 @@ let current: { id: string; expiresAt: number } | undefined
 
 /**
  * The visit this event belongs to. A visit ends after 30 minutes without an
- * event; every event extends it.
+ * event, or when `startNew` says the visitor arrived from somewhere new;
+ * every event extends it.
  */
-export function getSession(): { id: string; isNew: boolean } {
+export function getSession(startNew = false): { id: string; isNew: boolean } {
   const now = Date.now()
-  const existing =
-    readIdCookie(SESSION_COOKIE) ??
-    (current && current.expiresAt > now ? current.id : null)
+  const existing = startNew
+    ? null
+    : (readIdCookie(SESSION_COOKIE) ??
+      (current && current.expiresAt > now ? current.id : null))
   const id = existing ?? crypto.randomUUID()
 
   current = { id, expiresAt: now + SESSION_SECONDS * 1000 }

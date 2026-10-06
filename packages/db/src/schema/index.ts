@@ -1,5 +1,6 @@
 export * from "./auth"
 export * from "./sites"
+export * from "./funnels"
 export * from "./tracking"
 export * from "./revenue"
 export * from "./relations"

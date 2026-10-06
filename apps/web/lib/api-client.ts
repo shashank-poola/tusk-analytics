@@ -14,7 +14,10 @@ export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: ErrorBody["error"] }
 
-type ApiRequestOptions = { method?: "GET" | "POST"; body?: unknown }
+type ApiRequestOptions = {
+  method?: "GET" | "POST" | "DELETE"
+  body?: unknown
+}
 
 /**
  * Calls the API Worker from server code as the signed-in user (forwarding the
@@ -42,7 +45,9 @@ export async function apiRequest<T extends z.ZodType>(
   })
   if (response.status === 401) redirect(routes.signIn)
 
-  const json = await readJson(response, request)
+  // 204 No Content has no body: `schema` then sees null.
+  const json =
+    response.status === 204 ? null : await readJson(response, request)
 
   if (response.ok) {
     const result = schema.safeParse(json)

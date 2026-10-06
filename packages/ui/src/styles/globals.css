@@ -32,23 +32,24 @@
 }
 
 .dark {
-  --background: #0a0a0c;
-  --surface: #141417;
-  --foreground: #f1f4f9;
-  --muted: #1e1f24;
-  --muted-foreground: #9b9fab;
-  --border: #25262c;
+  /* Neutral greys and steel blues after DataFast's dark dashboard. */
+  --background: #1c1c1c;
+  --surface: #242424;
+  --foreground: #f2f2f2;
+  --muted: #303030;
+  --muted-foreground: #a3a3a3;
+  --border: #323232;
   /* Lighter than the brand blue so text and thin lines stay legible. */
   --accent: #5c8ff7;
   --accent-foreground: #0a0a0c;
-  --accent-soft: #19284a;
+  --accent-soft: #2f4a61;
   --highlight: oklch(0.82 0.14 75);
   --positive: oklch(0.75 0.13 155);
   --negative: oklch(0.72 0.15 27);
   --live: oklch(0.75 0.17 150);
-  --chart-1: var(--accent);
-  --chart-2: #24407c;
-  --shadow-color: 230 40% 2%;
+  --chart-1: #8cc8f5;
+  --chart-2: #3a4c5c;
+  --shadow-color: 0 0% 0%;
   color-scheme: dark;
 }
 

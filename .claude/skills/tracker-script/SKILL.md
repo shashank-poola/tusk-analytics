@@ -13,9 +13,12 @@ packages/tracker/
   src/config.ts      data-* attributes, localhost and opt-out skips
   src/cookie.ts      read/write first-party id cookies (try/catch)
   src/visitor.ts     vt_vid visitor id
-  src/session.ts     vt_sid session id, rolling 30 minutes
+  src/session.ts     vt_sid session id, rolling 30 minutes; a load from
+                     another site or a tagged link starts a new one
   src/send.ts        sendBeacon, fetch keepalive fallback
   src/spa.ts         pushState/replaceState/popstate hook
+  src/outbound.ts    clicks on links to other sites (origin + path only)
+  src/goals.ts       window.viewtally("goal"), its pre-load queue, data-vt-goal
   build.ts           Bun.build → apps/api/public/script.js (gitignored)
   test/*.test.ts     Vitest + jsdom (helpers.ts loads a fresh instance)
   test-page/         index.html + serve.ts for manual testing
@@ -57,8 +60,7 @@ packages/tracker/
 - Every entry point and storage access is in try/catch. The script must
   never throw into the host page. With cookies blocked, ids live in memory
   for the page's lifetime.
-- Not built yet: custom events, `identify`, a queue for calls made before
-  the script loads.
+- Not built yet: goal properties, `identify`.
 
 ## Payload
 
@@ -78,8 +80,15 @@ add fields, never rename or remove them.
 }
 ```
 
-`url` is origin + path + query (no hash) so the server can read UTM
-parameters; the server stores only the path. `referrer` is
+`url` is origin + path + query (no hash) so the server can read UTM,
+`ref` and `via` parameters; the server stores the hostname, the path and
+those campaign parameters.
+
+Two more event names share the same fields: `"outbound"` adds `href`, the
+link's origin + path (the tracker drops its query and hash), and `"goal"`
+adds `goal`, a lowercase slug (`^[a-z0-9][a-z0-9_-]{0,63}$`, not `pageview`
+or `outbound`). Each is one event row; the server never writes a visitor
+row for them. `referrer` is
 `document.referrer` on the first pageview and the previous in-site URL on
 SPA pageviews (the server counts a same-site referrer as none).
 

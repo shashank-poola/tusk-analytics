@@ -1,85 +1,47 @@
-import type { StatsInterval, StatsRange } from "@workspace/contracts"
+import {
+  allowedIntervals,
+  STATS_FILTER_KEYS,
+  type StatsFilterKey,
+  type StatsFilters,
+  defaultInterval,
+  HOURLY_MAX_DAYS,
+  resolveWindow,
+  type StatsInterval,
+  type StatsPeriod,
+  type StatsWindow,
+  utcOffsetMinutes,
+} from "@workspace/contracts"
 
-// Range and bucket rules: docs/metrics.md#ranges.
+import type { FilterDimension, SessionFilters } from "@workspace/db"
 
-const HOUR_MS = 60 * 60 * 1000
-const DAY_MS = 24 * HOUR_MS
+import { AppError } from "../../../lib/errors"
 
-const RANGES = {
-  "24h": { interval: "hour", buckets: 24 },
-  "7d": { interval: "day", buckets: 7 },
-  "30d": { interval: "day", buckets: 30 },
-  "90d": { interval: "day", buckets: 90 },
-} as const satisfies Record<
-  StatsRange,
-  { interval: StatsInterval; buckets: number }
->
+// Period and bucket rules: docs/metrics.md#ranges; the window math is
+// shared with the dashboard in packages/contracts/src/stats-period.ts.
 
-const BUCKET_MS = { hour: HOUR_MS, day: DAY_MS } as const
-
-type StatsWindow = {
-  fromMs: number
-  toMs: number
-  previousFromMs: number
-  previousToMs: number
-  interval: StatsInterval
-  bucketMs: number
-  /** The site's UTC offset at `toMs`, used for the whole range. */
-  offsetMs: number
-  /** Bucket number of `fromMs`: `floor((ms + offsetMs) / bucketMs)`. */
-  firstBucket: number
-  buckets: number
-}
-
-/** Minutes to add to UTC to get local time in `timeZone` at `at`. */
-export function utcOffsetMinutes(timeZone: string, at: Date): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  }).formatToParts(at)
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((p) => p.type === type)?.value)
-  const localAsUtc = Date.UTC(
-    part("year"),
-    part("month") - 1,
-    part("day"),
-    part("hour"),
-    part("minute"),
-    part("second")
-  )
-  const atSeconds = at.getTime() - at.getUTCMilliseconds()
-  return Math.round((localAsUtc - atSeconds) / 60_000)
-}
-
-/** The current and previous period of `range` for a site in `timeZone`. */
-export function resolveRange(
-  range: StatsRange,
+/** The window of `period` for a site in `timeZone`, at its offset now. */
+export function siteWindow(
+  period: StatsPeriod,
   timeZone: string,
   now: Date
 ): StatsWindow {
-  const { interval, buckets } = RANGES[range]
-  const bucketMs = BUCKET_MS[interval]
   const offsetMs = utcOffsetMinutes(timeZone, now) * 60_000
-  const toMs = now.getTime()
-  const firstBucket = Math.floor((toMs + offsetMs) / bucketMs) - (buckets - 1)
-  const fromMs = firstBucket * bucketMs - offsetMs
-  return {
-    fromMs,
-    toMs,
-    previousFromMs: fromMs - (toMs - fromMs),
-    previousToMs: fromMs,
-    interval,
-    bucketMs,
-    offsetMs,
-    firstBucket,
-    buckets,
+  return resolveWindow(period, offsetMs, now)
+}
+
+/** `interval`, or the period's default; a 400 when it would draw too many points. */
+export function chartInterval(
+  period: StatsPeriod,
+  interval: StatsInterval | undefined
+): StatsInterval {
+  if (!interval) return defaultInterval(period)
+  if (!allowedIntervals(period).includes(interval)) {
+    throw new AppError(
+      "bad_request",
+      `interval: hourly buckets need a period of ${HOURLY_MAX_DAYS} days or less; pick day, week or month`
+    )
   }
+  return interval
 }
 
 /** `ms` as an ISO string in local time with its offset, e.g. `…T00:00:00.000+05:30`. */
@@ -89,4 +51,17 @@ export function toOffsetIso(ms: number, offsetMs: number): string {
   const hh = String(Math.floor(minutes / 60)).padStart(2, "0")
   const mm = String(minutes % 60).padStart(2, "0")
   return `${local}${offsetMs < 0 ? "-" : "+"}${hh}:${mm}`
+}
+
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+
+/** The filters in a parsed stats query (which also holds the period). */
+export function filtersOf(query: StatsFilters): SessionFilters {
+  // Fails to compile when the contract allows a filter the queries can't apply.
+  true satisfies Same<StatsFilterKey, FilterDimension>
+  const filters: SessionFilters = {}
+  for (const key of STATS_FILTER_KEYS) {
+    if (query[key]) filters[key] = query[key]
+  }
+  return filters
 }

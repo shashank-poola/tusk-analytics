@@ -43,7 +43,7 @@ const CHANNEL_NAMES: Record<Channel, string> = {
 
 /** What a missing key means for each dimension. */
 const MISSING_LABELS: Partial<Record<BreakdownBy, string>> = {
-  referrer: "Direct / None",
+  referrer: "Direct/None",
   campaign: "No campaign",
 }
 
@@ -94,13 +94,16 @@ export function keyLabel(by: BreakdownBy, key: string | null): string {
     case "campaign":
     case "region":
     case "city":
+    case "hostname":
+    case "exit_link":
       return key
   }
 }
 
+/** DataFast's wording: no referrer and no tag is "Direct/None". */
 export function sourceLabel(key: string | null): string {
   if (!key) return "Unknown"
-  if (key === "direct") return "Direct"
+  if (key === "direct") return "Direct/None"
   return knownSourceName(key) ?? key
 }
 

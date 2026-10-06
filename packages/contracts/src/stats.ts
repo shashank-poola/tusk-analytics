@@ -1,14 +1,15 @@
 import * as z from "zod"
 
+import { funnelSchema } from "./funnels"
+import { statsIntervalSchema } from "./stats-period"
+
 // Definitions of every metric: docs/metrics.md.
 
-export const statsRangeSchema = z.enum(["24h", "7d", "30d", "90d"])
-export type StatsRange = z.infer<typeof statsRangeSchema>
-
 /**
- * `page` is counted per event; every other dimension per session.
- * `entry_page` and `exit_page` are a session's first and last path in the
- * range; `region` and `city` rows also carry their `country`.
+ * `page`, `hostname` and `exit_link` are counted per event; every other
+ * dimension per session. `entry_page` and `exit_page` are a session's first
+ * and last path in the range; `region` and `city` rows also carry their
+ * `country`. `exit_link` is the host and path of outbound link clicks.
  */
 export const breakdownBySchema = z.enum([
   "source",
@@ -24,11 +25,14 @@ export const breakdownBySchema = z.enum([
   "exit_page",
   "region",
   "city",
+  "hostname",
+  "exit_link",
 ])
 export type BreakdownBy = z.infer<typeof breakdownBySchema>
 
 export const BREAKDOWN_DEFAULT_LIMIT = 10
-export const BREAKDOWN_MAX_LIMIT = 50
+/** Enough for every country, so the world map can colour them all. */
+export const BREAKDOWN_MAX_LIMIT = 250
 
 const count = z.number().int().nonnegative()
 
@@ -55,19 +59,31 @@ export const statsOverviewResponseSchema = z.object({
 })
 export type StatsOverviewResponse = z.infer<typeof statsOverviewResponseSchema>
 
-export const statsIntervalSchema = z.enum(["hour", "day"])
-export type StatsInterval = z.infer<typeof statsIntervalSchema>
+const timeseriesPointSchema = z.object({
+  /** Bucket start in the site's UTC offset, e.g. `2026-10-06T00:00:00.000+05:30`. */
+  t: z.iso.datetime({ offset: true }),
+  visitors: count,
+  pageviews: count,
+})
 
 export const statsTimeseriesResponseSchema = z.object({
   interval: statsIntervalSchema,
   points: z.array(
-    z.object({
-      /** Bucket start in the site's UTC offset, e.g. `2026-10-06T00:00:00.000+05:30`. */
-      t: z.iso.datetime({ offset: true }),
-      visitors: count,
-      pageviews: count,
+    timeseriesPointSchema.extend({
+      /**
+       * The source that brought the most visitors in this bucket, direct
+       * excluded; null when none did. Untrusted: render as text.
+       */
+      topSource: z.string().nullable(),
     })
   ),
+  /**
+   * The full period before, bucket by bucket, aligned with `points` by
+   * index (same length).
+   */
+  previousPoints: z.array(timeseriesPointSchema),
+  /** True while the last point's bucket is still running (the period ends now). */
+  inProgress: z.boolean(),
 })
 export type StatsTimeseriesResponse = z.infer<
   typeof statsTimeseriesResponseSchema
@@ -80,9 +96,15 @@ export const statsBreakdownResponseSchema = z.object({
       /** Tracker-derived and untrusted: render as text. Null when unknown. */
       key: z.string().nullable(),
       visitors: count,
+      /** Pageviews; for `exit_link`, clicks on the link. */
       pageviews: count,
       /** ISO 3166-1 alpha-2, only on `region` and `city` rows. */
       country: z.string().nullable().optional(),
+      /**
+       * Only on `channel` rows: its top sources by visitors, at most
+       * three. Untrusted: render as text.
+       */
+      topSources: z.array(z.string()).optional(),
     })
   ),
 })
@@ -133,8 +155,45 @@ export const statsVisitorsResponseSchema = z.object({
       lastSeenAt: z.iso.datetime(),
       /** Path of the latest pageview in the range. */
       lastPage: z.string(),
+      /**
+       * Whether they viewed a page on each of the last 7 local days, oldest
+       * first, today last, whatever the period.
+       */
+      activeDays: z.array(z.boolean()).length(7),
     })
   ),
 })
 export type StatsVisitorsResponse = z.infer<typeof statsVisitorsResponseSchema>
 export type StatsVisitor = StatsVisitorsResponse["visitors"][number]
+
+/** Goals in the goal list; lines in the goal chart. */
+export const GOALS_LIMIT = 50
+export const GOAL_SERIES_LIMIT = 10
+
+/** Goals completed in the period, most visitors first. */
+export const statsGoalsResponseSchema = z.object({
+  interval: statsIntervalSchema,
+  /** Bucket starts, as the timeseries' `t`. */
+  buckets: z.array(z.iso.datetime({ offset: true })),
+  goals: z.array(
+    z.object({
+      name: z.string(),
+      /** Distinct visitors who completed it. */
+      visitors: count,
+      completions: count,
+      /**
+       * Visitors per bucket, aligned with `buckets`; only for the first
+       * GOAL_SERIES_LIMIT goals, empty for the rest.
+       */
+      series: z.array(count),
+    })
+  ),
+})
+export type StatsGoalsResponse = z.infer<typeof statsGoalsResponseSchema>
+
+/** How many visitors reached each step of a funnel, in order. */
+export const statsFunnelResponseSchema = z.object({
+  funnel: funnelSchema,
+  steps: z.array(z.object({ visitors: count })),
+})
+export type StatsFunnelResponse = z.infer<typeof statsFunnelResponseSchema>

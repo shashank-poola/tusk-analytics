@@ -12,6 +12,8 @@ const utc = (options: Intl.DateTimeFormatOptions) =>
 const monthDay = utc({ month: "short", day: "numeric" })
 const weekday = utc({ weekday: "short" })
 const fullDay = utc({ weekday: "short", month: "short", day: "numeric" })
+const shortMonth = utc({ month: "short" })
+const longMonth = utc({ month: "long", year: "numeric" })
 
 /** Up to this many daily points, ticks name the weekday. */
 const WEEK_POINTS = 7
@@ -21,17 +23,33 @@ const localTime = (t: string) => t.slice(11, 16)
 
 type AxisScale = { interval: StatsInterval; points: number }
 
-/** "14:00" for hours, "Tue 6" within a week, "Oct 6" for longer ranges. */
+/**
+ * "14:00" for minutes and hours, "Tue 6" within a week, "Oct 6" for longer runs of
+ * days and for weeks (their Monday), "Oct" for months.
+ */
 export function tickLabel(t: string, { interval, points }: AxisScale): string {
-  if (interval === "hour") return localTime(t)
+  if (interval === "minute" || interval === "hour") return localTime(t)
   const date = localDate(t)
-  if (points > WEEK_POINTS) return monthDay.format(date)
+  if (interval === "month") return shortMonth.format(date)
+  if (interval === "week" || points > WEEK_POINTS) {
+    return monthDay.format(date)
+  }
   // Built by hand: en-US puts the day first ("6 Tue").
   return `${weekday.format(date)} ${date.getUTCDate()}`
 }
 
-/** "Tue, Oct 6" for days; "Tue, Oct 6, 14:00" for hours. */
+/** "Tue, Oct 6, 14:00", "Tue, Oct 6", "Week of Sep 28" or "October 2026". */
 export function tooltipLabel(t: string, interval: StatsInterval): string {
-  const day = fullDay.format(localDate(t))
-  return interval === "hour" ? `${day}, ${localTime(t)}` : day
+  const date = localDate(t)
+  switch (interval) {
+    case "minute":
+    case "hour":
+      return `${fullDay.format(date)}, ${localTime(t)}`
+    case "day":
+      return fullDay.format(date)
+    case "week":
+      return `Week of ${monthDay.format(date)}`
+    case "month":
+      return longMonth.format(date)
+  }
 }

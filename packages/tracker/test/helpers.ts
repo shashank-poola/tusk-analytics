@@ -6,7 +6,8 @@ export const SCRIPT_SRC = "https://api.viewtally.test/script.js"
 
 const originalPushState = history.pushState
 const originalReplaceState = history.replaceState
-let popstateListeners: EventListenerOrEventListenerObject[] = []
+type AddedListener = [string, EventListenerOrEventListenerObject, unknown]
+let windowListeners: AddedListener[] = []
 
 /** A mocked navigator.sendBeacon; read what it sent with `sentPayloads`. */
 export function mockBeacon(accept = true) {
@@ -45,12 +46,12 @@ export async function loadTracker(
     configurable: true,
   })
 
-  // Remember popstate listeners so resetPage() can remove them; jsdom keeps
-  // the same window for every test in a file.
+  // Remember the tracker's window listeners so resetPage() can remove them;
+  // jsdom keeps the same window for every test in a file.
   const addEventListener = vi
     .spyOn(window, "addEventListener")
     .mockImplementation(function (this: Window, type, listener, options) {
-      if (type === "popstate" && listener) popstateListeners.push(listener)
+      if (listener) windowListeners.push([type, listener, options])
       EventTarget.prototype.addEventListener.call(this, type, listener, options)
     })
 
@@ -62,10 +63,14 @@ export async function loadTracker(
 /** Undoes everything the tracker and the tests changed on the page. */
 export function resetPage() {
   vi.restoreAllMocks()
-  for (const listener of popstateListeners) {
-    removeEventListener("popstate", listener)
+  for (const [type, listener, options] of windowListeners) {
+    removeEventListener(
+      type,
+      listener,
+      options as boolean | EventListenerOptions | undefined
+    )
   }
-  popstateListeners = []
+  windowListeners = []
   history.pushState = originalPushState
   history.replaceState = originalReplaceState
   history.replaceState(null, "", "/")

@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  DEFAULT_RANGE,
-  parseBreakdownTabs,
-  parseRange,
+  DEFAULT_PERIOD,
+  parseFilters,
+  parseInterval,
+  parsePeriod,
+  parseView,
+  viewParams,
+  viewSearch,
 } from "@/features/analytics/utils/analytics-params"
+import { parseBreakdownTabs } from "@/features/analytics/utils/breakdown-tabs"
 import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
 import {
-  bounceRateChange,
   countChange,
   formatCompact,
   formatDuration,
@@ -62,29 +66,15 @@ describe("formatTimeAgo", () => {
 })
 
 describe("change versus the previous period", () => {
-  it("gives a signed relative change and its direction", () => {
-    expect(countChange(120, 100)).toEqual({ direction: "up", text: "+20%" })
-    expect(countChange(75, 100)).toEqual({ direction: "down", text: "-25%" })
+  it("gives the size of a relative change and its direction", () => {
+    expect(countChange(120, 100)).toEqual({ direction: "up", text: "20%" })
+    expect(countChange(75, 100)).toEqual({ direction: "down", text: "25%" })
     expect(countChange(100, 100)).toEqual({ direction: "flat", text: "0%" })
   })
 
-  it("has no change when the previous value is 0", () => {
-    expect(countChange(40, 0)).toEqual({ direction: "none" })
-  })
-
-  it("gives bounce rate changes in percentage points", () => {
-    expect(bounceRateChange(0.44, 0.4, 10)).toEqual({
-      direction: "up",
-      text: "+4 pts",
-    })
-    expect(bounceRateChange(0.355, 0.4, 10)).toEqual({
-      direction: "down",
-      text: "-4.5 pts",
-    })
-  })
-
-  it("has no bounce rate change when the previous period had no sessions", () => {
-    expect(bounceRateChange(0.5, 0, 0)).toEqual({ direction: "none" })
+  it("counts a rise from 0 as 100% and 0 to 0 as flat", () => {
+    expect(countChange(40, 0)).toEqual({ direction: "up", text: "100%" })
+    expect(countChange(0, 0)).toEqual({ direction: "flat", text: "0%" })
   })
 })
 
@@ -102,7 +92,7 @@ describe("breakdown labels", () => {
   })
 
   it("says what a missing referrer, campaign or channel means", () => {
-    expect(keyLabel("referrer", null)).toBe("Direct / None")
+    expect(keyLabel("referrer", null)).toBe("Direct/None")
     expect(keyLabel("campaign", null)).toBe("No campaign")
     expect(keyLabel("channel", null)).toBe("Unknown")
   })
@@ -122,7 +112,7 @@ describe("browser, os and source labels", () => {
 
   it("names known sources from the shared referrer map", () => {
     expect(keyLabel("source", "hackernews")).toBe("Hacker News")
-    expect(keyLabel("source", "direct")).toBe("Direct")
+    expect(keyLabel("source", "direct")).toBe("Direct/None")
     expect(keyLabel("source", "blog.example.org")).toBe("blog.example.org")
   })
 })
@@ -142,37 +132,136 @@ describe("chart labels", () => {
     )
     expect(tooltipLabel(T, "hour")).toBe("Tue, Oct 6, 14:00")
   })
+
+  it("labels weeks by their Monday and months by name", () => {
+    const monday = "2026-09-28T00:00:00.000+00:00"
+    expect(tickLabel(monday, { interval: "week", points: 4 })).toBe("Sep 28")
+    expect(tooltipLabel(monday, "week")).toBe("Week of Sep 28")
+    expect(tickLabel(T, { interval: "month", points: 12 })).toBe("Oct")
+    expect(tooltipLabel(T, "month")).toBe("October 2026")
+  })
 })
 
 describe("search params", () => {
-  it("reads a known range and falls back to 7d otherwise", () => {
-    expect(parseRange("30d")).toBe("30d")
-    expect(parseRange(["24h", "90d"])).toBe("24h")
-    expect(parseRange("1y")).toBe(DEFAULT_RANGE)
-    expect(parseRange(undefined)).toBe("7d")
+  it("reads a preset, its offset or a custom period, and falls back to 7 days", () => {
+    expect(parsePeriod({ range: "30d" })).toEqual({ range: "30d", offset: 0 })
+    expect(parsePeriod({ range: ["24h", "90d"], offset: "2" })).toEqual({
+      range: "24h",
+      offset: 2,
+    })
+    expect(
+      parsePeriod({ range: "custom", from: "2026-09-01", to: "2026-09-30" })
+    ).toEqual({ range: "custom", from: "2026-09-01", to: "2026-09-30" })
+    expect(parsePeriod({ range: "1y" })).toEqual(DEFAULT_PERIOD)
+    expect(parsePeriod({ range: "custom", from: "2026-09-30" })).toEqual(
+      DEFAULT_PERIOD
+    )
+    expect(parsePeriod({})).toEqual({ range: "7d", offset: 0 })
   })
 
-  it("defaults every card to its first tab", () => {
+  it("keeps an interval the period allows and defaults otherwise", () => {
+    expect(parseInterval("week", { range: "30d", offset: 0 })).toBe("week")
+    expect(parseInterval("hour", { range: "90d", offset: 0 })).toBe("day")
+    expect(parseInterval(undefined, { range: "today", offset: 0 })).toBe("hour")
+  })
+
+  it("writes short URLs and resets the interval for a period of another length", () => {
+    const view = parseView({
+      range: "30d",
+      interval: "week",
+      pages: "exit_link",
+    })
+
+    expect(viewSearch(view)).toEqual({
+      range: "30d",
+      interval: "week",
+      pages: "exit_link",
+    })
+    expect(viewSearch(view, { period: { range: "7d", offset: 0 } })).toEqual({
+      range: "7d",
+      pages: "exit_link",
+    })
+    expect(viewSearch(view, { period: { range: "30d", offset: 1 } })).toEqual({
+      range: "30d",
+      offset: "1",
+      interval: "week",
+      pages: "exit_link",
+    })
+  })
+
+  it("reads valid filters and drops the rest", () => {
+    expect(
+      parseFilters({
+        country: "IN",
+        page: ["/pricing", "/"],
+        source: "",
+        city: "x".repeat(1025),
+        unknown: "1",
+      })
+    ).toEqual({ country: "IN", page: "/pricing" })
+  })
+
+  it("keeps at most 5 filters from the URL", () => {
+    const filters = parseFilters({
+      channel: "search",
+      source: "google",
+      campaign: "ref=x",
+      hostname: "a.com",
+      page: "/",
+      country: "IN",
+    })
+
+    expect(Object.keys(filters)).toHaveLength(5)
+    expect(filters.country).toBeUndefined()
+  })
+
+  it("shows the cookie's view on a clean URL, and the URL's when it has one", () => {
+    expect(viewParams({}, "range=30d&country=IN")).toEqual({
+      range: "30d",
+      country: "IN",
+    })
+    expect(viewParams({ range: "24h" }, "range=30d")).toEqual({ range: "24h" })
+    expect(viewParams({}, undefined)).toEqual({})
+    // A tampered cookie is just another untrusted query.
+    expect(parseView(viewParams({}, "range=nope&country="))).toMatchObject({
+      period: { range: "7d", offset: 0 },
+      filters: {},
+    })
+  })
+
+  it("keeps filters in every link", () => {
+    const view = parseView({ range: "7d", country: "IN" })
+
+    expect(viewSearch(view, { tabs: { ...view.tabs, devices: "os" } })).toEqual(
+      {
+        range: "7d",
+        country: "IN",
+        devices: "os",
+      }
+    )
+  })
+
+  it("defaults each card to DataFast's tab", () => {
     expect(parseBreakdownTabs({})).toEqual({
-      sources: "source",
+      sources: "referrer",
       pages: "page",
-      locations: "country",
+      locations: "map",
       devices: "browser",
     })
   })
 
   it("reads each card's tab from its own param", () => {
     expect(
-      parseBreakdownTabs({ sources: "referrer", devices: ["os", "device"] })
+      parseBreakdownTabs({ sources: "campaign", devices: ["os", "device"] })
     ).toEqual({
-      sources: "referrer",
+      sources: "campaign",
       pages: "page",
-      locations: "country",
+      locations: "map",
       devices: "os",
     })
   })
 
   it("ignores a tab that belongs to another card", () => {
-    expect(parseBreakdownTabs({ sources: "country" }).sources).toBe("source")
+    expect(parseBreakdownTabs({ sources: "country" }).sources).toBe("referrer")
   })
 })

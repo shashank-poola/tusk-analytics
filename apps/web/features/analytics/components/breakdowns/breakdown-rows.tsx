@@ -1,57 +1,76 @@
 import type { StatsBreakdownResponse } from "@workspace/contracts"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { BreakdownIcon } from "./breakdown-icon"
+import { BreakdownLabel } from "./breakdown-label"
 import { formatCompact, formatNumber } from "@/features/analytics/utils/format"
 import { keyLabel } from "@/features/analytics/utils/labels"
 
+type Row = StatsBreakdownResponse["rows"][number]
+
 type BreakdownRowsProps = {
   breakdown: StatsBreakdownResponse
-  /** Accessible name of the list, e.g. "Top sources". */
+  /** Accessible name of the list, e.g. "Top pages". */
   label: string
+  /** The link that filters the dashboard by a row; null when it can't. */
+  hrefFor: (row: Row) => string | null
 }
 
+const ROW_CLASSES =
+  "group/row relative flex h-[2.125rem] items-center gap-2.5 rounded-md px-2.5 text-sm"
+
 /**
- * One row per key: a bar sized against the top row grows in behind the icon
- * and label, with visitors on the right. Pageviews show on hover and are
- * always in the accessible text. Keys are tracker input, rendered as text.
+ * One row per key: a blue bar sized against the top row behind the icon
+ * and label, visitors on the right. Clicking a row filters the dashboard.
+ * Pageviews are in the accessible text and the hover title. Keys are
+ * tracker input, rendered as text.
  */
 export function BreakdownRows({
   breakdown: { by, rows },
   label,
+  hrefFor,
 }: BreakdownRowsProps) {
   const maxVisitors = Math.max(1, ...rows.map((row) => row.visitors))
   return (
     <ul aria-label={label} className="space-y-1">
       {rows.map((row) => {
         const name = keyLabel(by, row.key)
-        return (
-          <li
-            key={`${row.country ?? ""}:${row.key ?? ""}`}
-            className="group/row relative flex h-9 items-center gap-2.5 px-3 text-sm"
-          >
+        const href = hrefFor(row)
+        const content = (
+          <>
             <span
               aria-hidden="true"
-              className="absolute inset-y-0 left-0 origin-left animate-grow-x rounded-lg bg-accent-soft transition-colors group-hover/row:bg-accent/25"
+              className="absolute inset-y-0 left-0 origin-left animate-grow-x rounded-md bg-accent-soft transition-colors group-hover/row:bg-accent/30"
               style={{ width: `${(row.visitors / maxVisitors) * 100}%` }}
             />
             <span className="relative flex min-w-0 flex-1 items-center gap-2">
               <BreakdownIcon by={by} rowKey={row.key} country={row.country} />
-              <span className="truncate" title={name}>
-                {name}
-              </span>
+              <BreakdownLabel by={by} rowKey={row.key} name={name} />
             </span>
-            <span className="relative text-xs text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100">
-              <span aria-hidden="true">
-                {formatCompact(row.pageviews)} views
-              </span>
-            </span>
-            <span className="relative w-12 text-right font-semibold tabular-nums">
+            <span className="relative font-semibold tabular-nums">
               {formatCompact(row.visitors)}
             </span>
             <span className="sr-only">
               {formatNumber(row.visitors)} visitors,{" "}
-              {formatNumber(row.pageviews)} pageviews
+              {formatNumber(row.pageviews)}{" "}
+              {by === "exit_link" ? "clicks" : "pageviews"}
             </span>
+          </>
+        )
+        return (
+          <li key={`${row.country ?? ""}:${row.key ?? ""}`}>
+            {href ? (
+              <ViewLink
+                href={href}
+                scroll={false}
+                title={`Filter by ${name}`}
+                className={ROW_CLASSES}
+              >
+                {content}
+              </ViewLink>
+            ) : (
+              <div className={ROW_CLASSES}>{content}</div>
+            )}
           </li>
         )
       })}

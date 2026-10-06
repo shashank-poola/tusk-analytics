@@ -48,16 +48,16 @@ describe("classifySource", () => {
     ["blog.example.org", "blog.example.org"],
     ["notgoogle.com", "notgoogle.com"],
   ])("maps the referrer %j to %j", (referrer, expected) => {
-    expect(classifySource({ utmSource: null, referrer })).toBe(expected)
+    expect(classifySource({ tagged: null, referrer })).toBe(expected)
   })
 
   it("prefers utm_source, lowercased, over the referrer", () => {
     expect(
-      classifySource({ utmSource: "Newsletter", referrer: "www.google.com" })
+      classifySource({ tagged: "Newsletter", referrer: "www.google.com" })
     ).toBe("newsletter")
   })
 
   it("falls back to direct", () => {
-    expect(classifySource({ utmSource: null, referrer: null })).toBe("direct")
+    expect(classifySource({ tagged: null, referrer: null })).toBe("direct")
   })
 })

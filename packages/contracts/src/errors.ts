@@ -6,6 +6,7 @@ const errorCodeSchema = z.enum([
   "not_found",
   "site_already_exists",
   "site_limit_reached",
+  "funnel_limit_reached",
   "internal_error",
 ])
 

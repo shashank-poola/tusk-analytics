@@ -2,19 +2,17 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
-import SitePage from "@/app/(dashboard)/sites/[siteId]/page"
+import SitePage from "@/app/(dashboard)/site/[siteId]/page"
 import {
   SectionBoundary,
   SectionError,
 } from "@/features/analytics/components/section-boundary"
-import {
-  ChartSection,
-  HighlightsSection,
-} from "@/features/analytics/components/analytics-sections"
+import { ChartSection } from "@/features/analytics/components/analytics-sections"
 import {
   ChartEmptyState,
   NoData,
 } from "@/features/analytics/components/empty-state"
+import { parseView } from "@/features/analytics/utils/analytics-params"
 
 import {
   breakdown,
@@ -35,44 +33,66 @@ const { getSite, getInstallStatus, getOverview, getTimeseries, getBreakdown } =
 vi.mock("@/features/sites/server/sites.queries", () => ({
   getSite,
   getInstallStatus,
+  listSites: async () => [SITE],
 }))
 vi.mock("@/features/analytics/server/analytics.queries", () => ({
   getOverview,
   getTimeseries,
   getBreakdown,
 }))
-vi.mock("@/lib/session", () => ({
-  getSession: async () => ({ user: { name: "Ada", email: "ada@example.com" } }),
+vi.mock("@/features/analytics/server/funnels.queries", () => ({
+  listFunnels: vi.fn(),
+}))
+vi.mock("@/features/analytics/server/funnel-actions", () => ({
+  createFunnelAction: vi.fn(),
+  deleteFunnelAction: vi.fn(),
 }))
 vi.mock("@/features/onboarding/server/install-status-action", () => ({
   checkInstallStatus: vi.fn(),
 }))
 
 describe("chart empty state", () => {
-  it("points to the longest range first", () => {
-    render(<ChartEmptyState siteId={SITE.id} range="7d" />)
+  it("points to the last 90 days first", () => {
+    render(
+      <ChartEmptyState siteId={SITE.id} view={parseView({ range: "7d" })} />
+    )
 
     expect(screen.getByText("No visits in this period")).toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "See the last 90 days" })
-    ).toHaveAttribute("href", `/sites/${SITE.id}?range=90d`)
+    ).toHaveAttribute("href", `/site/${SITE.id}?view=1&range=90d`)
   })
 
   it("points to the install snippet when even 90 days are empty", () => {
-    render(<ChartEmptyState siteId={SITE.id} range="90d" />)
+    render(
+      <ChartEmptyState siteId={SITE.id} view={parseView({ range: "90d" })} />
+    )
 
     expect(
       screen.getByRole("link", { name: "Check the install snippet" })
     ).toHaveAttribute("href", `/onboarding/${SITE.id}`)
   })
 
-  it("is what the chart shows when the range has no visits", async () => {
-    getTimeseries.mockResolvedValue({ interval: "hour", points: [] })
+  it("is laid over the chart when the period has no visits", async () => {
+    getTimeseries.mockResolvedValue({
+      interval: "hour",
+      points: [],
+      inProgress: true,
+    })
     getOverview.mockResolvedValue(overview(NO_TOTALS, NO_TOTALS))
 
-    render(await ChartSection({ siteId: SITE.id, range: "24h" }))
+    render(
+      await ChartSection({
+        siteId: SITE.id,
+        scope: { period: { range: "24h", offset: 0 }, filters: {} },
+        interval: "hour",
+        compare: false,
+        label: "Last 24 hours",
+        emptyState: <p>Nothing here</p>,
+      })
+    )
 
-    expect(screen.getByText("No visits in this period")).toBeInTheDocument()
+    expect(screen.getByText("Nothing here")).toBeInTheDocument()
   })
 })
 
@@ -156,16 +176,5 @@ describe("site page states", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Waiting for the first visit")).toBeInTheDocument()
     expect(getOverview).not.toHaveBeenCalled()
-  })
-
-  it("hides the highlights when nothing is true enough to say", async () => {
-    getOverview.mockResolvedValue(overview(NO_TOTALS, NO_TOTALS))
-    getBreakdown.mockResolvedValue(breakdown("source", 0))
-
-    const { container } = render(
-      await HighlightsSection({ siteId: SITE.id, range: "7d" })
-    )
-
-    expect(container).toBeEmptyDOMElement()
   })
 })

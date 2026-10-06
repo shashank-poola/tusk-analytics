@@ -5,7 +5,7 @@ import {
   statsTimeseriesResponseSchema,
   statsVisitorsResponseSchema,
 } from "@workspace/contracts"
-import { createDb, createId, events, type NewEvent } from "@workspace/db"
+import { createDb, createId } from "@workspace/db"
 import { env } from "cloudflare:workers"
 import { describe, expect, it } from "vitest"
 
@@ -16,7 +16,13 @@ import {
   getStatsTimeseries,
   getStatsVisitors,
 } from "../src/api/v1/stats/stats.service"
-import { api, createSite, signIn } from "./helpers"
+import {
+  api,
+  createSite,
+  insertPageviews,
+  type Pageview,
+  signIn,
+} from "./helpers"
 
 // Expected numbers follow docs/metrics.md.
 
@@ -25,46 +31,12 @@ const db = createDb(env.DB)
 /** Tuesday noon UTC. The 7d range starts 2026-09-30T00:00Z in UTC. */
 const NOW = new Date("2026-10-06T12:00:00.000Z")
 
-function newSite(timezone = "UTC") {
-  return { id: createId("vt"), timezone }
+function preset(range: "24h" | "7d" | "30d" | "90d") {
+  return { range, offset: 0 }
 }
 
-type Pageview = {
-  visitor: string
-  session: string
-  at: string
-} & Partial<
-  Pick<
-    NewEvent,
-    | "path"
-    | "name"
-    | "source"
-    | "referrer"
-    | "utmMedium"
-    | "utmCampaign"
-    | "country"
-    | "region"
-    | "city"
-    | "device"
-    | "browser"
-    | "os"
-  >
->
-
-/** One insert per row: a multi-row insert would pass D1's 100-parameter cap. */
-async function insertPageviews(siteId: string, pageviews: Pageview[]) {
-  const [first, ...rest] = pageviews.map(({ visitor, session, at, ...row }) =>
-    db.insert(events).values({
-      path: "/",
-      source: "direct",
-      ...row,
-      siteId,
-      visitorId: visitor,
-      sessionId: session,
-      createdAt: new Date(at),
-    } satisfies NewEvent)
-  )
-  if (first) await db.batch([first, ...rest])
+function newSite(timezone = "UTC") {
+  return { id: createId("vt"), timezone }
 }
 
 describe("stats overview", () => {
@@ -94,7 +66,7 @@ describe("stats overview", () => {
       { visitor: "v5", session: "s7", at: "2026-09-29T23:59:59.999Z" },
     ])
 
-    const overview = await getStatsOverview(db, site, "7d", NOW)
+    const overview = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(statsOverviewResponseSchema.parse(overview)).toEqual({
       range: {
@@ -122,7 +94,7 @@ describe("stats overview", () => {
   })
 
   it("returns zeros and a bounce rate of 0 when there are no pageviews", async () => {
-    const overview = await getStatsOverview(db, newSite(), "30d", NOW)
+    const overview = await getStatsOverview(db, newSite(), preset("30d"), NOW)
 
     const zero = {
       visitors: 0,
@@ -157,7 +129,7 @@ describe("stats overview", () => {
       },
     ])
 
-    const { current } = await getStatsOverview(db, site, "7d", NOW)
+    const { current } = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(current.sessions).toBe(3)
     expect(current.avgSessionSeconds).toBe(40)
@@ -167,7 +139,7 @@ describe("stats overview", () => {
     const { range } = await getStatsOverview(
       db,
       newSite(),
-      "24h",
+      preset("24h"),
       new Date("2026-10-06T12:34:56.000Z")
     )
 
@@ -183,7 +155,7 @@ describe("stats overview", () => {
     const { range } = await getStatsOverview(
       db,
       newSite("Asia/Kolkata"),
-      "7d",
+      preset("7d"),
       NOW
     )
 
@@ -197,7 +169,7 @@ describe("stats overview", () => {
       { visitor: "v1", session: "s1", at: "2026-10-05T09:00:00.000Z" },
     ])
 
-    const overview = await getStatsOverview(db, site, "7d", NOW)
+    const overview = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(overview.current.pageviews).toBe(0)
   })
@@ -214,19 +186,56 @@ describe("stats timeseries", () => {
       { visitor: "v2", session: "s4", at: "2026-10-03T10:00:00.000Z" },
     ])
 
-    const timeseries = await getStatsTimeseries(db, site, "7d", NOW)
+    const timeseries = await getStatsTimeseries(db, site, preset("7d"), NOW)
 
     expect(statsTimeseriesResponseSchema.parse(timeseries)).toEqual({
       interval: "day",
       points: [
-        { t: "2026-09-30T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-01T00:00:00.000+00:00", visitors: 1, pageviews: 2 },
-        { t: "2026-10-02T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-03T00:00:00.000+00:00", visitors: 2, pageviews: 2 },
-        { t: "2026-10-04T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-05T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-06T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
+        {
+          t: "2026-09-30T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-01T00:00:00.000+00:00",
+          visitors: 1,
+          pageviews: 2,
+          topSource: null,
+        },
+        {
+          t: "2026-10-02T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-03T00:00:00.000+00:00",
+          visitors: 2,
+          pageviews: 2,
+          topSource: null,
+        },
+        {
+          t: "2026-10-04T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-05T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-06T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
       ],
+      previousPoints: expect.any(Array),
+      inProgress: true,
     })
   })
 
@@ -237,10 +246,10 @@ describe("stats timeseries", () => {
       { visitor: "v1", session: "s1", at: "2026-10-04T20:00:00.000Z" },
     ])
 
-    const { points } = await getStatsTimeseries(db, site, "7d", NOW)
+    const { points } = await getStatsTimeseries(db, site, preset("7d"), NOW)
 
     expect(points).toHaveLength(7)
-    expect(points.find((p) => p.pageviews > 0)).toEqual({
+    expect(points.find((p) => p.pageviews > 0)).toMatchObject({
       t: "2026-10-05T00:00:00.000+05:30",
       visitors: 1,
       pageviews: 1,
@@ -254,22 +263,213 @@ describe("stats timeseries", () => {
       { visitor: "v2", session: "s2", at: "2026-10-06T11:45:00.000Z" },
     ])
 
-    const timeseries = await getStatsTimeseries(db, site, "24h", NOW)
+    const timeseries = await getStatsTimeseries(db, site, preset("24h"), NOW)
 
     expect(timeseries.interval).toBe("hour")
     expect(timeseries.points).toHaveLength(24)
     expect(timeseries.points[0]?.t).toBe("2026-10-05T13:00:00.000+00:00")
     expect(timeseries.points.at(-1)?.t).toBe("2026-10-06T12:00:00.000+00:00")
-    expect(timeseries.points.at(-2)).toEqual({
+    expect(timeseries.points.at(-2)).toMatchObject({
       t: "2026-10-06T11:00:00.000+00:00",
       visitors: 2,
       pageviews: 2,
     })
   })
+
+  it("buckets by Monday-start weeks and by local months", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Sunday 2026-10-04 and Monday 2026-10-05: two different weeks.
+      { visitor: "v1", session: "s1", at: "2026-10-04T23:00:00.000Z" },
+      { visitor: "v1", session: "s2", at: "2026-10-05T01:00:00.000Z" },
+      { visitor: "v2", session: "s3", at: "2026-09-15T10:00:00.000Z" },
+    ])
+
+    const weeks = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("7d"), interval: "week" },
+      NOW
+    )
+    const months = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("90d"), interval: "month" },
+      NOW
+    )
+
+    expect(weeks.points).toMatchObject([
+      { t: "2026-09-28T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
+      { t: "2026-10-05T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
+    ])
+    expect(months.points.map((point) => point.t.slice(0, 10))).toEqual([
+      "2026-07-01",
+      "2026-08-01",
+      "2026-09-01",
+      "2026-10-01",
+    ])
+    expect(months.points.at(-2)).toMatchObject({ visitors: 1, pageviews: 1 })
+    expect(months.points.at(-1)).toMatchObject({ visitors: 1, pageviews: 2 })
+  })
+
+  it("steps whole periods back with offset, with nothing in progress", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      { visitor: "v1", session: "s1", at: "2026-09-29T10:00:00.000Z" },
+    ])
+
+    const timeseries = await getStatsTimeseries(
+      db,
+      site,
+      { range: "7d", offset: 1 },
+      NOW
+    )
+
+    expect(timeseries.inProgress).toBe(false)
+    expect(timeseries.points[0]?.t).toBe("2026-09-23T00:00:00.000+00:00")
+    expect(timeseries.points.at(-1)).toMatchObject({
+      t: "2026-09-29T00:00:00.000+00:00",
+      visitors: 1,
+      pageviews: 1,
+    })
+  })
+
+  it("covers every day of a custom period in the site's time zone", async () => {
+    const timeseries = await getStatsTimeseries(
+      db,
+      newSite("Asia/Kolkata"),
+      { range: "custom", from: "2026-09-01", to: "2026-09-03" },
+      NOW
+    )
+
+    expect(timeseries.points.map((point) => point.t)).toEqual([
+      "2026-09-01T00:00:00.000+05:30",
+      "2026-09-02T00:00:00.000+05:30",
+      "2026-09-03T00:00:00.000+05:30",
+    ])
+    expect(timeseries.inProgress).toBe(false)
+  })
+
+  it("counts the last 30 minutes minute by minute for now", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      { visitor: "v1", session: "s1", at: "2026-10-06T11:58:10.000Z" },
+      { visitor: "v2", session: "s2", at: "2026-10-06T11:58:50.000Z" },
+      // 31 minutes ago: before the window.
+      { visitor: "v3", session: "s3", at: "2026-10-06T11:29:00.000Z" },
+    ])
+
+    const timeseries = await getStatsTimeseries(
+      db,
+      site,
+      { range: "now", offset: 0 },
+      NOW
+    )
+
+    expect(timeseries.interval).toBe("minute")
+    expect(timeseries.points).toHaveLength(30)
+    expect(timeseries.points.at(-1)?.t).toBe("2026-10-06T12:00:00.000+00:00")
+    expect(timeseries.points.at(-3)).toMatchObject({
+      t: "2026-10-06T11:58:00.000+00:00",
+      visitors: 2,
+    })
+    expect(
+      timeseries.points.reduce((sum, point) => sum + point.pageviews, 0)
+    ).toBe(2)
+  })
+
+  it("refuses hourly buckets over more than 31 days", async () => {
+    await expect(
+      getStatsTimeseries(
+        db,
+        newSite(),
+        { ...preset("90d"), interval: "hour" },
+        NOW
+      )
+    ).rejects.toThrow("interval: hourly buckets need a period of 31 days")
+  })
+
+  it("pairs each point with the same bucket of the full period before", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Tuesday a week before NOW's Tuesday: the last previous point.
+      { visitor: "v1", session: "s1", at: "2026-09-29T08:00:00.000Z" },
+      { visitor: "v2", session: "s2", at: "2026-09-29T09:00:00.000Z" },
+      // Wednesday 2026-09-23: the first previous point.
+      { visitor: "v3", session: "s3", at: "2026-09-23T09:00:00.000Z" },
+    ])
+
+    const { points, previousPoints } = await getStatsTimeseries(
+      db,
+      site,
+      preset("7d"),
+      NOW
+    )
+
+    expect(previousPoints).toHaveLength(points.length)
+    expect(previousPoints[0]).toEqual({
+      t: "2026-09-23T00:00:00.000+00:00",
+      visitors: 1,
+      pageviews: 1,
+    })
+    expect(previousPoints.at(-1)).toEqual({
+      t: "2026-09-29T00:00:00.000+00:00",
+      visitors: 2,
+      pageviews: 2,
+    })
+  })
+
+  it("names each bucket's top source by its sessions' first pageview, never direct", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Thursday: google brings two visitors, x one, direct three.
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-01T09:00:00.000Z",
+        source: "google",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-01T10:00:00.000Z",
+        source: "google",
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-01T11:00:00.000Z",
+        source: "x",
+      },
+      { visitor: "v4", session: "s4", at: "2026-10-01T12:00:00.000Z" },
+      { visitor: "v5", session: "s5", at: "2026-10-01T12:00:00.000Z" },
+      { visitor: "v6", session: "s6", at: "2026-10-01T12:00:00.000Z" },
+      // A session from x whose later pageviews are direct still counts as x.
+      {
+        visitor: "v7",
+        session: "s7",
+        at: "2026-10-02T09:00:00.000Z",
+        source: "x",
+      },
+      { visitor: "v7", session: "s7", at: "2026-10-02T09:01:00.000Z" },
+    ])
+
+    const { points } = await getStatsTimeseries(db, site, preset("7d"), NOW)
+
+    expect(points.map((point) => point.topSource)).toEqual([
+      null,
+      "google",
+      "x",
+      null,
+      null,
+      null,
+      null,
+    ])
+  })
 })
 
 describe("stats breakdown", () => {
-  const range = "7d"
+  const period = preset("7d")
 
   it("counts a session once, under the source of its first pageview", async () => {
     const site = newSite()
@@ -309,7 +509,7 @@ describe("stats breakdown", () => {
     const breakdown = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 10 },
+      { ...period, by: "source", limit: 10 },
       NOW
     )
 
@@ -354,7 +554,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "page", limit: 10 },
+      { ...period, by: "page", limit: 10 },
       NOW
     )
 
@@ -370,7 +570,7 @@ describe("stats breakdown", () => {
     ["browser", "browser", "Chrome", "Safari"],
     ["os", "os", "Android", "iOS"],
     ["referrer", "referrer", "news.ycombinator.com", "t.co"],
-    ["campaign", "utmCampaign", "launch", "spring-sale"],
+    ["hostname", "hostname", "myapp.com", "www.myapp.com"],
   ] as const)(
     "groups by %s, with unknown values last",
     async (by, field, firstValue, secondValue) => {
@@ -395,7 +595,7 @@ describe("stats breakdown", () => {
       const { rows } = await getStatsBreakdown(
         db,
         site,
-        { range, by, limit: 10 },
+        { ...period, by, limit: 10 },
         NOW
       )
 
@@ -441,11 +641,11 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "channel", limit: 10 },
+      { ...period, by: "channel", limit: 10 },
       NOW
     )
 
-    expect(rows).toEqual([
+    expect(rows.map(({ topSources: _, ...row }) => row)).toEqual([
       { key: "direct", visitors: 2, pageviews: 2 },
       { key: "email", visitors: 2, pageviews: 2 },
       { key: "referral", visitors: 2, pageviews: 2 },
@@ -453,6 +653,124 @@ describe("stats breakdown", () => {
       { key: "social", visitors: 2, pageviews: 2 },
       { key: "ai", visitors: 1, pageviews: 1 },
       { key: "paid", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("names each channel's top sources, most visitors first, unknown ones left out", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "x",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "reddit",
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "reddit",
+      },
+      {
+        visitor: "v4",
+        session: "s4",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "youtube",
+      },
+      {
+        visitor: "v5",
+        session: "s5",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "linkedin",
+      },
+      {
+        visitor: "v6",
+        session: "s6",
+        at: "2026-10-05T09:00:00.000Z",
+        source: null,
+      },
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "channel", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      {
+        key: "social",
+        visitors: 5,
+        pageviews: 5,
+        topSources: ["reddit", "linkedin", "x"],
+      },
+      { key: "direct", visitors: 1, pageviews: 1, topSources: [] },
+    ])
+  })
+
+  it("groups campaigns by their parameters and leaves out visits without one", async () => {
+    const site = newSite()
+    const tagged = (visitor: string, campaignParams: string | null) => ({
+      visitor,
+      session: `s-${visitor}`,
+      at: "2026-10-05T09:00:00.000Z",
+      campaignParams,
+    })
+    await insertPageviews(site.id, [
+      tagged("v1", "ref=indiepage"),
+      tagged("v2", "ref=indiepage"),
+      tagged("v3", "utm_source=x&utm_campaign=launch"),
+      tagged("v4", null),
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "campaign", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "ref=indiepage", visitors: 2, pageviews: 2 },
+      { key: "utm_source=x&utm_campaign=launch", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("counts outbound clicks per link, with distinct visitors", async () => {
+    const site = newSite()
+    const click = (visitor: string, url: string) => ({
+      visitor,
+      session: `s-${visitor}`,
+      at: "2026-10-05T09:00:00.000Z",
+      name: "outbound",
+      props: { url },
+    })
+    await insertPageviews(site.id, [
+      click("v1", "github.com/acme"),
+      click("v1", "github.com/acme"),
+      click("v2", "github.com/acme"),
+      click("v3", "x.com/acme"),
+      // A pageview is not a click.
+      { visitor: "v4", session: "s-v4", at: "2026-10-05T09:00:00.000Z" },
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "exit_link", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "github.com/acme", visitors: 2, pageviews: 3 },
+      { key: "x.com/acme", visitors: 1, pageviews: 1 },
     ])
   })
 
@@ -500,7 +818,7 @@ describe("stats breakdown", () => {
 
     const [entry, exit] = await Promise.all(
       (["entry_page", "exit_page"] as const).map((by) =>
-        getStatsBreakdown(db, site, { range, by, limit: 10 }, NOW)
+        getStatsBreakdown(db, site, { ...period, by, limit: 10 }, NOW)
       )
     )
 
@@ -539,7 +857,7 @@ describe("stats breakdown", () => {
     const breakdown = await getStatsBreakdown(
       db,
       site,
-      { range, by: "city", limit: 10 },
+      { ...period, by: "city", limit: 10 },
       NOW
     )
 
@@ -603,7 +921,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "region", limit: 10 },
+      { ...period, by: "region", limit: 10 },
       NOW
     )
 
@@ -629,7 +947,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 10 },
+      { ...period, by: "source", limit: 10 },
       NOW
     )
 
@@ -654,11 +972,184 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 2 },
+      { ...period, by: "source", limit: 2 },
       NOW
     )
 
     expect(rows.map((row) => row.key)).toEqual(["github", "bing"])
+  })
+})
+
+describe("stats filters", () => {
+  // Three sessions: s1 from google on mobile (/ then /pricing), s2 direct on
+  // desktop (/ only, then clicks out), s3 from google on desktop (/blog).
+  async function seed() {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "google",
+        device: "mobile",
+        country: "IN",
+      },
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:01:00.000Z",
+        path: "/pricing",
+        device: "mobile",
+        country: "IN",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T10:00:00.000Z",
+        device: "desktop",
+        country: "US",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T10:00:30.000Z",
+        name: "outbound",
+        props: { url: "github.com/acme" },
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-05T11:00:00.000Z",
+        path: "/blog",
+        source: "google",
+        device: "desktop",
+        country: "US",
+      },
+    ])
+    return site
+  }
+
+  it("keeps whole sessions by their first pageview's value", async () => {
+    const site = await seed()
+
+    const { current } = await getStatsOverview(
+      db,
+      site,
+      { ...preset("7d"), source: "google" },
+      NOW
+    )
+
+    // The internal /pricing pageview is stored as direct but stays in s1.
+    expect(current).toMatchObject({ visitors: 2, pageviews: 3, sessions: 2 })
+  })
+
+  it("keeps sessions that viewed a page, with all their pageviews", async () => {
+    const site = await seed()
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...preset("7d"), page: "/pricing", by: "page", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "/", visitors: 1, pageviews: 1 },
+      { key: "/pricing", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("combines filters: sessions must match all of them", async () => {
+    const site = await seed()
+
+    const { current } = await getStatsOverview(
+      db,
+      site,
+      { ...preset("7d"), source: "google", device: "desktop" },
+      NOW
+    )
+
+    expect(current).toMatchObject({ visitors: 1, pageviews: 1 })
+  })
+
+  it("keeps sessions with a click on an outbound link", async () => {
+    const site = await seed()
+
+    const { visitors } = await getStatsVisitors(
+      db,
+      site,
+      {
+        ...preset("7d"),
+        exit_link: "github.com/acme",
+        limit: 10,
+        secret: env.BETTER_AUTH_SECRET,
+      },
+      NOW
+    )
+
+    expect(visitors.map((visitor) => visitor.country)).toEqual(["US"])
+  })
+
+  it("filters the chart and its previous period alike", async () => {
+    const site = await seed()
+
+    const { points } = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("7d"), channel: "search" },
+      NOW
+    )
+
+    expect(points.reduce((sum, point) => sum + point.pageviews, 0)).toBe(3)
+  })
+
+  it("runs the heaviest queries with the most filters D1's parameter cap allows", async () => {
+    const site = await seed()
+    const five = {
+      ...preset("7d"),
+      channel: "search",
+      source: "google",
+      page: "/pricing",
+      exit_link: "github.com/acme",
+      region: "Karnataka",
+    }
+
+    await expect(getStatsOverview(db, site, five, NOW)).resolves.toBeDefined()
+    await expect(
+      getStatsVisitors(
+        db,
+        site,
+        { ...five, limit: 50, secret: env.BETTER_AUTH_SECRET },
+        NOW
+      )
+    ).resolves.toBeDefined()
+    await expect(
+      getStatsBreakdown(db, site, { ...five, by: "channel", limit: 250 }, NOW)
+    ).resolves.toBeDefined()
+  })
+
+  it("answers 400 for more than 5 filters at once", async () => {
+    const owner = await signIn()
+    const site = await createSite(owner.userId)
+
+    const response = await api(
+      `/sites/${site.id}/stats/overview?range=7d&country=IN&city=x&region=y&os=a&browser=b&device=mobile`,
+      { cookie: owner.cookie }
+    )
+
+    expect(response.status).toBe(400)
+  })
+
+  it("filters through the route's query string", async () => {
+    const owner = await signIn()
+    const site = await createSite(owner.userId)
+
+    const response = await api(
+      `/sites/${site.id}/stats/overview?range=7d&country=IN&page=%2Fpricing`,
+      { cookie: owner.cookie }
+    )
+
+    expect(response.status).toBe(200)
   })
 })
 
@@ -692,7 +1183,7 @@ describe("stats visitors", () => {
     getStatsVisitors(
       db,
       site,
-      { range: "7d", limit, secret: env.BETTER_AUTH_SECRET },
+      { ...preset("7d"), limit, secret: env.BETTER_AUTH_SECRET },
       NOW
     )
 
@@ -793,11 +1284,15 @@ describe("stats visitors", () => {
       firstSeenAt: "2026-10-05T09:00:00.000Z",
       lastSeenAt: "2026-10-06T10:00:00.000Z",
       lastPage: "/docs",
+      // Sep 30 → Oct 6: pageviews on Oct 5 and 6.
+      activeDays: [false, false, false, false, false, true, true],
     })
     expect(visitors[2]).toMatchObject({
       source: "direct",
       pageviews: 1,
       firstSeenAt: "2026-10-01T08:00:00.000Z",
+      // Sep 29 is before the week; Oct 1 is its second day.
+      activeDays: [false, true, false, false, false, false, false],
     })
   })
 
@@ -943,7 +1438,11 @@ describe("stats routes", () => {
       "/stats/breakdown?range=7d&by=path",
       "by",
     ],
-    ["a limit over 50", "/stats/breakdown?range=7d&by=page&limit=51", "limit"],
+    [
+      "a limit over 250",
+      "/stats/breakdown?range=7d&by=page&limit=251",
+      "limit",
+    ],
     [
       "a limit that isn't a number",
       "/stats/breakdown?range=7d&by=page&limit=ten",
@@ -951,6 +1450,22 @@ describe("stats routes", () => {
     ],
     ["a visitors limit over 50", "/stats/visitors?range=7d&limit=51", "limit"],
     ["visitors without a range", "/stats/visitors", "range"],
+    [
+      "a custom period without an end",
+      "/stats/overview?range=custom&from=2026-10-01",
+      "to",
+    ],
+    [
+      "a custom period that ends before it starts",
+      "/stats/overview?range=custom&from=2026-10-02&to=2026-10-01",
+      "to",
+    ],
+    ["a negative offset", "/stats/overview?range=7d&offset=-1", "offset"],
+    [
+      "hourly buckets over 90 days",
+      "/stats/timeseries?range=90d&interval=hour",
+      "interval",
+    ],
   ])("answers 400 for %s", async (_, path, field) => {
     const owner = await signIn()
     const site = await createSite(owner.userId)

@@ -22,6 +22,20 @@
       "when": 1791299170834,
       "tag": "0002_events_region_city",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791317539597,
+      "tag": "0003_light_silk_fever",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791318646671,
+      "tag": "0004_empty_sersi",
+      "breakpoints": true
     }
   ]
 }

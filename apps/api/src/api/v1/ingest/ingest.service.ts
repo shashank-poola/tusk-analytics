@@ -3,7 +3,10 @@ import { and, type Database, eq, events, lt, visitors } from "@workspace/db"
 
 import { isBot } from "./bot-filter"
 import {
+  MAX_CAMPAIGN_PARAMS_LENGTH,
   MAX_DERIVED_VALUE_LENGTH,
+  MAX_HOSTNAME_LENGTH,
+  MAX_OUTBOUND_URL_LENGTH,
   MAX_PATH_LENGTH,
   MAX_PLACE_NAME_LENGTH,
 } from "./ingest.schema"
@@ -51,6 +54,53 @@ function cleanValue(
   return cleaned || null
 }
 
+/**
+ * Marketing parameters kept for the campaign breakdown, in this order.
+ * `ref` and `via` are what indie launch sites and newsletters append.
+ */
+const CAMPAIGN_PARAMS = [
+  "ref",
+  "via",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+] as const
+
+/**
+ * `?ref=` or `?via=`, cleaned. Affiliate and newsletter links sometimes put
+ * an email there; a value with `@` is dropped, never stored.
+ */
+function referralTag(url: URL, name: "ref" | "via"): string | null {
+  const value = cleanValue(url.searchParams.get(name))
+  return value?.includes("@") ? null : value
+}
+
+/**
+ * `ref=producthunt` or `utm_source=x&utm_medium=social`: the URL's
+ * campaign parameters in a fixed order, each value cleaned and
+ * URI-encoded so `&` and `=` inside one can't split it; null when none.
+ */
+function campaignParamsOf(url: URL): string | null {
+  const pairs = CAMPAIGN_PARAMS.flatMap((name) => {
+    const value =
+      name === "ref" || name === "via"
+        ? referralTag(url, name)
+        : cleanValue(url.searchParams.get(name))
+    return value ? [`${name}=${encodeURIComponent(value)}`] : []
+  })
+  const joined = pairs.join("&")
+  return joined && joined.length <= MAX_CAMPAIGN_PARAMS_LENGTH ? joined : null
+}
+
+/** An outbound link as `host/path`: no scheme, query or fragment, which can hold tokens. */
+function outboundUrlOf(href: string): string {
+  const url = new URL(href)
+  return `${url.hostname}${url.pathname === "/" ? "" : url.pathname}`.slice(
+    0,
+    MAX_OUTBOUND_URL_LENGTH
+  )
+}
+
 /** A `request.cf` region or city name; null when missing or not a string. */
 function cleanPlaceName(value: unknown): string | null {
   return typeof value === "string"
@@ -78,17 +128,39 @@ export async function ingestEvent(
   }
 
   const url = new URL(payload.url)
+  const path = url.pathname.slice(0, MAX_PATH_LENGTH)
+  const hostname = url.hostname.slice(0, MAX_HOSTNAME_LENGTH)
+  const visitorKey = { siteId: site.id, visitorId: payload.visitorId }
+
+  if (payload.name !== "pageview") {
+    // One row: a click or a goal needs no visitor write, source or
+    // location; filters and funnels reach those through its session.
+    // A goal is stored under its own name (never pageview or outbound).
+    await writeOrThrow(db, site.id, [
+      db.insert(events).values({
+        ...visitorKey,
+        sessionId: payload.sessionId,
+        path,
+        hostname,
+        createdAt: now,
+        ...(payload.name === "outbound"
+          ? { name: "outbound", props: { url: outboundUrlOf(payload.href) } }
+          : { name: payload.goal }),
+      }),
+    ])
+    return { status: "recorded" }
+  }
+
   const utmSource = cleanValue(url.searchParams.get("utm_source"))
   const utmMedium = cleanValue(url.searchParams.get("utm_medium"))
   const utmCampaign = cleanValue(url.searchParams.get("utm_campaign"))
   const referrer = cleanValue(referrerHost(payload.referrer, site.domain))
-  const source = classifySource({ utmSource, referrer })
-  const path = url.pathname.slice(0, MAX_PATH_LENGTH)
+  const tagged = utmSource ?? referralTag(url, "ref") ?? referralTag(url, "via")
+  const source = classifySource({ tagged, referrer })
   const validCountry =
     typeof country === "string" && /^[A-Z]{2}$/.test(country) ? country : null
   const { browser, os, device } = parseUserAgent(userAgent)
 
-  const visitorKey = { siteId: site.id, visitorId: payload.visitorId }
   // First touch is written once and never overwritten.
   const insertVisitor = db
     .insert(visitors)
@@ -110,11 +182,13 @@ export async function ingestEvent(
     sessionId: payload.sessionId,
     name: payload.name,
     path,
+    hostname,
     referrer,
     source,
     utmSource,
     utmMedium,
     utmCampaign,
+    campaignParams: campaignParamsOf(url),
     country: validCountry,
     region: cleanPlaceName(region),
     city: cleanPlaceName(city),
@@ -137,16 +211,35 @@ export async function ingestEvent(
       )
     )
 
+  await writeOrThrow(
+    db,
+    site.id,
+    payload.newSession
+      ? [insertVisitor, insertEvent, touchVisitor]
+      : [insertVisitor, insertEvent]
+  )
+  return { status: "recorded" }
+}
+
+/**
+ * One statement of a batch, taken from `Database` itself: drizzle-orm is a
+ * dependency of @workspace/db, not of this app, so it isn't imported here.
+ */
+type Write = Parameters<Database["batch"]>[0][number]
+
+/** One atomic batch; a failure names the site but none of the values. */
+async function writeOrThrow(
+  db: Database,
+  siteId: string,
+  [first, ...rest]: [Write, ...Write[]]
+): Promise<void> {
   try {
-    await (payload.newSession
-      ? db.batch([insertVisitor, insertEvent, touchVisitor])
-      : db.batch([insertVisitor, insertEvent]))
+    await db.batch([first, ...rest])
   } catch (error) {
     // Drizzle's message embeds the bound params (visitor id, path, UTM
     // values), and the error handler logs what it gets. Keep only D1's cause.
-    throw new Error(`Writing an event for site ${site.id} failed`, {
+    throw new Error(`Writing an event for site ${siteId} failed`, {
       cause: error instanceof Error ? error.cause : undefined,
     })
   }
-  return { status: "recorded" }
 }

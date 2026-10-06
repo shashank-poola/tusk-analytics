@@ -1,5 +1,7 @@
 import type {
   StatsBreakdownResponse,
+  StatsFunnelResponse,
+  StatsGoalsResponse,
   StatsLiveResponse,
   StatsOverviewResponse,
   StatsTimeseriesResponse,
@@ -14,7 +16,9 @@ import { requireSite } from "../../../middleware/require-site"
 import { requireUser } from "../../../middleware/require-user"
 import {
   breakdownQuerySchema,
+  funnelQuerySchema,
   statsQuerySchema,
+  timeseriesQuerySchema,
   visitorsQuerySchema,
 } from "./stats.schema"
 import {
@@ -24,6 +28,7 @@ import {
   getStatsTimeseries,
   getStatsVisitors,
 } from "./stats.service"
+import { getStatsFunnel, getStatsGoals } from "./stats.goals"
 
 /**
  * Mounted at /sites/:siteId/stats. requireSite answers 404 unless the
@@ -36,16 +41,16 @@ export const statsRoutes = new Hono<SiteEnv>()
     const overview = await getStatsOverview(
       createDb(c.env.DB),
       c.get("site"),
-      c.req.valid("query").range,
+      c.req.valid("query"),
       new Date()
     )
     return c.json(overview satisfies StatsOverviewResponse)
   })
-  .get("/timeseries", queryParams(statsQuerySchema), async (c) => {
+  .get("/timeseries", queryParams(timeseriesQuerySchema), async (c) => {
     const timeseries = await getStatsTimeseries(
       createDb(c.env.DB),
       c.get("site"),
-      c.req.valid("query").range,
+      c.req.valid("query"),
       new Date()
     )
     return c.json(timeseries satisfies StatsTimeseriesResponse)
@@ -75,4 +80,22 @@ export const statsRoutes = new Hono<SiteEnv>()
       new Date()
     )
     return c.json(visitors satisfies StatsVisitorsResponse)
+  })
+  .get("/goals", queryParams(timeseriesQuerySchema), async (c) => {
+    const goals = await getStatsGoals(
+      createDb(c.env.DB),
+      c.get("site"),
+      c.req.valid("query"),
+      new Date()
+    )
+    return c.json(goals satisfies StatsGoalsResponse)
+  })
+  .get("/funnel", queryParams(funnelQuerySchema), async (c) => {
+    const funnel = await getStatsFunnel(
+      createDb(c.env.DB),
+      c.get("site"),
+      c.req.valid("query"),
+      new Date()
+    )
+    return c.json(funnel satisfies StatsFunnelResponse)
   })

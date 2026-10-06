@@ -17,16 +17,6 @@ function Loading({ label }: { label: string }) {
   return <span className="sr-only">Loading {label}…</span>
 }
 
-export function GreetingSkeleton() {
-  return (
-    <div role="status" className="space-y-3">
-      <Bar className="h-8 w-full max-w-xl" />
-      <Bar className="h-4 w-64" />
-      <Loading label="summary" />
-    </div>
-  )
-}
-
 export function KpiStripSkeleton() {
   return (
     <div
@@ -82,7 +72,7 @@ export function BreakdownSkeleton() {
   )
 }
 
-export function VisitorsSkeleton() {
+export function InsightsSkeleton() {
   return (
     <div role="status" className="space-y-1 px-3">
       {["a", "b", "c", "d", "e", "f"].map((key) => (
@@ -94,18 +84,7 @@ export function VisitorsSkeleton() {
           </div>
         </div>
       ))}
-      <Loading label="visitors" />
+      <Loading label="this tab" />
     </div>
-  )
-}
-
-export function HighlightsSkeleton() {
-  return (
-    <Card role="status" className="space-y-3 p-5">
-      <Bar className="h-4 w-24" />
-      <Bar className="h-4 w-full max-w-md" />
-      <Bar className="h-4 w-full max-w-sm" />
-      <Loading label="highlights" />
-    </Card>
   )
 }

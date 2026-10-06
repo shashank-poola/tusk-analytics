@@ -9,17 +9,18 @@ Ranges and buckets: `apps/api/src/api/v1/stats/stats.range.ts`.
 
 ## What is counted
 
-Only events with `name = 'pageview'`. Custom events (not built yet) never
+Only events with `name = 'pageview'`. Outbound clicks (`name =
+'outbound'`) only feed the `exit_link` breakdown and its filter; they never
 count towards these metrics.
 
-| Metric       | Definition                                                                                                                 |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Pageviews    | Number of pageview events.                                                                                                 |
-| Visitors     | Distinct `visitor_id`.                                                                                                     |
-| Sessions     | Distinct `session_id`.                                                                                                     |
-| Bounce rate  | Sessions with exactly one pageview ÷ sessions. 0 with no sessions.                                                         |
-| Session time | Mean over sessions of (last pageview's `created_at` − first pageview's), in seconds. A one-pageview session counts as 0 s. |
-| Online       | Distinct `visitor_id` with a pageview in the last 5 minutes (`now − 5 min <= created_at < now`), whatever the range.       |
+| Metric       | Definition                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pageviews    | Number of pageview events.                                                                                                                                          |
+| Visitors     | Distinct `visitor_id`.                                                                                                                                              |
+| Sessions     | Distinct `session_id`. The tracker starts a session after 30 minutes without events, or when a page loads from another site or with a `utm_source`/`ref`/`via` tag. |
+| Bounce rate  | Sessions with exactly one pageview ÷ sessions. 0 with no sessions.                                                                                                  |
+| Session time | Mean over sessions of (last pageview's `created_at` − first pageview's), in seconds. A one-pageview session counts as 0 s.                                          |
+| Online       | Distinct `visitor_id` with a pageview in the last 5 minutes (`now − 5 min <= created_at < now`), whatever the range.                                                |
 
 Every metric except online is computed over events with `range.from <=
 created_at < range.to`. A session that started before the range counts only
@@ -53,27 +54,46 @@ key, which the dashboard shows as "Unknown".
 
 ### Dimensions
 
-| Dimension    | Value                                                                                                                       |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `source`     | `events.source`: lowercased `utm_source`, else the referrer's known name (`google`, `x`), else its hostname, else `direct`. |
-| `channel`    | The source grouped into a channel, see below.                                                                               |
-| `referrer`   | `events.referrer`: the referrer's hostname, `null` for none (direct, or navigation inside the site).                        |
-| `campaign`   | `events.utm_campaign`, as tagged.                                                                                           |
-| `page`       | Per event: the pageview's `path`.                                                                                           |
-| `entry_page` | The `path` of the session's first pageview in the range.                                                                    |
-| `exit_page`  | The `path` of the session's **last** pageview in the range (latest `created_at`; ties: either one).                         |
-| `country`    | ISO 3166-1 alpha-2 from Cloudflare's `request.cf.country`.                                                                  |
-| `region`     | `request.cf.region` (state, province), grouped with its country: rows carry `country`.                                      |
-| `city`       | `request.cf.city`, grouped with its country, so Paris, FR and Paris, US are two rows.                                       |
-| `device`     | `desktop`, `mobile` or `tablet`, from the User-Agent.                                                                       |
-| `browser`    | Browser family from the User-Agent.                                                                                         |
-| `os`         | Operating system from the User-Agent.                                                                                       |
+| Dimension    | Value                                                                                                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`     | `events.source`: lowercased `utm_source`, else `ref`, else `via`, else the referrer's known name (`google`, `x`), else its hostname, else `direct`. Shown as "Referrer".   |
+| `channel`    | The source grouped into a channel, see below.                                                                                                                              |
+| `referrer`   | `events.referrer`: the referrer's hostname, `null` for none (direct, or navigation inside the site).                                                                       |
+| `campaign`   | `events.campaign_params`: `ref`, `via`, `utm_source`, `utm_medium`, `utm_campaign` in that order, values URI-encoded (`ref=indiepage`). Sessions without any are left out. |
+| `page`       | Per event: the pageview's `path`.                                                                                                                                          |
+| `hostname`   | Per event: the pageview's hostname (`www.myapp.com`); `null` before it was collected.                                                                                      |
+| `exit_link`  | Per outbound click: the link's `host/path` (no scheme, query or hash). `visitors` are distinct clickers, `pageviews` clicks.                                               |
+| `entry_page` | The `path` of the session's first pageview in the range.                                                                                                                   |
+| `exit_page`  | The `path` of the session's **last** pageview in the range (latest `created_at`; ties: either one).                                                                        |
+| `country`    | ISO 3166-1 alpha-2 from Cloudflare's `request.cf.country`.                                                                                                                 |
+| `region`     | `request.cf.region` (state, province), grouped with its country: rows carry `country`.                                                                                     |
+| `city`       | `request.cf.city`, grouped with its country, so Paris, FR and Paris, US are two rows.                                                                                      |
+| `device`     | `desktop`, `mobile` or `tablet`, from the User-Agent.                                                                                                                      |
+| `browser`    | Browser family from the User-Agent.                                                                                                                                        |
+| `os`         | Operating system from the User-Agent.                                                                                                                                      |
 
 Region and city are derived by Cloudflare from the visitor's IP at ingest
 (`request.cf.region`, `request.cf.city`) and stored on the event only (not
 on `visitors`); the IP itself is never stored. Events from before they were
 collected have `null`. Unknown regions or cities form one row with `key` and
 `country` both `null`, whatever the visitors' countries.
+
+Channel rows also carry `topSources`: the channel's three sources with the
+most visitors (ties by name), for the icons on the channel chart.
+
+## Filters
+
+Every stats request except online takes optional filters, one value each,
+as query params named after the dimension: `channel`, `source`,
+`campaign`, `entry_page`, `country`, `region`, `city`, `browser`, `os`,
+`device` (the session's first pageview in the range has that value),
+`page`, `hostname` (any pageview of the session has it) and `exit_link`
+(the session clicked that link). Filters keep **whole sessions**: with
+`source=google`, a session that landed from Google keeps its later internal
+pageviews, so its bounce, session time and pages stay true. Several filters
+must all match. The previous period is filtered the same way.
+
+A dashboard click on a city or region row adds its `country` too.
 
 ### Channels
 
@@ -111,33 +131,77 @@ default, at most 50). For each `visitor_id` with a pageview in the range:
 - `pageviews` and `sessions` (distinct `session_id`) in the range.
 - `firstSeenAt` / `lastSeenAt`: their first and latest pageview in the range.
 - `lastPage`: the `path` of their latest pageview in the range.
+- `activeDays`: seven booleans, oldest first, for today and the 6 days
+  before it in the site's time zone (whatever the range and filters):
+  whether the visitor had a pageview that day. Shown as dots.
 
 Region and city here are the same Cloudflare IP-derived values as in the
 breakdowns; the IP is not stored.
 
 Ties on `lastSeenAt` are ordered by `visitor_id`.
 
+## Goals
+
+A goal is an event the site sends with `window.viewtally("signup")` or a
+click on an element with `data-vt-goal="signup"`; it's stored with the
+goal as its `name`. Goals are listed by distinct visitors who completed them
+in the range (then name), with `completions` (every event), at most 50. The
+top 10 also get `series`: distinct visitors per bucket of the chart's
+interval. Filters apply as everywhere: goals of matching sessions.
+
+## Funnels
+
+A funnel is 2–8 ordered steps saved per site (at most 20 funnels), each a
+page (`path` equals the value) or a goal (`name` equals it). A visitor
+reaches step 1 with any matching event in the range, and step n with a
+matching event at or after the moment they first reached step n − 1, in any
+session within the range. Each step counts distinct visitors. The drop
+between steps is `(step n − step n−1) / step n−1`; the conversion rate is
+the last step over the first.
+
 ## Ranges
 
-| Range | Covers                                               | Buckets |
-| ----- | ---------------------------------------------------- | ------- |
-| `24h` | The current hour and the 23 before it, until now     | Hourly  |
-| `7d`  | Today and the 6 days before it, from local midnight  | Daily   |
-| `30d` | Today and the 29 days before it, from local midnight | Daily   |
-| `90d` | Today and the 89 days before it, from local midnight | Daily   |
+Every stats request names a **period**. Window math lives in
+`packages/contracts/src/stats-period.ts`, shared by the API and the
+dashboard so labels and queries agree.
 
-- Every range ends at **now**, so today is a partial day.
+| `range`  | Covers (at `offset` 0)                               | Default interval |
+| -------- | ---------------------------------------------------- | ---------------- |
+| `now`    | The current minute and the 29 before it, until now   | By minute        |
+| `today`  | Today from local midnight, until now                 | Hourly           |
+| `24h`    | The current hour and the 23 before it, until now     | Hourly           |
+| `7d`     | Today and the 6 days before it, from local midnight  | Daily            |
+| `30d`    | Today and the 29 days before it, from local midnight | Daily            |
+| `90d`    | Today and the 89 days before it, from local midnight | Daily            |
+| `12mo`   | This month and the 11 before it, from the local 1st  | Monthly          |
+| `custom` | `from` 00:00 to the end of `to` (local dates)        | see below        |
+
+- A preset with `offset=n` is the same preset `n` whole periods earlier:
+  `7d&offset=1` is the 7 full days before the last 7, `today&offset=1` is
+  yesterday. Offsets run from 0 to 1000.
+- A custom period is at most 366 days, `from <= to`. Its default interval is
+  hourly up to 2 days, daily up to 92, monthly beyond.
+- A period ends at **now** at the latest, so a running period's last bucket
+  is partial (`inProgress: true` on the timeseries).
 - Hours and days are the site's local hours and days (`sites.timezone`).
-- **Previous period**: the same length immediately before the range
+- **Previous period**: the same length immediately before the period
   (`previousTo = from`, `previousFrom = from - (to - from)`). For `7d` at
   10:00 on a Wednesday that compares Thursday 00:00 → Wednesday 10:00 with
   the 6 days and 10 hours before it.
-- The timeseries has one point per bucket, including buckets with no events
-  (zero-filled). Visitors per bucket are distinct visitors in that bucket, so
-  daily visitors are not the sum of hourly visitors.
-- A point's `t` is the bucket's start as an ISO string with the site's UTC
-  offset, e.g. `2026-10-06T00:00:00.000+05:30`, so the dashboard can label it
-  without converting time zones.
+
+### Intervals
+
+`interval` is `minute` (only for `now`, which has no other), `hour`, `day`, `week` or `month`. Weeks start on Monday,
+months on the 1st, both local. Hourly buckets are only allowed for periods
+of up to 31 days (a 400 otherwise). The timeseries has one point per bucket
+of the period at its full length, including the running one and buckets with
+no events (zero-filled); the first week or month may start before the
+period. Visitors per bucket are distinct visitors in that bucket, so daily
+visitors are not the sum of hourly visitors.
+
+A point's `t` is the bucket's start as an ISO string with the site's UTC
+offset, e.g. `2026-10-06T00:00:00.000+05:30`, so the dashboard can label it
+without converting time zones.
 
 ### Time zones and DST
 
@@ -154,7 +218,7 @@ with rollups.
 
 ## Limits and performance
 
-- Ranges are capped at 90 days, breakdowns at 50 rows (default 10) and the
+- Periods are capped at 366 days (`12mo`, custom), breakdowns at 50 rows (default 10) and the
   visitors list at 50 (default 20). These caps are the protection for now:
   every request reads the raw events of its range through
   `events_site_time_idx (site_id, created_at)`. Totals read the range twice
@@ -163,6 +227,8 @@ with rollups.
   B-tree, since the index doesn't cover `visitor_id`) to pick the latest
   `limit` visitors, then a second pass over the range that keeps only those
   visitors' pageviews.
+- A `12mo` or long custom period reads up to a year of raw events per
+  request; fine for small sites, the first thing rollups should cover.
 - Retention: none enforced yet for events (open decision).
 - No caching or rollups yet. When raw scans get too slow, add daily rollup
   tables or a short-lived cache in front of these queries; the definitions

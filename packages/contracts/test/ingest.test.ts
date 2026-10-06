@@ -17,6 +17,34 @@ describe("collectPayloadSchema", () => {
     expect(collectPayloadSchema.parse(VALID)).toEqual(VALID)
   })
 
+  it("accepts an outbound click with the link it went to", () => {
+    const click = { ...VALID, name: "outbound", href: "https://github.com/a" }
+    expect(collectPayloadSchema.parse(click)).toEqual(click)
+  })
+
+  it.each([
+    ["without a link", { href: undefined }],
+    ["to a non-http link", { href: "mailto:a@b.co" }],
+  ])("rejects an outbound click %s", (_, override) => {
+    const click = { ...VALID, name: "outbound", href: "https://a.com" }
+    expect(
+      collectPayloadSchema.safeParse({ ...click, ...override }).success
+    ).toBe(false)
+  })
+
+  it("accepts a goal with a lowercase slug name, never a reserved one", () => {
+    const goal = (name: string) =>
+      collectPayloadSchema.safeParse({ ...VALID, name: "goal", goal: name })
+        .success
+
+    expect(goal("checkout_started")).toBe(true)
+    expect(goal("Signup")).toBe(false)
+    expect(goal("sign up")).toBe(false)
+    expect(goal("x".repeat(65))).toBe(false)
+    expect(goal("pageview")).toBe(false)
+    expect(goal("outbound")).toBe(false)
+  })
+
   it("ignores fields it doesn't know, so new tracker fields stay compatible", () => {
     expect(collectPayloadSchema.parse({ ...VALID, extra: 1 })).toEqual(VALID)
   })

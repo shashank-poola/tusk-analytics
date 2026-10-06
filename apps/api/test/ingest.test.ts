@@ -24,10 +24,12 @@ async function siteForNewUser() {
   return createSite((await signIn()).userId)
 }
 
+type PageviewPayload = Extract<CollectPayload, { name: "pageview" }>
+
 function pageview(
   siteId: string,
-  overrides: Partial<CollectPayload> = {}
-): CollectPayload {
+  overrides: Partial<PageviewPayload> = {}
+): PageviewPayload {
   return {
     siteId,
     name: "pageview",
@@ -98,8 +100,10 @@ describe("POST /api/v1/collect", () => {
       sessionId: payload.sessionId,
       name: "pageview",
       path: "/pricing",
+      hostname: site.domain,
       referrer: "news.ycombinator.com",
       source: "hackernews",
+      campaignParams: null,
       browser: "chrome",
       os: "macos",
       device: "desktop",
@@ -186,6 +190,114 @@ describe("POST /api/v1/collect", () => {
       utmSource: "ProductHunt",
       referrer: "www.google.com",
     })
+  })
+
+  it("takes the source from ref or via when there is no utm_source", async () => {
+    const site = await siteForNewUser()
+
+    await collect(
+      pageview(site.id, {
+        url: `https://${site.domain}/?via=Indiepage&ref=logofast`,
+        referrer: "https://www.google.com/",
+      }),
+      { Origin: `https://${site.domain}` }
+    )
+
+    const [event] = await eventRows(site.id)
+    expect(event).toMatchObject({
+      source: "logofast",
+      utmSource: null,
+      campaignParams: "ref=logofast&via=Indiepage",
+    })
+  })
+
+  it("drops a ref or via that holds an email", async () => {
+    const site = await siteForNewUser()
+
+    await collect(
+      pageview(site.id, {
+        url: `https://${site.domain}/?ref=jane%40example.com&via=letter`,
+      }),
+      { Origin: `https://${site.domain}` }
+    )
+
+    const [event] = await eventRows(site.id)
+    expect(event).toMatchObject({
+      source: "letter",
+      campaignParams: "via=letter",
+    })
+  })
+
+  it("keeps campaign parameters in a fixed order with each value encoded", async () => {
+    const site = await siteForNewUser()
+
+    await collect(
+      pageview(site.id, {
+        url: `https://${site.domain}/?utm_campaign=launch%26more&utm_source=x&plan=pro`,
+      }),
+      { Origin: `https://${site.domain}` }
+    )
+
+    const [event] = await eventRows(site.id)
+    expect(event?.campaignParams).toBe(
+      "utm_source=x&utm_campaign=launch%26more"
+    )
+  })
+
+  it("records an outbound click as one event with the link's host and path only", async () => {
+    const site = await siteForNewUser()
+    const payload = {
+      ...pageview(site.id, { url: `https://www.${site.domain}/pricing` }),
+      name: "outbound" as const,
+      href: "https://github.com/acme/repo?token=secret#readme",
+    }
+
+    const res = await collect(payload, { Origin: `https://${site.domain}` })
+
+    expect(res.status).toBe(202)
+    const [event, ...others] = await eventRows(site.id)
+    expect(others).toEqual([])
+    expect(event).toMatchObject({
+      name: "outbound",
+      path: "/pricing",
+      hostname: `www.${site.domain}`,
+      props: { url: "github.com/acme/repo" },
+      source: null,
+      country: null,
+    })
+    expect(await visitorRows(site.id)).toEqual([])
+  })
+
+  it("records a goal as one event named after it", async () => {
+    const site = await siteForNewUser()
+    const payload = {
+      ...pageview(site.id, { url: `https://${site.domain}/signup` }),
+      name: "goal" as const,
+      goal: "signup",
+    }
+
+    const res = await collect(payload, { Origin: `https://${site.domain}` })
+
+    expect(res.status).toBe(202)
+    const [event, ...others] = await eventRows(site.id)
+    expect(others).toEqual([])
+    expect(event).toMatchObject({
+      name: "signup",
+      path: "/signup",
+      source: null,
+    })
+    expect(await visitorRows(site.id)).toEqual([])
+  })
+
+  it("answers 400 for an outbound click without a link", async () => {
+    const site = await siteForNewUser()
+
+    const res = await collect(
+      { ...pageview(site.id), name: "outbound" },
+      { Origin: `https://${site.domain}` }
+    )
+
+    expect(res.status).toBe(400)
   })
 
   it("counts a referral from the site itself as direct", async () => {
