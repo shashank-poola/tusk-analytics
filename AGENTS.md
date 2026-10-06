@@ -40,7 +40,9 @@ Local secrets: `apps/api/.dev.vars` (API) and `apps/web/.env` (copy
 - `packages/contracts`: zod schemas and types shared by the API and the web
   app (request/response shapes, domain normalization, the error body).
 - `packages/ui`: shared Tailwind 4 stylesheet (`globals.css`); shadcn target.
-- `packages/tracker`: the browser script customers install (not built yet).
+- `packages/tracker`: the browser script customers install. Its build is
+  served by the API Worker as `/script.js`; it posts to `/api/v1/collect`
+  (`src/api/v1/ingest/`).
 
 ## Hard rules
 

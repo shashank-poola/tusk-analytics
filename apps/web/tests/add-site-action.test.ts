@@ -46,6 +46,16 @@ describe("addSite", () => {
     })
   })
 
+  it("shows the site limit above the button", async () => {
+    createSite.mockResolvedValue(
+      apiError("site_limit_reached", "You can add up to 25 sites per account.")
+    )
+
+    expect(await addSite(REQUEST)).toEqual({
+      form: "You can add up to 25 sites per account.",
+    })
+  })
+
   it("shows other API errors above the button", async () => {
     createSite.mockResolvedValue(
       apiError("bad_request", "localhost only works in development.")

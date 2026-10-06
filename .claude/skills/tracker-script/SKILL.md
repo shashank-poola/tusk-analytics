@@ -1,89 +1,111 @@
 ---
 name: tracker-script
-description: Builds and changes packages/tracker, the browser script customers embed, within a 2 KB gzip budget with zero dependencies, covering SPA route changes, the first-party visitor cookie, privacy rules, custom events and identify, plus how to build, size-check and test it. Use when creating or editing the tracking snippet or anything it sends to the collect endpoint.
+description: Builds and changes packages/tracker, the browser script customers embed, within a 2 KB gzip budget with zero dependencies, covering SPA route changes, the first-party visitor and session cookies, privacy rules, the payload it sends to the collect endpoint, plus how to build, size-check and test it by hand. Use when creating or editing the tracking snippet or anything it sends to the collect endpoint.
 ---
 
 # Tracker script
 
-**Not built yet: `packages/tracker` doesn't exist.** This is the intended
-design. The CI size check (`scripts/check-tracker-size.ts`) skips with a
-notice until the package exists, then enforces the budget.
-
-## Package layout
+## Layout
 
 ```
 packages/tracker/
-  package.json      name @workspace/tracker; scripts build/test/typecheck/lint
-  tsconfig.json     extends @workspace/typescript-config/base.json, lib DOM
-  src/index.ts      the whole script; no imports outside src/
-  test/*.test.ts    Vitest + jsdom (same setup as apps/web/vitest.config.ts)
-  dist/script.js    build output (gitignored)
+  src/index.ts       entry: reads config, sends pageviews, never throws
+  src/config.ts      data-* attributes, localhost and opt-out skips
+  src/cookie.ts      read/write first-party id cookies (try/catch)
+  src/visitor.ts     vt_vid visitor id
+  src/session.ts     vt_sid session id, rolling 30 minutes
+  src/send.ts        sendBeacon, fetch keepalive fallback
+  src/spa.ts         pushState/replaceState/popstate hook
+  build.ts           Bun.build → apps/api/public/script.js (gitignored)
+  test/*.test.ts     Vitest + jsdom (helpers.ts loads a fresh instance)
+  test-page/         index.html + serve.ts for manual testing
 ```
 
-Build script:
-`bun build src/index.ts --minify --target=browser --format=iife --outfile=dist/script.js`.
-`bun run build` (turbo) then builds it, and `bun run check:tracker-size`
-checks it.
+`src/` imports nothing outside itself except `import type` from
+`@workspace/contracts`, so zod never reaches the bundle.
 
-## Budget: 2 KB gzipped, zero dependencies
+## Build and serve
 
-- No npm runtime dependencies, no polyfills, no classes where a function
-  will do. Every byte ships on every customer pageview.
-- If a change pushes it over, cut something. Raise the budget in
-  `scripts/check-tracker-size.ts` only with the user's agreement.
+- `bun run build` (turbo) runs `build.ts`: minified IIFE written to
+  `apps/api/public/script.js`. The API Worker serves it as `/script.js`
+  through Workers static assets (`assets` in `apps/api/wrangler.jsonc`);
+  `apps/api/public/_headers` sets `Cache-Control: public, max-age=3600`
+  because the URL can't be versioned.
+- Wrangler's `build` hook runs the same build before `wrangler dev` and
+  deploys, and rebuilds when `packages/tracker/src` changes in dev.
+- `bun run check:tracker-size` fails above 2048 bytes gzipped
+  (`scripts/check-tracker-size.ts`, run in CI after the build). Today it
+  is about 1.1 KB. If a change pushes it over, cut something; raise the
+  budget only with the user's agreement.
 
 ## Behavior
 
-- Config from the script tag: `data-site="vt_…"` (required), `data-api`
-  (defaults to the script's own origin). Read via `document.currentScript`
-  at load.
-- Pageview on load, and on SPA navigation: wrap `history.pushState` and
-  `history.replaceState`, listen to `popstate`. Send only when
-  `location.pathname` changed (ignore hash-only and same-path changes).
-- Public API: `window.viewtally(name, props?)` for custom events,
-  `window.viewtally("identify", externalUserId)` once at signup. Queue
-  calls made before the script loads (`window.viewtally.q`).
-- Transport: `navigator.sendBeacon(url, payload)` with a `text/plain`
-  string body (no CORS preflight), falling back to `fetch` with
-  `keepalive: true`. Never retry, never block the page.
-- Wrap everything in try/catch. The script must never throw into the host
-  page.
-- Don't send on `localhost`, `127.0.0.1`, `file:`, when
-  `navigator.webdriver` is true, during prerender, or when
-  `localStorage.viewtally_ignore === "true"` (owner opt-out).
-
-## Privacy rules
-
-Details in [references/privacy.md](references/privacy.md). In short: one
-first-party cookie holds a random visitor id (attribution needs it to match
-payments), the session id lives in `sessionStorage`, no PII, no
-fingerprinting, paths without query strings. Changing anything here needs
-the `privacy-reviewer` agent.
+- Config from `document.currentScript`: `data-site="vt_…"` (required; the
+  install snippet's attribute, never rename it), `data-api` (an origin; the
+  default is the script's own origin), `data-allow-localhost="true"`.
+  Endpoint: `<origin>/api/v1/collect`.
+- Skips entirely on `localhost`, `127.0.0.1` and `file:` (unless
+  `data-allow-localhost="true"`), and when `localStorage.vt_ignore` is set
+  to anything (owners exclude themselves).
+- Pageview on load, then after `history.pushState`/`replaceState` and on
+  `popstate`, only when path or query changed (hash-only and same-URL
+  changes don't count, so a router's replaceState on load doesn't double
+  count). Skipped while `document.visibilityState === "prerender"`.
+- Transport: `navigator.sendBeacon` with a `text/plain` Blob (no CORS
+  preflight); if it's missing, throws or returns false, `fetch` with
+  `keepalive: true`, `credentials: "omit"` and the same body. Never retries.
+- Every entry point and storage access is in try/catch. The script must
+  never throw into the host page. With cookies blocked, ids live in memory
+  for the page's lifetime.
+- Not built yet: custom events, `identify`, a queue for calls made before
+  the script loads.
 
 ## Payload
 
-Short keys keep bytes down. The collect endpoint's zod schema (see the
-`ingest-pipeline` skill) is the contract; change both together.
+Type `CollectPayload` in `packages/contracts/src/ingest.ts`; the collect
+endpoint validates it with `collectPayloadSchema`. It's a public contract:
+add fields, never rename or remove them.
 
 ```json
 {
-  "s": "vt_…",
-  "n": "pageview",
-  "u": "https://myapp.com/pricing?utm_source=x",
-  "r": "https://news.ycombinator.com/",
-  "v": "<visitor id>",
-  "i": "<session id>",
-  "p": { "plan": "pro" }
+  "siteId": "vt_…",
+  "name": "pageview",
+  "url": "https://myapp.com/pricing?utm_source=x",
+  "referrer": "https://news.ycombinator.com/",
+  "visitorId": "<uuid>",
+  "sessionId": "<uuid>",
+  "newSession": true
 }
 ```
 
-The full URL is sent so the server can read UTM parameters; the server
-stores the path without the query string.
+`url` is origin + path + query (no hash) so the server can read UTM
+parameters; the server stores only the path. `referrer` is
+`document.referrer` on the first pageview and the previous in-site URL on
+SPA pageviews (the server counts a same-site referrer as none).
+
+## Privacy
+
+Details in [references/privacy.md](references/privacy.md): two first-party
+cookies with random ids, no PII, no fingerprinting. Changing anything there
+needs the `privacy-reviewer` agent.
+
+## Testing by hand
+
+1. `bun run dev` (API on :8787, web on :3000). Add a site with domain
+   `localhost` (allowed only in development) and copy its `vt_…` id.
+2. `bun run tracker:dev`, then open
+   `http://localhost:4000/?site=vt_…`. The page injects the script from
+   `http://localhost:8787/script.js` with `data-allow-localhost="true"`.
+3. Click the links (full loads) and "pushState to a new path" (SPA
+   pageviews); "Change only the hash" sends nothing. Watch
+   DevTools → Network, filter `collect`: each request answers 202.
+4. `bun run db:studio` shows the rows in `visitors` and `events`, and
+   `/onboarding/<id>` flips to Connected.
 
 ## Tests
 
-jsdom: pageview on load; one pageview per SPA navigation, none for
-same-path or hash-only changes; queued calls flush; identify sends once;
-nothing sent on localhost or with the opt-out flag; a throwing
-`sendBeacon` doesn't throw out of the script; the cookie has the expected
-attributes.
+`packages/tracker/test/`: payload shape, data-api override, SPA dedupe,
+prerender skip, fetch fallback, cookie reuse, session rollover after 30
+minutes, invalid cookie replaced, opt-out, never throwing with blocked
+storage or a broken transport, localhost skip and override
+(`localhost.test.ts` runs with a localhost URL).

@@ -1,9 +1,10 @@
 import {
+  installStatusSchema,
   siteListResponseSchema,
   siteResponseSchema,
   siteSchema,
 } from "@workspace/contracts"
-import { createDb, eq, sites } from "@workspace/db"
+import { createDb, eq, events, sites } from "@workspace/db"
 import { env } from "cloudflare:workers"
 import { describe, expect, it } from "vitest"
 
@@ -366,5 +367,139 @@ describe("GET /api/v1/sites/:siteId", () => {
 
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual(SIGNED_OUT)
+  })
+})
+
+describe("site limit", () => {
+  it(`answers 409 site_limit_reached once the owner has ${sitesService.MAX_SITES_PER_USER} sites`, async () => {
+    const owner = await signIn()
+    await Promise.all(
+      Array.from({ length: sitesService.MAX_SITES_PER_USER }, () =>
+        createSite(owner.userId)
+      )
+    )
+
+    const res = await post("/sites", owner.cookie, {
+      domain: uniqueDomain(),
+      timezone: "UTC",
+    })
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({
+      error: {
+        code: "site_limit_reached",
+        message:
+          "You can add up to 25 sites per account. Contact us if you need more.",
+      },
+    })
+  })
+
+  it("still lets the owner add a site below the limit", async () => {
+    const owner = await signIn()
+    await Promise.all(
+      Array.from({ length: sitesService.MAX_SITES_PER_USER - 1 }, () =>
+        createSite(owner.userId)
+      )
+    )
+
+    const res = await post("/sites", owner.cookie, {
+      domain: uniqueDomain(),
+      timezone: "UTC",
+    })
+
+    expect(res.status).toBe(201)
+  })
+})
+
+describe("GET /api/v1/sites/:siteId/install-status", () => {
+  it("says not connected before the first event and connected after", async () => {
+    const owner = await signIn()
+    const site = await createSite(owner.userId)
+
+    const before = await api(`/sites/${site.id}/install-status`, {
+      cookie: owner.cookie,
+    })
+    expect(before.status).toBe(200)
+    expect(installStatusSchema.parse(await before.json())).toEqual({
+      connected: false,
+      firstEventAt: null,
+    })
+
+    const firstEventAt = new Date("2026-10-01T12:00:00.000Z")
+    await createDb(env.DB)
+      .insert(events)
+      .values([
+        {
+          siteId: site.id,
+          visitorId: crypto.randomUUID(),
+          sessionId: crypto.randomUUID(),
+          path: "/",
+          createdAt: new Date("2026-10-02T12:00:00.000Z"),
+        },
+        {
+          siteId: site.id,
+          visitorId: crypto.randomUUID(),
+          sessionId: crypto.randomUUID(),
+          path: "/",
+          createdAt: firstEventAt,
+        },
+      ])
+
+    const after = await api(`/sites/${site.id}/install-status`, {
+      cookie: owner.cookie,
+    })
+    expect(installStatusSchema.parse(await after.json())).toEqual({
+      connected: true,
+      firstEventAt: firstEventAt.toISOString(),
+    })
+  })
+
+  it("answers 404 when user B asks for user A's site", async () => {
+    const userA = await signIn()
+    const userB = await signIn()
+    const siteOfA = await createSite(userA.userId)
+
+    const res = await api(`/sites/${siteOfA.id}/install-status`, {
+      cookie: userB.cookie,
+    })
+
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual(SITE_NOT_FOUND)
+  })
+
+  it("answers 401 when signed out", async () => {
+    const site = await createSite((await signIn()).userId)
+
+    const res = await api(`/sites/${site.id}/install-status`)
+
+    expect(res.status).toBe(401)
+  })
+})
+
+describe("CORS", () => {
+  it("adds no CORS headers to /api/v1/sites, even for a cross-origin request", async () => {
+    const owner = await signIn()
+    const crossOrigin = { Origin: "https://evil.example" }
+
+    const list = await app.request(
+      "/api/v1/sites",
+      { headers: { Cookie: owner.cookie, ...crossOrigin } },
+      env
+    )
+    const preflight = await app.request(
+      "/api/v1/sites",
+      {
+        method: "OPTIONS",
+        headers: { ...crossOrigin, "Access-Control-Request-Method": "POST" },
+      },
+      env
+    )
+
+    for (const res of [list, preflight]) {
+      const corsHeaders = [...res.headers.keys()].filter((name) =>
+        name.startsWith("access-control-")
+      )
+      expect(corsHeaders).toEqual([])
+    }
   })
 })

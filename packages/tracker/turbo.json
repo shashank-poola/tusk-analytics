@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      // build.ts writes outside this package; declared so a cache hit
+      // restores the file instead of skipping it.
+      "outputs": ["$TURBO_ROOT$/apps/api/public/script.js"]
+    }
+  }
+}

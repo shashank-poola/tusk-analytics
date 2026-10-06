@@ -2,6 +2,8 @@ import "server-only"
 
 import {
   type CreateSiteInput,
+  type InstallStatus,
+  installStatusSchema,
   type Site,
   siteIdSchema,
   siteListResponseSchema,
@@ -47,4 +49,21 @@ export async function createSite(
     body: input,
   })
   return result.ok ? { ok: true, data: result.data.site } : result
+}
+
+/**
+ * Whether the signed-in user's site has received its first event. An API
+ * error counts as "not yet": the verify panel keeps polling and recovers,
+ * instead of a secondary check taking the whole page down.
+ */
+export async function getInstallStatus(siteId: string): Promise<InstallStatus> {
+  const result = await apiRequest(
+    `/api/v1/sites/${siteId}/install-status`,
+    installStatusSchema
+  )
+  if (result.ok) return result.data
+  console.error(
+    `Checking the install status of ${siteId} failed (${result.error.code}): ${result.error.message}`
+  )
+  return { connected: false, firstEventAt: null }
 }

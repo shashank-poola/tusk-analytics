@@ -2,43 +2,42 @@
 
 ## Bot handling (cheapest checks first)
 
-1. Tracker side: don't send when `navigator.webdriver` is true, or on
-   `localhost`, `127.0.0.1`, `file:` and prerendered pages
-   (`document.prerendering`).
-2. Server side, before any D1 read:
-   - Missing or empty `User-Agent` → drop.
-   - User agent matches a short case-insensitive pattern list: `bot`,
-     `crawl`, `spider`, `slurp`, `headless`, `lighthouse`, `pingdom`,
-     `uptime`, `preview`, `python-requests`, `curl/`, `wget/`, `go-http`,
-     `axios/`, `node-fetch`, `facebookexternalhit`, `whatsapp`. Keep the list
-     in one module with a test per entry.
-   - `request.cf.botManagement?.verifiedBot === true` → drop. The
-     `botManagement` object (`verifiedBot`, `score`) is typed in
-     `@cloudflare/workers-types` but only populated on plans with Bot
-     Management, so treat it as optional and never require it.
-3. Count drops (a log line with the reason, sampled), never store them as
-   events.
+1. Tracker side: nothing is sent on `localhost`, `127.0.0.1`, `file:` or
+   prerendered pages. (`navigator.webdriver` isn't checked; headless
+   browsers are caught by their user agent instead.)
+2. Server side, before any D1 read (`bot-filter.ts`):
+   - Missing or blank `User-Agent` → drop.
+   - User agent contains (case-insensitive) one of: `bot`, `crawl`,
+     `spider`, `slurp`, `headless`, `lighthouse`, `pingdom`, `uptime`,
+     `preview`, `python-requests`, `curl/`, `wget/`, `go-http`, `axios/`,
+     `node-fetch`, `facebookexternalhit`, `whatsapp`. Own list instead of
+     the `isbot` package: small, fast, and covers what hits analytics
+     endpoints. Add an entry with a real UA fixture in
+     `apps/api/test/user-agent.test.ts`.
+   - Not used yet: `request.cf.botManagement?.verifiedBot` (only populated
+     on plans with Bot Management).
+3. Drops are logged (`collect: event dropped`, `reason: "bot"`), never
+   stored as events.
 
 Don't fingerprint (canvas, fonts, IP + UA hashes stored per visitor) to
 catch bots: it conflicts with the privacy rules in the `tracker-script`
 skill.
 
-## Source classification
+## Source classification (`referrer-source.ts`)
 
-Inputs: referrer hostname, `utm_source`, `utm_medium`, and the site's own
-domain.
-
-1. Referrer hostname equals the site's domain or a subdomain → internal
-   navigation, keep the visitor's existing source (`source` = `null` on the
-   event).
-2. `utm_source` present → lowercase, trimmed, ≤ 64 chars, `[a-z0-9._-]`
-   only, then map known aliases (`twitter`, `t.co`, `x.com` → `x`;
-   `chat.openai.com`, `chatgpt.com` → `chatgpt`; `news.ycombinator.com` →
-   `hackernews`).
-3. Else referrer hostname → same alias map; search engines → `google`,
-   `bing`, `duckduckgo`; unknown hosts → the bare hostname.
+1. Referrer hostname equal to the site's domain or `www.<domain>` counts
+   as no referrer.
+2. `utm_source` present → its value, lowercased (not mapped through the
+   table).
+3. Else the referrer hostname, matched with all its parent domains against
+   the table: `bing.com` → bing, `duckduckgo.com` → duckduckgo, `x.com`,
+   `twitter.com`, `t.co` → x, `facebook.com` → facebook, `linkedin.com`,
+   `lnkd.in` → linkedin, `reddit.com` → reddit, `news.ycombinator.com` →
+   hackernews, `github.com` → github, `producthunt.com` → producthunt,
+   `chatgpt.com`, `chat.openai.com` → chatgpt, `perplexity.ai` →
+   perplexity; `google.<country tld>` (regex) → google. Unknown hosts →
+   the bare hostname.
 4. Neither → `direct`.
 
-The map is data (`hostname → channel`), unit-tested, and covers the values
-the dashboard shows. The `visitors.firstSource` column stores the result of
-the visitor's first event only.
+`visitors.firstSource` stores the result for the visitor's first event
+only; every event stores its own `source`.

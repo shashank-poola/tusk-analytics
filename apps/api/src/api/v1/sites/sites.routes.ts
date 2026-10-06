@@ -1,5 +1,6 @@
 import {
   createSiteInputSchema,
+  type InstallStatus,
   type SiteListResponse,
   type SiteResponse,
 } from "@workspace/contracts"
@@ -16,7 +17,12 @@ import {
   listSitesQuerySchema,
   MAX_CREATE_SITE_BODY_BYTES,
 } from "./sites.schema"
-import { createSite, listSites, toSite } from "./sites.service"
+import {
+  createSite,
+  getInstallStatus,
+  listSites,
+  toSite,
+} from "./sites.service"
 
 export const sitesRoutes = new Hono<UserEnv>()
   .use(requireUser)
@@ -51,3 +57,7 @@ export const sitesRoutes = new Hono<UserEnv>()
   .get("/:siteId", requireSite, (c) =>
     c.json({ site: toSite(c.get("site")) } satisfies SiteResponse)
   )
+  .get("/:siteId/install-status", requireSite, async (c) => {
+    const status = await getInstallStatus(createDb(c.env.DB), c.get("site").id)
+    return c.json(status satisfies InstallStatus)
+  })

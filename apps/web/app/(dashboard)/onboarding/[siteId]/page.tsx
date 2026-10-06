@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { InstallSnippet } from "@/features/onboarding/install-snippet"
-import { getSite } from "@/features/sites/sites.queries"
+import { VerifyInstallation } from "@/features/onboarding/verify-installation"
+import { getInstallStatus, getSite } from "@/features/sites/sites.queries"
 import { scriptUrl } from "@/lib/env"
 import { routes } from "@/lib/routes"
 import { buildSnippets } from "@/lib/snippets"
@@ -16,6 +17,7 @@ export default async function InstallSnippetPage({
 }: PageProps<"/onboarding/[siteId]">) {
   const site = await getSite((await params).siteId)
   if (!site) notFound()
+  const installStatus = await getInstallStatus(site.id)
 
   return (
     <>
@@ -30,6 +32,13 @@ export default async function InstallSnippetPage({
         snippets={buildSnippets({ siteId: site.id, scriptUrl: scriptUrl() })}
         continueHref={routes.site(site.id)}
       />
+      <div className="mt-10">
+        <VerifyInstallation
+          siteId={site.id}
+          domain={site.domain}
+          initialStatus={installStatus}
+        />
+      </div>
     </>
   )
 }

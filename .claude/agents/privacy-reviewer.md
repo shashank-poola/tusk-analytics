@@ -28,8 +28,9 @@ Check:
    form or element content, emails or names in props or `identify`,
    fingerprinting signals (screen, fonts, canvas, timezone, language
    combined into an id).
-2. **Storage on the visitor's device.** Only the `vt_vid` first-party cookie
-   and the `sessionStorage` session id. Any new cookie, `localStorage` key,
+2. **Storage on the visitor's device.** Only the `vt_vid` and `vt_sid`
+   first-party cookies, plus reading the `vt_ignore` opt-out from
+   `localStorage`. Any new cookie, `localStorage` key,
    longer lifetime or `Domain=` widening is a finding.
 3. **Consent.** Whether the change affects the open consent decision
    (persistent visitor id under ePrivacy). Point out when it does; don't

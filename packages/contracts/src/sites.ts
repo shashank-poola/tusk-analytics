@@ -102,3 +102,11 @@ export const siteListResponseSchema = z.object({ sites: z.array(siteSchema) })
 
 export type SiteResponse = z.infer<typeof siteResponseSchema>
 export type SiteListResponse = z.infer<typeof siteListResponseSchema>
+
+/** Whether the site's tracker has sent anything yet. */
+export const installStatusSchema = z.discriminatedUnion("connected", [
+  z.object({ connected: z.literal(false), firstEventAt: z.null() }),
+  z.object({ connected: z.literal(true), firstEventAt: z.iso.datetime() }),
+])
+
+export type InstallStatus = z.infer<typeof installStatusSchema>

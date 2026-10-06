@@ -1,0 +1,9 @@
+# Parsed by Workers static assets, never served itself.
+#
+# The tracker URL is in every customer's snippet and can't carry a version or
+# hash, so it can't be cached for long: one hour lets a fix reach every site
+# within an hour, while browsers and Cloudflare still serve most pageviews
+# from cache. The default (max-age=0, must-revalidate) would add a
+# revalidation request to every pageview of every customer site.
+/script.js
+  Cache-Control: public, max-age=3600

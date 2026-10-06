@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Viewtally tracker test page</title>
+    <style>
+      body {
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      nav a,
+      button {
+        margin-right: 0.75rem;
+      }
+      code {
+        background: #f3f3f3;
+        padding: 0 0.25rem;
+      }
+    </style>
+    <script>
+      // Local testing only: loads the tracker from the API dev server with
+      // the site id from ?site=, and lets it run on localhost.
+      const SCRIPT_URL = "http://localhost:8787/script.js"
+      const site = new URLSearchParams(location.search).get("site") ?? ""
+
+      if (/^vt_[0-9a-z]{16}$/.test(site)) {
+        const script = document.createElement("script")
+        script.defer = true
+        script.src = SCRIPT_URL
+        script.dataset.site = site
+        script.dataset.allowLocalhost = "true"
+        document.head.append(script)
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Tracker test page</h1>
+    <p id="status"></p>
+    <p>Path: <code id="path"></code></p>
+
+    <nav>
+      <a data-path="/">Home</a>
+      <a data-path="/pricing">Pricing (full load)</a>
+      <a data-path="/blog?utm_source=newsletter&utm_campaign=launch">
+        Blog with UTM (full load)
+      </a>
+    </nav>
+    <p>
+      <button id="push" type="button">pushState to a new path</button>
+      <button id="hash" type="button">Change only the hash</button>
+    </p>
+    <p>
+      DevTools → Network, filter <code>collect</code>: each full load and
+      pushState sends one request; the hash change sends none.
+    </p>
+
+    <script>
+      const status = document.getElementById("status")
+      status.textContent = /^vt_[0-9a-z]{16}$/.test(site)
+        ? `Tracking site ${site}.`
+        : "Add ?site=vt_… (a localhost site's id) to the URL."
+
+      // Keep ?site= on every navigation so the tracker loads on each page.
+      function withSite(path) {
+        const url = new URL(path, location.origin)
+        url.searchParams.set("site", site)
+        return url.pathname + url.search
+      }
+
+      function showPath() {
+        document.getElementById("path").textContent =
+          location.pathname + location.search + location.hash
+      }
+
+      for (const link of document.querySelectorAll("a[data-path]")) {
+        link.href = withSite(link.dataset.path)
+      }
+
+      let spaPage = 0
+      document.getElementById("push").addEventListener("click", () => {
+        spaPage += 1
+        history.pushState({}, "", withSite(`/spa/${spaPage}`))
+        showPath()
+      })
+      document.getElementById("hash").addEventListener("click", () => {
+        location.hash = `section-${Date.now()}`
+        showPath()
+      })
+      addEventListener("popstate", showPath)
+      showPath()
+    </script>
+  </body>
+</html>
