@@ -2,9 +2,10 @@ import { type SQL, sql } from "drizzle-orm"
 
 import { events } from "../schema"
 
-export type TimeseriesInterval = "hour" | "day" | "week" | "month"
+export type TimeseriesInterval = "minute" | "hour" | "day" | "week" | "month"
 
-const HOUR_MS = 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
+const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
 const WEEK_MS = 7 * DAY_MS
 /** Day 0 of the Unix epoch was a Thursday; weeks start on Monday. */
@@ -23,9 +24,10 @@ export function bucketOf(
 ): SQL {
   const local = sql`(${at} + ${offsetMs})`
   switch (interval) {
+    case "minute":
     case "hour":
     case "day": {
-      const size = interval === "hour" ? HOUR_MS : DAY_MS
+      const size = { minute: MINUTE_MS, hour: HOUR_MS, day: DAY_MS }[interval]
       return sql`CAST(${local} / ${size} AS INTEGER) * ${size}`
     }
     case "week":

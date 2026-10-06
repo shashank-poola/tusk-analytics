@@ -1,5 +1,6 @@
 import {
   dayNumber,
+  NOW_MINUTES,
   PRESET_DAYS,
   type StatsInterval,
   type StatsPeriod,
@@ -9,7 +10,8 @@ import {
 // queries the window) and the dashboard (which labels it), so both agree on
 // where a period starts and ends.
 
-const HOUR_MS = 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
+const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
 const WEEK_MS = 7 * DAY_MS
 /** Day 0 of the Unix epoch was a Thursday; weeks start on Monday. */
@@ -72,6 +74,12 @@ function localBounds(
   const back = period.offset
   const today = Math.floor(nowLocal / DAY_MS) * DAY_MS
   switch (period.range) {
+    case "now": {
+      const span = NOW_MINUTES * MINUTE_MS
+      const end =
+        (Math.floor(nowLocal / MINUTE_MS) + 1) * MINUTE_MS - back * span
+      return { start: end - span, end }
+    }
     case "today":
       return { start: today - back * DAY_MS, end: today + (1 - back) * DAY_MS }
     case "24h": {
@@ -121,6 +129,8 @@ export function resolveWindow(
 /** Start of the bucket holding `localMs`, in local ms. Weeks start on Monday. */
 function bucketStartLocal(localMs: number, interval: StatsInterval): number {
   switch (interval) {
+    case "minute":
+      return Math.floor(localMs / MINUTE_MS) * MINUTE_MS
     case "hour":
       return Math.floor(localMs / HOUR_MS) * HOUR_MS
     case "day":
@@ -139,7 +149,12 @@ function bucketStartLocal(localMs: number, interval: StatsInterval): number {
 
 function nextBucketLocal(startLocal: number, interval: StatsInterval): number {
   if (interval !== "month") {
-    const size = { hour: HOUR_MS, day: DAY_MS, week: WEEK_MS }[interval]
+    const size = {
+      minute: MINUTE_MS,
+      hour: HOUR_MS,
+      day: DAY_MS,
+      week: WEEK_MS,
+    }[interval]
     return startLocal + size
   }
   const date = new Date(startLocal)

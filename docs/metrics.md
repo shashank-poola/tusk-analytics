@@ -167,6 +167,7 @@ dashboard so labels and queries agree.
 
 | `range`  | Covers (at `offset` 0)                               | Default interval |
 | -------- | ---------------------------------------------------- | ---------------- |
+| `now`    | The current minute and the 29 before it, until now   | By minute        |
 | `today`  | Today from local midnight, until now                 | Hourly           |
 | `24h`    | The current hour and the 23 before it, until now     | Hourly           |
 | `7d`     | Today and the 6 days before it, from local midnight  | Daily            |
@@ -190,7 +191,7 @@ dashboard so labels and queries agree.
 
 ### Intervals
 
-`interval` is `hour`, `day`, `week` or `month`. Weeks start on Monday,
+`interval` is `minute` (only for `now`, which has no other), `hour`, `day`, `week` or `month`. Weeks start on Monday,
 months on the 1st, both local. Hourly buckets are only allowed for periods
 of up to 31 days (a 400 otherwise). The timeseries has one point per bucket
 of the period at its full length, including the running one and buckets with

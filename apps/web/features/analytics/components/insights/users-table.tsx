@@ -89,14 +89,16 @@ function UserRow({ visitor, now }: { visitor: StatsVisitor; now: Date }) {
             className="size-11 ring-2 ring-surface"
           />
           <div className="min-w-0">
-            <p className="font-semibold">{name}</p>
-            <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground">
+            <p className="text-[0.9375rem] leading-snug font-semibold">
+              {name}
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.6875rem] leading-tight text-muted-foreground">
               <Detail
                 icon={
                   <Icon
                     type="country"
                     name={visitor.country}
-                    className="size-4"
+                    className="size-3.5"
                   />
                 }
               >
@@ -107,7 +109,7 @@ function UserRow({ visitor, now }: { visitor: StatsVisitor; now: Date }) {
                   <Icon
                     type="device"
                     name={visitor.device}
-                    className="size-4"
+                    className="size-3.5"
                   />
                 }
               >
@@ -115,7 +117,9 @@ function UserRow({ visitor, now }: { visitor: StatsVisitor; now: Date }) {
               </Detail>
               {os && visitor.os && (
                 <Detail
-                  icon={<Icon type="os" name={visitor.os} className="size-4" />}
+                  icon={
+                    <Icon type="os" name={visitor.os} className="size-3.5" />
+                  }
                 >
                   {os}
                 </Detail>
@@ -126,7 +130,7 @@ function UserRow({ visitor, now }: { visitor: StatsVisitor; now: Date }) {
                     <Icon
                       type="browser"
                       name={visitor.browser}
-                      className="size-4"
+                      className="size-3.5"
                     />
                   }
                 >

@@ -89,6 +89,9 @@ export function periodLabel(
   const { fromMs, endMs } = resolveWindow(period, offsetMs, now)
   const first = fromMs + offsetMs
   const last = endMs + offsetMs - 1
+  if (period.range === "now") {
+    return `${clock.format(first)} – ${clock.format(last + 1)}`
+  }
   if (period.range === "24h") {
     return `${monthDay.format(first)}, ${clock.format(first)} – ${monthDay.format(last)}, ${clock.format(last)}`
   }

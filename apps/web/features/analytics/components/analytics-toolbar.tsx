@@ -37,7 +37,7 @@ export function AnalyticsToolbar({
       />
       <CompareToggle siteId={site.id} view={view} />
       <IntervalMenu siteId={site.id} view={view} />
-      <RefreshButton />
+      <RefreshButton live={view.period.range === "now"} />
       <FilterChips siteId={site.id} view={view} />
     </div>
   )

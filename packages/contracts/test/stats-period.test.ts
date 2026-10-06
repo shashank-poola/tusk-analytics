@@ -77,6 +77,19 @@ describe("resolveWindow", () => {
     })
   })
 
+  it("covers the last 30 minutes for now, minute by minute", () => {
+    const at = new Date("2026-10-06T12:00:30.000Z")
+    const live = resolveWindow({ range: "now", offset: 0 }, 0, at)
+    expect(iso(live.fromMs)).toBe("2026-10-06T11:31:00.000Z")
+    expect(iso(live.toMs)).toBe("2026-10-06T12:00:30.000Z")
+    const starts = bucketStarts(live, "minute").map(iso)
+    expect(starts).toHaveLength(30)
+    expect(starts.at(-1)).toBe("2026-10-06T12:00:00.000Z")
+    expect(iso(resolveWindow({ range: "now", offset: 1 }, 0, at).toMs)).toBe(
+      "2026-10-06T11:31:00.000Z"
+    )
+  })
+
   it("covers whole months for 12mo", () => {
     expect(window({ range: "12mo", offset: 0 }).from).toBe(
       "2025-11-01T00:00:00.000Z"
@@ -105,6 +118,14 @@ describe("intervals", () => {
     expect(defaultInterval({ range: "24h", offset: 0 })).toBe("hour")
     expect(defaultInterval({ range: "90d", offset: 0 })).toBe("day")
     expect(defaultInterval({ range: "12mo", offset: 0 })).toBe("month")
+  })
+
+  it("draws now by the minute, and nothing else by the minute", () => {
+    expect(defaultInterval({ range: "now", offset: 0 })).toBe("minute")
+    expect(allowedIntervals({ range: "now", offset: 0 })).toEqual(["minute"])
+    expect(allowedIntervals({ range: "today", offset: 0 })).not.toContain(
+      "minute"
+    )
   })
 
   it("allows hourly buckets only up to 31 days", () => {

@@ -1,7 +1,3 @@
-import { cn } from "@workspace/ui/lib/utils"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { ViewLink } from "@/features/analytics/components/view-link"
-
 import { Card } from "@/components/ui/card"
 
 type OverviewCardProps = {
@@ -9,62 +5,14 @@ type OverviewCardProps = {
   totals: React.ReactNode
   /** The chart; streams in on its own. */
   chart: React.ReactNode
-  /** The period before this one. */
-  previousHref: string
-  /** The period after this one; null when this one runs until now. */
-  nextHref: string | null
 }
 
-const ARROW_CLASSES =
-  "absolute top-2 z-10 inline-grid size-11 place-items-center rounded-full text-muted-foreground transition-colors sm:size-7"
-
-/**
- * The headline numbers directly on top of the chart, in one card, with
- * arrows at the chart's edges to step through time.
- */
-export function OverviewCard({
-  totals,
-  chart,
-  previousHref,
-  nextHref,
-}: OverviewCardProps) {
+/** The headline numbers directly on top of the chart, in one card. */
+export function OverviewCard({ totals, chart }: OverviewCardProps) {
   return (
     <Card aria-label="Overview" className="overflow-hidden">
       <section aria-label="Totals">{totals}</section>
-      <div className="relative px-3 pb-3 sm:px-5 sm:pb-4">
-        <ViewLink
-          href={previousHref}
-          scroll={false}
-          aria-label="Previous period"
-          className={cn(
-            ARROW_CLASSES,
-            "left-1 hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <ChevronLeft aria-hidden="true" className="size-4" />
-        </ViewLink>
-        {nextHref ? (
-          <ViewLink
-            href={nextHref}
-            scroll={false}
-            aria-label="Next period"
-            className={cn(
-              ARROW_CLASSES,
-              "right-1 hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <ChevronRight aria-hidden="true" className="size-4" />
-          </ViewLink>
-        ) : (
-          <span
-            aria-hidden="true"
-            className={cn(ARROW_CLASSES, "right-1 text-muted-foreground/30")}
-          >
-            <ChevronRight className="size-4" />
-          </span>
-        )}
-        {chart}
-      </div>
+      <div className="px-3 pb-3 sm:px-5 sm:pb-4">{chart}</div>
     </Card>
   )
 }

@@ -158,6 +158,23 @@ describe("AnalyticsToolbar", () => {
     expect(setViewAction).not.toHaveBeenCalled()
   })
 
+  it("offers Now first, with a live dot and the N key", async () => {
+    renderToolbar()
+    await userEvent.click(screen.getByLabelText("Period: Last 30 days"))
+
+    const now = screen.getByRole("link", { name: /^Now/ })
+    expect(query(now)).toEqual({ range: "now", pages: "exit_link" })
+    expect(now).toHaveAttribute("aria-keyshortcuts", "N")
+  })
+
+  it("names an earlier Now by its minutes", () => {
+    renderToolbar({ range: "now", offset: "1" })
+
+    expect(
+      screen.getByLabelText("Period: 8:39 PM – 9:09 PM")
+    ).toBeInTheDocument()
+  })
+
   it("toggles the comparison with the previous period", () => {
     renderToolbar({ range: "today" })
 

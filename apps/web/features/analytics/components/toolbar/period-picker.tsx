@@ -26,7 +26,13 @@ import {
 import { type PeriodOption, PeriodMenu } from "./period-menu"
 import { PeriodShortcuts } from "./period-shortcuts"
 
-type MenuEntry = { label: string; period: StatsPeriod; key?: string }
+type MenuEntry = {
+  label: string
+  period: StatsPeriod
+  key?: string
+  /** A live period: gets the green dot. */
+  live?: boolean
+}
 
 const preset = (range: PresetRange, offset = 0): StatsPeriod => ({
   range,
@@ -34,6 +40,7 @@ const preset = (range: PresetRange, offset = 0): StatsPeriod => ({
 })
 
 const MAIN_ENTRIES: MenuEntry[] = [
+  { label: PRESET_LABELS.now, period: preset("now"), key: "n", live: true },
   { label: PRESET_LABELS.today, period: preset("today"), key: "t" },
   { label: "Yesterday", period: preset("today", 1), key: "y" },
   { label: PRESET_LABELS["24h"], period: preset("24h"), key: "h" },
@@ -80,11 +87,12 @@ export function PeriodPicker({
   const next = nextPeriod(view.period, today)
   const label = periodLabel(view.period, timeZone, now)
   const custom = view.period.range === "custom" ? view.period : null
-  const option = ({ label, period, key }: MenuEntry): PeriodOption => ({
+  const option = ({ label, period, key, live }: MenuEntry): PeriodOption => ({
     label,
     href: href(period),
     active: samePeriod(period, view.period),
     shortcut: key,
+    live,
   })
   // Everything but the period and interval, which the custom range replaces.
   const keptSearch = Object.fromEntries(

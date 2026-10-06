@@ -30,6 +30,7 @@ export const DEFAULT_PERIOD: StatsPeriod = { range: "7d", offset: 0 }
 
 /** For the period menu and the toolbar: "Last 7 days". */
 export const PRESET_LABELS: Record<PresetRange, string> = {
+  now: "Now",
   today: "Today",
   "24h": "Last 24 hours",
   "7d": "Last 7 days",
@@ -39,6 +40,7 @@ export const PRESET_LABELS: Record<PresetRange, string> = {
 }
 
 export const INTERVAL_LABELS: Record<StatsInterval, string> = {
+  minute: "By minute",
   hour: "Hourly",
   day: "Daily",
   week: "Weekly",

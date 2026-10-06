@@ -25,6 +25,8 @@ import { rowFilters, withRowFilters } from "@/features/analytics/utils/filters"
 import { formatNumber } from "@/features/analytics/utils/format"
 import { keyLabel } from "@/features/analytics/utils/labels"
 import { BreakdownBody } from "./breakdowns/breakdown-body"
+import { BreakdownDialog } from "./breakdowns/breakdown-dialog"
+import { BreakdownTable } from "./breakdowns/breakdown-table"
 import { ChannelDonut } from "./breakdowns/channel-donut"
 import { NoData } from "./empty-state"
 import { WorldMap } from "./locations/world-map"
@@ -109,25 +111,43 @@ export async function BreakdownSection({
     return filters && routes.site(siteId, viewSearch(view, { filters }))
   }
   if (breakdown.rows.length === 0) return <NoData />
+  // Charts get the same Details list as the rows, under the chart.
+  const details = (title: string) => (
+    <div className="flex justify-center pt-1">
+      <BreakdownDialog title={title} count={breakdown.rows.length}>
+        <BreakdownTable title={title} breakdown={breakdown} hrefFor={hrefFor} />
+      </BreakdownDialog>
+    </div>
+  )
   switch (tab.chart) {
     case "map":
-      return <WorldMap rows={breakdown.rows} hrefFor={hrefFor} />
+      return (
+        <>
+          <div className="min-h-0 flex-1">
+            <WorldMap rows={breakdown.rows} hrefFor={hrefFor} />
+          </div>
+          {details("Country")}
+        </>
+      )
     case "donut":
       return (
-        <ChannelDonut
-          slices={breakdown.rows.flatMap((row) => {
-            const href = hrefFor(row)
-            if (!href) return []
-            return [
-              {
-                label: keyLabel("channel", row.key),
-                visitors: row.visitors,
-                topSources: row.topSources ?? [],
-                href,
-              },
-            ]
-          })}
-        />
+        <>
+          <ChannelDonut
+            slices={breakdown.rows.flatMap((row) => {
+              const href = hrefFor(row)
+              if (!href) return []
+              return [
+                {
+                  label: keyLabel("channel", row.key),
+                  visitors: row.visitors,
+                  topSources: row.topSources ?? [],
+                  href,
+                },
+              ]
+            })}
+          />
+          {details(tab.label)}
+        </>
       )
     case undefined:
       return (

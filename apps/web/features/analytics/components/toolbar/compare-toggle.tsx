@@ -14,6 +14,7 @@ import { CHIP_CLASSES } from "./chip"
 /** "Yesterday", "previous 7 days", "previous period". */
 function previousName(period: StatsPeriod): string {
   if (period.range === "today") return "Yesterday"
+  if (period.range === "now") return "previous 30 min"
   if (period.range === "custom" || period.offset > 0) return "previous period"
   return PRESET_LABELS[period.range].replace("Last", "previous")
 }

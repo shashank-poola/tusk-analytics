@@ -350,6 +350,34 @@ describe("stats timeseries", () => {
     expect(timeseries.inProgress).toBe(false)
   })
 
+  it("counts the last 30 minutes minute by minute for now", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      { visitor: "v1", session: "s1", at: "2026-10-06T11:58:10.000Z" },
+      { visitor: "v2", session: "s2", at: "2026-10-06T11:58:50.000Z" },
+      // 31 minutes ago: before the window.
+      { visitor: "v3", session: "s3", at: "2026-10-06T11:29:00.000Z" },
+    ])
+
+    const timeseries = await getStatsTimeseries(
+      db,
+      site,
+      { range: "now", offset: 0 },
+      NOW
+    )
+
+    expect(timeseries.interval).toBe("minute")
+    expect(timeseries.points).toHaveLength(30)
+    expect(timeseries.points.at(-1)?.t).toBe("2026-10-06T12:00:00.000+00:00")
+    expect(timeseries.points.at(-3)).toMatchObject({
+      t: "2026-10-06T11:58:00.000+00:00",
+      visitors: 2,
+    })
+    expect(
+      timeseries.points.reduce((sum, point) => sum + point.pageviews, 0)
+    ).toBe(2)
+  })
+
   it("refuses hourly buckets over more than 31 days", async () => {
     await expect(
       getStatsTimeseries(

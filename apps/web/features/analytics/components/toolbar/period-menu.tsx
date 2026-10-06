@@ -15,6 +15,8 @@ export type PeriodOption = {
   active: boolean
   /** One-key shortcut, shown as a hint. */
   shortcut?: string
+  /** A live period ("Now"): a green dot after its name. */
+  live?: boolean
 }
 
 type PeriodMenuProps = {
@@ -141,7 +143,15 @@ function Options({ options }: { options: PeriodOption[] }) {
               option.active && "bg-muted font-semibold"
             )}
           >
-            <span className="flex-1">{option.label}</span>
+            <span className="flex flex-1 items-center gap-2">
+              {option.label}
+              {option.live && (
+                <span
+                  aria-hidden="true"
+                  className="size-2 rounded-full bg-live"
+                />
+              )}
+            </span>
             {option.shortcut && (
               <kbd aria-hidden="true" className={KBD_CLASSES}>
                 {option.shortcut.toUpperCase()}
