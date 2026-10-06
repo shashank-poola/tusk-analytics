@@ -135,6 +135,19 @@ export function parseView(search: SearchParams): DashboardView {
   }
 }
 
+/**
+ * The params the page shows: the URL's when it has any (a view too long for
+ * the cookie stays in the URL), else the ones the proxy kept in the cookie.
+ * Either way `parseView` validates them.
+ */
+export function viewParams(
+  search: SearchParams,
+  stored: string | undefined
+): SearchParams {
+  if (Object.keys(search).length > 0) return search
+  return Object.fromEntries(new URLSearchParams(stored ?? ""))
+}
+
 /** The period as API query params. */
 export function periodQuery(period: StatsPeriod): Record<string, string> {
   if (period.range === "custom") {

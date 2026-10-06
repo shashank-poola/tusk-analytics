@@ -31,13 +31,21 @@ attention without getting in the way. Metric definitions live in
   Each card keeps its tab in its own search param (`?sources=campaign`),
   the bottom card in `?insights=`. A row click adds a filter
   (`?country=IN`), shown as a removable chip in the filter row.
-- The period is `?range=` (+ `offset` for ‹ ›) or `custom` with
+- URLs stay clean: `/site/<id>` is one website's dashboard and `/sites`
+  lists all of the user's websites. A link that sets the view carries it as
+  `?view=1&range=30d&…`; `apps/web/proxy.ts` stores that query in a
+  per-site cookie (`vt_view`, 30 days) and redirects to the bare URL, so
+  the address bar never shows what was clicked. The page reads the cookie
+  and validates it like any query. Only a view too long for a cookie stays
+  in the URL. Links that set the view don't prefetch.
+- The view is made of: the period is `?range=` (+ `offset` for ‹ ›) or `custom` with
   `from`/`to`, picked on a two-month calendar (no date library); the chart
   interval is `?interval=`. Keys T, Y, H, W, M jump to Today, Yesterday,
   24 hours, 7 and 30 days. "vs …" (`?compare=1`) adds the previous period
   to the chart as a dotted line.
-- Chart: visitors only, a 2.5 px line with a soft glow over a fading
-  gradient, dots on every point up to 31 points, a dashed crosshair and a
+- Chart: visitors only, one continuous curve (monotone, through every
+  point; the running bucket is the same curve, dashed), a 2.5 px line
+  with a soft glow over a fading gradient, dots on every point up to 31 points, a dashed crosshair and a
   tooltip with pageviews and the change versus the previous period.
 - KPI strip: 2 columns on phones, 3 on `sm`, one row of 5 on `lg`; no info
   icons. Every number has its change under it ("38% ↑"); from an empty

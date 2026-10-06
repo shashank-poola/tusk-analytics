@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
-import SitePage from "@/app/(dashboard)/sites/[siteId]/page"
+import SitePage from "@/app/(dashboard)/site/[siteId]/page"
 import {
   SectionBoundary,
   SectionError,
@@ -63,7 +63,7 @@ describe("chart empty state", () => {
     expect(screen.getByText("No visits in this period")).toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "See the last 90 days" })
-    ).toHaveAttribute("href", `/sites/${SITE.id}?range=90d`)
+    ).toHaveAttribute("href", `/site/${SITE.id}?view=1&range=90d`)
   })
 
   it("points to the install snippet when even 90 days are empty", () => {

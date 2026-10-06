@@ -6,6 +6,7 @@ import {
   parseInterval,
   parsePeriod,
   parseView,
+  viewParams,
   viewSearch,
 } from "@/features/analytics/utils/analytics-params"
 import { parseBreakdownTabs } from "@/features/analytics/utils/breakdown-tabs"
@@ -212,6 +213,20 @@ describe("search params", () => {
 
     expect(Object.keys(filters)).toHaveLength(5)
     expect(filters.country).toBeUndefined()
+  })
+
+  it("shows the cookie's view on a clean URL, and the URL's when it has one", () => {
+    expect(viewParams({}, "range=30d&country=IN")).toEqual({
+      range: "30d",
+      country: "IN",
+    })
+    expect(viewParams({ range: "24h" }, "range=30d")).toEqual({ range: "24h" })
+    expect(viewParams({}, undefined)).toEqual({})
+    // A tampered cookie is just another untrusted query.
+    expect(parseView(viewParams({}, "range=nope&country="))).toMatchObject({
+      period: { range: "7d", offset: 0 },
+      filters: {},
+    })
   })
 
   it("keeps filters in every link", () => {

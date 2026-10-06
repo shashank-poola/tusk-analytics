@@ -2,7 +2,7 @@
 
 import { cn } from "@workspace/ui/lib/utils"
 import { CalendarDays, ChevronDown, ChevronLeft } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
@@ -131,7 +131,7 @@ function Options({ options }: { options: PeriodOption[] }) {
     <ul>
       {options.map((option) => (
         <li key={option.label}>
-          <Link
+          <ViewLink
             href={option.href}
             scroll={false}
             aria-current={option.active ? "page" : undefined}
@@ -147,7 +147,7 @@ function Options({ options }: { options: PeriodOption[] }) {
                 {option.shortcut.toUpperCase()}
               </kbd>
             )}
-          </Link>
+          </ViewLink>
         </li>
       ))}
     </ul>

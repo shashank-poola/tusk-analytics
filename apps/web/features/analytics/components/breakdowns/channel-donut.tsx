@@ -4,7 +4,7 @@ import {
   type ChartConfig,
   ChartContainer,
 } from "@workspace/ui/components/chart"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 import { useRouter } from "next/navigation"
 import { Cell, Pie, PieChart } from "recharts"
 
@@ -148,9 +148,9 @@ export function ChannelDonut({ slices }: { slices: ChannelSlice[] }) {
       >
         {slices.map((slice) => (
           <li key={slice.label}>
-            <Link href={slice.href} scroll={false}>
+            <ViewLink href={slice.href} scroll={false}>
               {slice.label}: {formatNumber(slice.visitors)} visitors
-            </Link>
+            </ViewLink>
           </li>
         ))}
       </ul>

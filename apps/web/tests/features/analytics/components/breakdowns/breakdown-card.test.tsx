@@ -184,8 +184,9 @@ describe("BreakdownCard", () => {
       .getByRole("link", { name: "Channel" })
       .getAttribute("href")
     const url = new URL(href ?? "", "http://x")
-    expect(url.pathname).toBe(`/sites/${SITE.id}`)
+    expect(url.pathname).toBe(`/site/${SITE.id}`)
     expect(Object.fromEntries(url.searchParams)).toEqual({
+      view: "1",
       range: "30d",
       country: "IN",
       sources: "channel",

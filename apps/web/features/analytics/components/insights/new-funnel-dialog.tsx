@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { useId, useRef, useState, useTransition } from "react"
 
 import { createFunnelAction } from "@/features/analytics/server/funnel-actions"
+import { routes } from "@/lib/routes"
 
 type Draft = { type: FunnelStep["type"]; value: string }
 
@@ -19,6 +20,8 @@ type NewFunnelDialogProps = {
   pages: string[]
   /** Suggestions for goal steps: the goals seen in the period. */
   goals: string[]
+  /** The current view as `viewSearch` writes it, kept when the new funnel opens. */
+  view: Record<string, string>
   /** Classes for the button that opens the dialog. */
   triggerClassName: string
 }
@@ -34,6 +37,7 @@ export function NewFunnelDialog({
   siteId,
   pages,
   goals,
+  view,
   triggerClassName,
 }: NewFunnelDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -63,10 +67,14 @@ export function NewFunnelDialog({
         return
       }
       dialogRef.current?.close()
-      const search = new URLSearchParams(window.location.search)
-      search.set("insights", "funnel")
-      search.set("funnel", result.funnelId)
-      router.push(`?${search}`, { scroll: false })
+      router.push(
+        routes.site(siteId, {
+          ...view,
+          insights: "funnel",
+          funnel: result.funnelId,
+        }),
+        { scroll: false }
+      )
     })
   }
 

@@ -67,7 +67,7 @@ describe("SiteSwitcher", () => {
     )
     expect(screen.getByRole("link", { name: "blog.dev" })).toHaveAttribute(
       "href",
-      "/sites/vt_aaaaaaaaaaaaaaaa"
+      "/site/vt_aaaaaaaaaaaaaaaa"
     )
     expect(screen.getByRole("link", { name: "Tracking code" })).toHaveAttribute(
       "href",

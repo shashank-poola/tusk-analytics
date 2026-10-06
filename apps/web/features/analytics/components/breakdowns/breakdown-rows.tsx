@@ -1,5 +1,5 @@
 import type { StatsBreakdownResponse } from "@workspace/contracts"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { BreakdownIcon } from "./breakdown-icon"
 import { BreakdownLabel } from "./breakdown-label"
@@ -60,14 +60,14 @@ export function BreakdownRows({
         return (
           <li key={`${row.country ?? ""}:${row.key ?? ""}`}>
             {href ? (
-              <Link
+              <ViewLink
                 href={href}
                 scroll={false}
                 title={`Filter by ${name}`}
                 className={ROW_CLASSES}
               >
                 {content}
-              </Link>
+              </ViewLink>
             ) : (
               <div className={ROW_CLASSES}>{content}</div>
             )}

@@ -21,6 +21,12 @@ vi.mock("next/form", () => ({
   }: ComponentProps<"form"> & { scroll?: boolean }) => <form {...props} />,
 }))
 
+function withoutViewMarker(url: URL) {
+  const { view, ...search } = Object.fromEntries(url.searchParams)
+  expect(view).toBe("1")
+  return search
+}
+
 describe("AnalyticsToolbar", () => {
   /** Tuesday 2026-10-06, 21:38 UTC. */
   const NOW = new Date("2026-10-06T21:38:00.000Z")
@@ -36,9 +42,10 @@ describe("AnalyticsToolbar", () => {
     )
   }
 
+  /** What a link sets; the proxy keeps it in a cookie, not the URL. */
   function query(link: HTMLElement) {
     const url = new URL(link.getAttribute("href") ?? "", "http://localhost")
-    return Object.fromEntries(url.searchParams)
+    return withoutViewMarker(url)
   }
 
   it("shows the site, the period, the interval and refresh in one row", () => {
@@ -118,7 +125,7 @@ describe("AnalyticsToolbar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Apply" }))
 
     const url = new URL(push.mock.calls.at(-1)?.[0] ?? "", "http://x")
-    expect(Object.fromEntries(url.searchParams)).toEqual({
+    expect(withoutViewMarker(url)).toEqual({
       pages: "exit_link",
       range: "custom",
       from: "2026-09-28",

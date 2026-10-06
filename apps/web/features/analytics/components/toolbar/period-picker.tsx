@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { Menu } from "@/components/ui/menu"
 import { routes } from "@/lib/routes"
@@ -101,7 +101,7 @@ export function PeriodPicker({
   return (
     <div className="inline-flex h-11 items-stretch overflow-visible rounded-lg border border-border bg-surface text-sm font-medium sm:h-9">
       <PeriodShortcuts links={shortcuts} />
-      <Link
+      <ViewLink
         href={href(previous)}
         scroll={false}
         aria-label="Previous period"
@@ -112,7 +112,7 @@ export function PeriodPicker({
         )}
       >
         <ChevronLeft aria-hidden="true" className="size-4" />
-      </Link>
+      </ViewLink>
       <div className="border-x border-border">
         <Menu
           label={`Period: ${label}`}
@@ -145,7 +145,7 @@ export function PeriodPicker({
         </Menu>
       </div>
       {next ? (
-        <Link
+        <ViewLink
           href={href(next)}
           scroll={false}
           aria-label="Next period"
@@ -156,7 +156,7 @@ export function PeriodPicker({
           )}
         >
           <ChevronRight aria-hidden="true" className="size-4" />
-        </Link>
+        </ViewLink>
       ) : (
         <span
           aria-hidden="true"

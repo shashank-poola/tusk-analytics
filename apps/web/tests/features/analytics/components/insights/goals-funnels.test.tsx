@@ -40,7 +40,7 @@ describe("InsightsCard", () => {
     )
     expect(within(nav).getByRole("link", { name: "Goal" })).toHaveAttribute(
       "href",
-      `/sites/${SITE.id}?range=30d&insights=goal`
+      `/site/${SITE.id}?view=1&range=30d&insights=goal`
     )
   })
 })
@@ -100,6 +100,7 @@ describe("NewFunnelDialog", () => {
         siteId={SITE.id}
         pages={["/", "/pricing"]}
         goals={["signup"]}
+        view={{}}
         triggerClassName=""
       />
     )
@@ -139,6 +140,7 @@ describe("NewFunnelDialog", () => {
         siteId={SITE.id}
         pages={[]}
         goals={[]}
+        view={{}}
         triggerClassName=""
       />
     )

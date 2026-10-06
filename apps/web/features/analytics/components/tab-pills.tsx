@@ -1,5 +1,5 @@
 import { cn } from "@workspace/ui/lib/utils"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 type TabPillsProps = {
   /** Accessible name of the tab list, e.g. "sources breakdown". */
@@ -18,7 +18,7 @@ export function TabPills({ label, tabs, active }: TabPillsProps) {
       <ul className="inline-flex gap-0.5 rounded-xl bg-background p-1">
         {tabs.map((tab) => (
           <li key={tab.id}>
-            <Link
+            <ViewLink
               href={tab.href}
               scroll={false}
               aria-current={tab.id === active ? "page" : undefined}
@@ -30,7 +30,7 @@ export function TabPills({ label, tabs, active }: TabPillsProps) {
               )}
             >
               {tab.label}
-            </Link>
+            </ViewLink>
           </li>
         ))}
       </ul>

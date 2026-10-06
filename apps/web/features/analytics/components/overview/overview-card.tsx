@@ -1,6 +1,6 @@
 import { cn } from "@workspace/ui/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { Card } from "@/components/ui/card"
 
@@ -32,7 +32,7 @@ export function OverviewCard({
     <Card aria-label="Overview" className="overflow-hidden">
       <section aria-label="Totals">{totals}</section>
       <div className="relative px-3 pb-3 sm:px-5 sm:pb-4">
-        <Link
+        <ViewLink
           href={previousHref}
           scroll={false}
           aria-label="Previous period"
@@ -42,9 +42,9 @@ export function OverviewCard({
           )}
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
-        </Link>
+        </ViewLink>
         {nextHref ? (
-          <Link
+          <ViewLink
             href={nextHref}
             scroll={false}
             aria-label="Next period"
@@ -54,7 +54,7 @@ export function OverviewCard({
             )}
           >
             <ChevronRight aria-hidden="true" className="size-4" />
-          </Link>
+          </ViewLink>
         ) : (
           <span
             aria-hidden="true"

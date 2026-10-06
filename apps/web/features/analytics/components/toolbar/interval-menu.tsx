@@ -1,7 +1,7 @@
 import { allowedIntervals, statsIntervalSchema } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
 import { Check, ChevronDown } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { Menu } from "@/components/ui/menu"
 import { MENU_ITEM_CLASSES } from "@/components/ui/menu-styles"
@@ -54,7 +54,7 @@ export function IntervalMenu({ siteId, view }: IntervalMenuProps) {
           }
           return (
             <li key={interval}>
-              <Link
+              <ViewLink
                 href={routes.site(siteId, viewSearch(view, { interval }))}
                 scroll={false}
                 aria-current={active ? "page" : undefined}
@@ -65,7 +65,7 @@ export function IntervalMenu({ siteId, view }: IntervalMenuProps) {
                   aria-hidden="true"
                   className={cn("size-4 text-accent", !active && "invisible")}
                 />
-              </Link>
+              </ViewLink>
             </li>
           )
         })}

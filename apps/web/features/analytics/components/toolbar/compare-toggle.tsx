@@ -1,6 +1,6 @@
 import type { StatsPeriod } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { routes } from "@/lib/routes"
 
@@ -26,7 +26,7 @@ type CompareToggleProps = { siteId: string; view: DashboardView }
  */
 export function CompareToggle({ siteId, view }: CompareToggleProps) {
   return (
-    <Link
+    <ViewLink
       href={routes.site(siteId, viewSearch(view, { compare: !view.compare }))}
       scroll={false}
       className={cn(
@@ -39,6 +39,6 @@ export function CompareToggle({ siteId, view }: CompareToggleProps) {
       <span className={cn(!view.compare && "opacity-80")}>vs</span>{" "}
       <span className="font-semibold">{previousName(view.period)}</span>
       <span className="sr-only">, {view.compare ? "on" : "off"}</span>
-    </Link>
+    </ViewLink>
   )
 }

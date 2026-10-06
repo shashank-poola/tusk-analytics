@@ -1,6 +1,6 @@
 import { cn } from "@workspace/ui/lib/utils"
 import { Check, ChevronDown } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { Menu } from "@/components/ui/menu"
 import { MENU_ITEM_CLASSES } from "@/components/ui/menu-styles"
@@ -86,6 +86,7 @@ async function FunnelSection({
       siteId={siteId}
       pages={pages.rows.flatMap((row) => (row.key ? [row.key] : []))}
       goals={goals.goals.map((goal) => goal.name)}
+      view={viewSearch(view)}
       triggerClassName={CHIP_CLASSES}
     />
   )
@@ -126,7 +127,7 @@ async function FunnelSection({
           <ul>
             {funnels.map((funnel) => (
               <li key={funnel.id}>
-                <Link
+                <ViewLink
                   href={routes.site(
                     siteId,
                     viewSearch(view, { funnel: funnel.id })
@@ -143,7 +144,7 @@ async function FunnelSection({
                       funnel.id !== selected.id && "invisible"
                     )}
                   />
-                </Link>
+                </ViewLink>
               </li>
             ))}
           </ul>
@@ -151,6 +152,7 @@ async function FunnelSection({
         <DeleteFunnelButton
           siteId={siteId}
           funnel={selected}
+          viewWithoutFunnel={viewSearch(view, { funnel: null })}
           className={ICON_BUTTON_CLASSES}
         />
         {newFunnel}

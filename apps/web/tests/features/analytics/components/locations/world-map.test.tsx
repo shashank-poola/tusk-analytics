@@ -14,7 +14,7 @@ function renderMap() {
         { key: "IN", visitors: 26, pageviews: 40 },
         { key: "US", visitors: 3, pageviews: 3 },
       ]}
-      hrefFor={(row) => `/sites/x?country=${row.key}`}
+      hrefFor={(row) => `/site/x?view=1&country=${row.key}`}
     />
   )
 }
@@ -52,6 +52,8 @@ describe("WorldMap", () => {
       screen.getByRole("link", { name: "India: 26 visitors" })
     )
 
-    expect(push).toHaveBeenCalledWith("/sites/x?country=IN", { scroll: false })
+    expect(push).toHaveBeenCalledWith("/site/x?view=1&country=IN", {
+      scroll: false,
+    })
   })
 })

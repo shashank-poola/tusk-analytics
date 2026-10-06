@@ -58,7 +58,7 @@ describe("VerifyInstallation", () => {
     expect(screen.getByRole("status")).toHaveTextContent("You're live!")
     expect(
       screen.getByRole("link", { name: "View analytics" })
-    ).toHaveAttribute("href", `/sites/${SITE_ID}`)
+    ).toHaveAttribute("href", `/site/${SITE_ID}`)
 
     await wait(30_000)
     expect(checkInstallStatus).toHaveBeenCalledTimes(2)

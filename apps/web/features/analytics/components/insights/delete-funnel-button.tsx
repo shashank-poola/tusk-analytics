@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 
 import { deleteFunnelAction } from "@/features/analytics/server/funnel-actions"
+import { routes } from "@/lib/routes"
 
 type DeleteFunnelButtonProps = {
   siteId: string
   funnel: { id: string; name: string }
+  /** The current view without a chosen funnel, as `viewSearch` writes it. */
+  viewWithoutFunnel: Record<string, string>
   className: string
 }
 
@@ -16,6 +19,7 @@ type DeleteFunnelButtonProps = {
 export function DeleteFunnelButton({
   siteId,
   funnel,
+  viewWithoutFunnel,
   className,
 }: DeleteFunnelButtonProps) {
   const router = useRouter()
@@ -35,9 +39,9 @@ export function DeleteFunnelButton({
             window.alert(result.error ?? "Couldn't delete the funnel.")
             return
           }
-          const search = new URLSearchParams(window.location.search)
-          search.delete("funnel")
-          router.push(`?${search}`, { scroll: false })
+          router.push(routes.site(siteId, viewWithoutFunnel), {
+            scroll: false,
+          })
         })
       }}
     >

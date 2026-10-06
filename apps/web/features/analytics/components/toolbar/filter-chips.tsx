@@ -1,6 +1,6 @@
 import type { StatsFilters } from "@workspace/contracts"
 import { X } from "lucide-react"
-import Link from "next/link"
+import { ViewLink } from "@/features/analytics/components/view-link"
 
 import { routes } from "@/lib/routes"
 
@@ -25,7 +25,7 @@ export function FilterChips({ siteId, view }: FilterChipsProps) {
     <ul aria-label="Filters" className="flex flex-wrap items-center gap-2">
       {chips.map(({ key, label, value }) => (
         <li key={key}>
-          <Link
+          <ViewLink
             href={without({ ...view.filters, [key]: undefined })}
             scroll={false}
             aria-label={`Remove filter ${label}: ${value}`}
@@ -34,18 +34,18 @@ export function FilterChips({ siteId, view }: FilterChipsProps) {
             <span className="text-muted-foreground">{label}</span>
             <span className="truncate font-medium">{value}</span>
             <X aria-hidden="true" className="size-3.5 shrink-0" />
-          </Link>
+          </ViewLink>
         </li>
       ))}
       {chips.length > 1 && (
         <li>
-          <Link
+          <ViewLink
             href={without({})}
             scroll={false}
             className="inline-flex h-11 items-center rounded-lg px-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:h-9"
           >
             Clear
-          </Link>
+          </ViewLink>
         </li>
       )}
     </ul>

@@ -1,11 +1,14 @@
 import type { Metadata } from "next"
 import { SITE_LIST_MAX_LIMIT } from "@workspace/contracts"
+import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
 import { routes } from "@/lib/routes"
+import { VIEW_COOKIE } from "@/lib/view-cookie"
 
 import {
   parseView,
+  viewParams,
   scopeKey,
   viewSearch,
 } from "@/features/analytics/utils/analytics-params"
@@ -53,7 +56,7 @@ export const metadata: Metadata = {
 export default async function SitePage({
   params,
   searchParams,
-}: PageProps<"/sites/[siteId]">) {
+}: PageProps<"/site/[siteId]">) {
   const [{ siteId }, search] = await Promise.all([params, searchParams])
   const [site, sites] = await Promise.all([
     getSite(siteId),
@@ -66,7 +69,10 @@ export default async function SitePage({
     return <WaitingForFirstVisit site={site} initialStatus={installStatus} />
   }
 
-  const view = parseView(search)
+  // The proxy keeps the view in a cookie and strips it from the URL. A query
+  // that reached us anyway (too long for a cookie) wins over the cookie.
+  const stored = (await cookies()).get(VIEW_COOKIE)?.value
+  const view = parseView(viewParams(search, stored))
   const now = new Date()
   const section = { siteId: site.id, scope: view }
   // Keys reset a section's boundaries, so a new period, filter or tab shows

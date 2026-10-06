@@ -19,7 +19,7 @@ afterEach(() => {
 
 describe("InstallSnippet", () => {
   it("shows the HTML snippet first and switches to Next.js", () => {
-    render(<InstallSnippet snippets={SNIPPETS} continueHref="/sites/vt_x" />)
+    render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
     expect(screen.getByRole("tabpanel")).toHaveTextContent("<script html />")
 
     fireEvent.click(screen.getByRole("tab", { name: "Next.js" }))
@@ -34,7 +34,7 @@ describe("InstallSnippet", () => {
 
   it("copies the visible snippet and says so", async () => {
     const writeText = mockClipboard(() => Promise.resolve())
-    render(<InstallSnippet snippets={SNIPPETS} continueHref="/sites/vt_x" />)
+    render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
 
     fireEvent.click(screen.getByRole("button", { name: "Copy" }))
 
@@ -46,7 +46,7 @@ describe("InstallSnippet", () => {
 
   it("tells the user to copy by hand when the clipboard is blocked", async () => {
     mockClipboard(() => Promise.reject(new Error("NotAllowedError")))
-    render(<InstallSnippet snippets={SNIPPETS} continueHref="/sites/vt_x" />)
+    render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
 
     fireEvent.click(screen.getByRole("button", { name: "Copy" }))
 
@@ -54,11 +54,11 @@ describe("InstallSnippet", () => {
   })
 
   it("links Continue to the site page", () => {
-    render(<InstallSnippet snippets={SNIPPETS} continueHref="/sites/vt_x" />)
+    render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
 
     expect(screen.getByRole("link", { name: "Continue" })).toHaveAttribute(
       "href",
-      "/sites/vt_x"
+      "/site/vt_x"
     )
   })
 })

@@ -2,7 +2,7 @@
 
 import type { Site } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
-import { Check, ChevronDown, Code, Plus } from "lucide-react"
+import { Check, ChevronDown, Code, LayoutGrid, Plus } from "lucide-react"
 import Link from "next/link"
 
 import { Menu } from "@/components/ui/menu"
@@ -76,6 +76,13 @@ export function SiteSwitcher({
         ))}
       </ul>
       <div className="mt-1.5 border-t border-border pt-1.5">
+        <Link href={routes.sites} className={MENU_ITEM_CLASSES}>
+          <LayoutGrid
+            aria-hidden="true"
+            className="size-4 text-muted-foreground"
+          />
+          All sites
+        </Link>
         <Link
           href={routes.installSnippet(current.id)}
           className={MENU_ITEM_CLASSES}

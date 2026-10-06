@@ -18,17 +18,16 @@ import {
 
 import { Icon } from "@/components/ui/icon"
 
-import { usePrefersReducedMotion } from "@/features/analytics/hooks/use-prefers-reduced-motion"
 import { tickLabel } from "@/features/analytics/utils/chart-axis"
 import { peakIndexes } from "@/features/analytics/utils/chart-peaks"
 import { formatCompact } from "@/features/analytics/utils/format"
 import { type ChartDatum, ChartTooltipBody } from "./chart-tooltip"
+import { VisitorCurve } from "./visitor-curve"
 
 const chartConfig = {
   visitors: { label: "Visitors", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
-const ANIMATION_MS = 300
 const PEAK_ICON_PX = 20
 
 type VisitorsChartProps = {
@@ -47,8 +46,8 @@ type DotProps = { cx?: number; cy?: number; index?: number }
 const DOTTED_POINTS = 31
 
 /**
- * Visitors: one smooth line with a soft glow over a fading gradient,
- * dashed for the bucket still running, dots on each point when there are
+ * Visitors: one smooth, curvy line with a soft glow over a fading
+ * gradient, dashed for the bucket still running, dots on each point when there are
  * few, a crosshair and tooltip on hover. The biggest peaks carry the icon
  * of their top source. With `compare`, the previous period is a dotted
  * line behind it (the Google Analytics / Plausible pattern).
@@ -61,22 +60,13 @@ export function VisitorsChart({
 }: VisitorsChartProps) {
   // useId output can contain characters that break `url(#…)` references.
   const gradientId = `visitors-fill-${useId().replace(/[^\w-]/g, "")}`
-  const reducedMotion = usePrefersReducedMotion()
   const scale = { interval, points: points.length }
-  const animation = {
-    isAnimationActive: !reducedMotion,
-    animationDuration: ANIMATION_MS,
-  }
 
   const last = points.length - 1
   const data = points.map((point, index) => ({
     ...point,
     previous: previousPoints[index]?.visitors ?? 0,
     previousT: previousPoints[index]?.t ?? point.t,
-    // Two overlapping copies of the line: solid up to the last finished
-    // bucket, dashed from there to the running one.
-    finished: !inProgress || index < last ? point.visitors : undefined,
-    running: inProgress && index >= last - 1 ? point.visitors : undefined,
   })) satisfies (ChartDatum & Record<string, unknown>)[]
   const peaks = new Set(
     peakIndexes(
@@ -187,7 +177,7 @@ export function VisitorsChart({
               dot={false}
               activeDot={false}
               tooltipType="none"
-              {...animation}
+              isAnimationActive={false}
             />
           )}
           <Area
@@ -211,30 +201,11 @@ export function VisitorsChart({
               stroke: "var(--surface)",
               fill: "var(--color-visitors)",
             }}
-            {...animation}
+            isAnimationActive={false}
           />
-          <Line
-            dataKey="finished"
-            type="monotone"
-            stroke="var(--color-visitors)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            className="[filter:drop-shadow(0_6px_10px_color-mix(in_oklab,var(--chart-1)_35%,transparent))]"
-            dot={false}
-            activeDot={false}
-            tooltipType="none"
-            {...animation}
-          />
-          <Line
-            dataKey="running"
-            type="monotone"
-            stroke="var(--color-visitors)"
-            strokeWidth={2.5}
-            strokeDasharray="4 5"
-            dot={false}
-            activeDot={false}
-            tooltipType="none"
-            {...animation}
+          <VisitorCurve
+            points={points}
+            dashedFrom={inProgress && last > 0 ? last - 1 : null}
           />
           {/* Invisible line whose dots are the peak icons. */}
           <Line
