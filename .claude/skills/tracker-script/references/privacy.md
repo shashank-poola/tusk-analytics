@@ -27,8 +27,21 @@ without it.
 ## Sent but not stored
 
 The full page URL (origin, path, query; never the hash) so the server can
-read `utm_source`, `utm_medium` and `utm_campaign`. The server keeps the
-path and those three values only. `document.referrer` is reduced to its
+read `utm_source`, `utm_medium`, `utm_campaign`, `ref` and `via`. The server
+keeps the hostname, the path and those five values only (a `ref` or `via`
+containing `@` is dropped as a likely email). Outbound and goal events send
+the same URL.
+
+Outbound link clicks send the link's origin and path (the tracker drops its
+query and hash); the server keeps `host/path`. Goal events send a slug name
+(`^[a-z0-9][a-z0-9_-]{0,63}$`) that the server stores as the event name.
+Owners must keep personal data out of goal names, `ref`/`via` values and
+the paths they link to: these are labels, never user data. Link paths can
+still hold tokens (`/invite/abc123`); that is the owner's markup, not
+something the tracker can tell apart.
+
+The dashboard's visitors list shows each visitor's activity over the last 7
+days (one dot per day with a pageview), computed from stored events. `document.referrer` is reduced to its
 hostname server-side. The User-Agent header is reduced to browser, OS and
 device buckets (ua-parser-js, then an allowlist of known slugs; anything
 else is stored as null).

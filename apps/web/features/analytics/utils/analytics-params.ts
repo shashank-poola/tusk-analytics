@@ -2,6 +2,7 @@ import {
   allowedIntervals,
   defaultInterval,
   funnelIdSchema,
+  MAX_ACTIVE_FILTERS,
   periodDays,
   type PresetRange,
   STATS_FILTER_KEYS,
@@ -97,12 +98,20 @@ export function parseInterval(
     : defaultInterval(period)
 }
 
-/** Each valid filter in the URL; an invalid one is dropped, not fatal. */
+/**
+ * Each valid filter in the URL, at most MAX_ACTIVE_FILTERS; an invalid one
+ * is dropped, not fatal.
+ */
 export function parseFilters(search: SearchParams): StatsFilters {
   const filters: StatsFilters = {}
+  let count = 0
   for (const key of STATS_FILTER_KEYS) {
     const result = statsFiltersSchema.shape[key].safeParse(first(search[key]))
-    if (result.success && result.data) filters[key] = result.data
+    if (!result.success || !result.data || count === MAX_ACTIVE_FILTERS) {
+      continue
+    }
+    filters[key] = result.data
+    count++
   }
   return filters
 }

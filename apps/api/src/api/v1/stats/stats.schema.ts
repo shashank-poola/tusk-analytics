@@ -48,8 +48,6 @@ export const visitorsQuerySchema = z.intersection(
   })
 )
 
-export const goalsQuerySchema = timeseriesQuerySchema
-
 export const funnelQuerySchema = z.intersection(
   scopeSchema,
   z.object({ funnel: funnelIdSchema })

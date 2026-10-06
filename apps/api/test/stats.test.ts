@@ -1075,6 +1075,43 @@ describe("stats filters", () => {
     expect(points.reduce((sum, point) => sum + point.pageviews, 0)).toBe(3)
   })
 
+  it("runs the heaviest queries with the most filters D1's parameter cap allows", async () => {
+    const site = await seed()
+    const five = {
+      ...preset("7d"),
+      channel: "search",
+      source: "google",
+      page: "/pricing",
+      exit_link: "github.com/acme",
+      region: "Karnataka",
+    }
+
+    await expect(getStatsOverview(db, site, five, NOW)).resolves.toBeDefined()
+    await expect(
+      getStatsVisitors(
+        db,
+        site,
+        { ...five, limit: 50, secret: env.BETTER_AUTH_SECRET },
+        NOW
+      )
+    ).resolves.toBeDefined()
+    await expect(
+      getStatsBreakdown(db, site, { ...five, by: "channel", limit: 250 }, NOW)
+    ).resolves.toBeDefined()
+  })
+
+  it("answers 400 for more than 5 filters at once", async () => {
+    const owner = await signIn()
+    const site = await createSite(owner.userId)
+
+    const response = await api(
+      `/sites/${site.id}/stats/overview?range=7d&country=IN&city=x&region=y&os=a&browser=b&device=mobile`,
+      { cookie: owner.cookie }
+    )
+
+    expect(response.status).toBe(400)
+  })
+
   it("filters through the route's query string", async () => {
     const owner = await signIn()
     const site = await createSite(owner.userId)

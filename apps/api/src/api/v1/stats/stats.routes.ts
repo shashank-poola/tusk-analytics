@@ -17,7 +17,6 @@ import { requireUser } from "../../../middleware/require-user"
 import {
   breakdownQuerySchema,
   funnelQuerySchema,
-  goalsQuerySchema,
   statsQuerySchema,
   timeseriesQuerySchema,
   visitorsQuerySchema,
@@ -82,7 +81,7 @@ export const statsRoutes = new Hono<SiteEnv>()
     )
     return c.json(visitors satisfies StatsVisitorsResponse)
   })
-  .get("/goals", queryParams(goalsQuerySchema), async (c) => {
+  .get("/goals", queryParams(timeseriesQuerySchema), async (c) => {
     const goals = await getStatsGoals(
       createDb(c.env.DB),
       c.get("site"),

@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest"
 
 import {
   allowedIntervals,
-  bucketStarts,
   defaultInterval,
-  resolveWindow,
   type StatsPeriod,
   statsPeriodSchema,
 } from "../src/stats-period"
+import { bucketStarts, resolveWindow } from "../src/stats-window"
 
 /** Tuesday 2026-10-06, noon UTC. */
 const NOW = new Date("2026-10-06T12:00:00.000Z")

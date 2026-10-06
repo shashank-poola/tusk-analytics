@@ -1,5 +1,6 @@
 import {
   type BreakdownBy,
+  MAX_ACTIVE_FILTERS,
   STATS_FILTER_KEYS,
   type StatsBreakdownResponse,
   type StatsFilterKey,
@@ -50,6 +51,20 @@ export function rowFilters(by: BreakdownBy, row: Row): StatsFilters | null {
     return { [key]: row.key, country: row.country }
   }
   return { [key]: row.key }
+}
+
+/**
+ * The filters after clicking a row, or null when that would combine more
+ * than the API allows (the row then isn't a link).
+ */
+export function withRowFilters(
+  filters: StatsFilters,
+  added: StatsFilters | null
+): StatsFilters | null {
+  if (!added) return null
+  const merged = { ...filters, ...added }
+  const active = Object.values(merged).filter(Boolean).length
+  return active <= MAX_ACTIVE_FILTERS ? merged : null
 }
 
 /** The active filters as chips: "Country: India". */

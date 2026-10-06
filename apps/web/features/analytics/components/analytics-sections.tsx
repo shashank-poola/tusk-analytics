@@ -21,7 +21,7 @@ import {
   type BreakdownCardKey,
   cardTab,
 } from "@/features/analytics/utils/breakdown-tabs"
-import { rowFilters } from "@/features/analytics/utils/filters"
+import { rowFilters, withRowFilters } from "@/features/analytics/utils/filters"
 import { formatNumber } from "@/features/analytics/utils/format"
 import { buildHighlights } from "@/features/analytics/utils/highlights"
 import { keyLabel } from "@/features/analytics/utils/labels"
@@ -118,14 +118,8 @@ export async function BreakdownSection({
     tab.chart === "map" ? BREAKDOWN_MAX_LIMIT : undefined
   )
   const hrefFor = (row: Row) => {
-    const filters = rowFilters(tab.by, row)
-    return (
-      filters &&
-      routes.site(
-        siteId,
-        viewSearch(view, { filters: { ...view.filters, ...filters } })
-      )
-    )
+    const filters = withRowFilters(view.filters, rowFilters(tab.by, row))
+    return filters && routes.site(siteId, viewSearch(view, { filters }))
   }
   if (breakdown.rows.length === 0) return <NoData />
   switch (tab.chart) {

@@ -199,6 +199,20 @@ describe("search params", () => {
     ).toEqual({ country: "IN", page: "/pricing" })
   })
 
+  it("keeps at most 5 filters from the URL", () => {
+    const filters = parseFilters({
+      channel: "search",
+      source: "google",
+      campaign: "ref=x",
+      hostname: "a.com",
+      page: "/",
+      country: "IN",
+    })
+
+    expect(Object.keys(filters)).toHaveLength(5)
+    expect(filters.country).toBeUndefined()
+  })
+
   it("keeps filters in every link", () => {
     const view = parseView({ range: "7d", country: "IN" })
 

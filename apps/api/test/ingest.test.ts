@@ -211,6 +211,23 @@ describe("POST /api/v1/collect", () => {
     })
   })
 
+  it("drops a ref or via that holds an email", async () => {
+    const site = await siteForNewUser()
+
+    await collect(
+      pageview(site.id, {
+        url: `https://${site.domain}/?ref=jane%40example.com&via=letter`,
+      }),
+      { Origin: `https://${site.domain}` }
+    )
+
+    const [event] = await eventRows(site.id)
+    expect(event).toMatchObject({
+      source: "letter",
+      campaignParams: "via=letter",
+    })
+  })
+
   it("keeps campaign parameters in a fixed order with each value encoded", async () => {
     const site = await siteForNewUser()
 

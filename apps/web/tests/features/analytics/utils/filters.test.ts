@@ -35,3 +35,22 @@ describe("filter chips", () => {
     ])
   })
 })
+
+describe("adding a row's filters", () => {
+  it("merges them, up to the API's cap of 5", async () => {
+    const { withRowFilters } =
+      await import("@/features/analytics/utils/filters")
+    const four = {
+      country: "IN",
+      os: "ios",
+      browser: "safari",
+      device: "mobile",
+    }
+
+    expect(withRowFilters(four, { page: "/" })).toEqual({ ...four, page: "/" })
+    expect(
+      withRowFilters({ ...four, page: "/" }, { city: "Paris", country: "FR" })
+    ).toBeNull()
+    expect(withRowFilters(four, null)).toBeNull()
+  })
+})

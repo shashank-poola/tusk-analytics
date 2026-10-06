@@ -68,13 +68,25 @@ const CAMPAIGN_PARAMS = [
 ] as const
 
 /**
+ * `?ref=` or `?via=`, cleaned. Affiliate and newsletter links sometimes put
+ * an email there; a value with `@` is dropped, never stored.
+ */
+function referralTag(url: URL, name: "ref" | "via"): string | null {
+  const value = cleanValue(url.searchParams.get(name))
+  return value?.includes("@") ? null : value
+}
+
+/**
  * `ref=producthunt` or `utm_source=x&utm_medium=social`: the URL's
  * campaign parameters in a fixed order, each value cleaned and
  * URI-encoded so `&` and `=` inside one can't split it; null when none.
  */
 function campaignParamsOf(url: URL): string | null {
   const pairs = CAMPAIGN_PARAMS.flatMap((name) => {
-    const value = cleanValue(url.searchParams.get(name))
+    const value =
+      name === "ref" || name === "via"
+        ? referralTag(url, name)
+        : cleanValue(url.searchParams.get(name))
     return value ? [`${name}=${encodeURIComponent(value)}`] : []
   })
   const joined = pairs.join("&")
@@ -144,10 +156,7 @@ export async function ingestEvent(
   const utmMedium = cleanValue(url.searchParams.get("utm_medium"))
   const utmCampaign = cleanValue(url.searchParams.get("utm_campaign"))
   const referrer = cleanValue(referrerHost(payload.referrer, site.domain))
-  const tagged =
-    utmSource ??
-    cleanValue(url.searchParams.get("ref")) ??
-    cleanValue(url.searchParams.get("via"))
+  const tagged = utmSource ?? referralTag(url, "ref") ?? referralTag(url, "via")
   const source = classifySource({ tagged, referrer })
   const validCountry =
     typeof country === "string" && /^[A-Z]{2}$/.test(country) ? country : null
