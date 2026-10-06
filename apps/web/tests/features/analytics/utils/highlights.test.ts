@@ -20,7 +20,6 @@ const row = (key: string | null, visitors: number) => ({
 })
 
 const BASE = {
-  range: "7d" as const,
   current: totals(100),
   previous: totals(100),
   sources: [],
@@ -90,7 +89,7 @@ describe("buildHighlights", () => {
     })
     expect(highlight).toEqual({
       kind: "change",
-      text: "Pageviews are up 34% on the previous 7 days.",
+      text: "Pageviews are up 34% on the previous period.",
     })
   })
 
@@ -101,7 +100,7 @@ describe("buildHighlights", () => {
       previous: totals(100),
     })
     expect(highlight?.text).toBe(
-      "Visitors are down 40% on the previous 7 days."
+      "Visitors are down 40% on the previous period."
     )
   })
 

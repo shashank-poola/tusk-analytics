@@ -13,6 +13,8 @@ type MenuProps = {
   align?: "start" | "end"
   /** Classes for the toggle, e.g. "p-0" when the trigger draws its own chip. */
   triggerClassName?: string
+  /** Classes for the dropdown, e.g. a narrower width. */
+  panelClassName?: string
   children: React.ReactNode
 }
 
@@ -25,6 +27,7 @@ export function Menu({
   label,
   align = "start",
   triggerClassName,
+  panelClassName,
   children,
 }: MenuProps) {
   const ref = useRef<HTMLDetailsElement>(null)
@@ -51,7 +54,8 @@ export function Menu({
         }}
         className={cn(
           "absolute z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] animate-rise rounded-2xl border border-border bg-surface p-1.5 shadow-pop",
-          align === "end" ? "right-0" : "left-0"
+          align === "end" ? "right-0" : "left-0",
+          panelClassName
         )}
       >
         {children}

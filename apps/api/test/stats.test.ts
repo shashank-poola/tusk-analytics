@@ -25,6 +25,10 @@ const db = createDb(env.DB)
 /** Tuesday noon UTC. The 7d range starts 2026-09-30T00:00Z in UTC. */
 const NOW = new Date("2026-10-06T12:00:00.000Z")
 
+function preset(range: "24h" | "7d" | "30d" | "90d") {
+  return { range, offset: 0 }
+}
+
 function newSite(timezone = "UTC") {
   return { id: createId("vt"), timezone }
 }
@@ -94,7 +98,7 @@ describe("stats overview", () => {
       { visitor: "v5", session: "s7", at: "2026-09-29T23:59:59.999Z" },
     ])
 
-    const overview = await getStatsOverview(db, site, "7d", NOW)
+    const overview = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(statsOverviewResponseSchema.parse(overview)).toEqual({
       range: {
@@ -122,7 +126,7 @@ describe("stats overview", () => {
   })
 
   it("returns zeros and a bounce rate of 0 when there are no pageviews", async () => {
-    const overview = await getStatsOverview(db, newSite(), "30d", NOW)
+    const overview = await getStatsOverview(db, newSite(), preset("30d"), NOW)
 
     const zero = {
       visitors: 0,
@@ -157,7 +161,7 @@ describe("stats overview", () => {
       },
     ])
 
-    const { current } = await getStatsOverview(db, site, "7d", NOW)
+    const { current } = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(current.sessions).toBe(3)
     expect(current.avgSessionSeconds).toBe(40)
@@ -167,7 +171,7 @@ describe("stats overview", () => {
     const { range } = await getStatsOverview(
       db,
       newSite(),
-      "24h",
+      preset("24h"),
       new Date("2026-10-06T12:34:56.000Z")
     )
 
@@ -183,7 +187,7 @@ describe("stats overview", () => {
     const { range } = await getStatsOverview(
       db,
       newSite("Asia/Kolkata"),
-      "7d",
+      preset("7d"),
       NOW
     )
 
@@ -197,7 +201,7 @@ describe("stats overview", () => {
       { visitor: "v1", session: "s1", at: "2026-10-05T09:00:00.000Z" },
     ])
 
-    const overview = await getStatsOverview(db, site, "7d", NOW)
+    const overview = await getStatsOverview(db, site, preset("7d"), NOW)
 
     expect(overview.current.pageviews).toBe(0)
   })
@@ -214,7 +218,7 @@ describe("stats timeseries", () => {
       { visitor: "v2", session: "s4", at: "2026-10-03T10:00:00.000Z" },
     ])
 
-    const timeseries = await getStatsTimeseries(db, site, "7d", NOW)
+    const timeseries = await getStatsTimeseries(db, site, preset("7d"), NOW)
 
     expect(statsTimeseriesResponseSchema.parse(timeseries)).toEqual({
       interval: "day",
@@ -227,6 +231,7 @@ describe("stats timeseries", () => {
         { t: "2026-10-05T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
         { t: "2026-10-06T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
       ],
+      inProgress: true,
     })
   })
 
@@ -237,7 +242,7 @@ describe("stats timeseries", () => {
       { visitor: "v1", session: "s1", at: "2026-10-04T20:00:00.000Z" },
     ])
 
-    const { points } = await getStatsTimeseries(db, site, "7d", NOW)
+    const { points } = await getStatsTimeseries(db, site, preset("7d"), NOW)
 
     expect(points).toHaveLength(7)
     expect(points.find((p) => p.pageviews > 0)).toEqual({
@@ -254,7 +259,7 @@ describe("stats timeseries", () => {
       { visitor: "v2", session: "s2", at: "2026-10-06T11:45:00.000Z" },
     ])
 
-    const timeseries = await getStatsTimeseries(db, site, "24h", NOW)
+    const timeseries = await getStatsTimeseries(db, site, preset("24h"), NOW)
 
     expect(timeseries.interval).toBe("hour")
     expect(timeseries.points).toHaveLength(24)
@@ -266,10 +271,95 @@ describe("stats timeseries", () => {
       pageviews: 2,
     })
   })
+
+  it("buckets by Monday-start weeks and by local months", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Sunday 2026-10-04 and Monday 2026-10-05: two different weeks.
+      { visitor: "v1", session: "s1", at: "2026-10-04T23:00:00.000Z" },
+      { visitor: "v1", session: "s2", at: "2026-10-05T01:00:00.000Z" },
+      { visitor: "v2", session: "s3", at: "2026-09-15T10:00:00.000Z" },
+    ])
+
+    const weeks = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("7d"), interval: "week" },
+      NOW
+    )
+    const months = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("90d"), interval: "month" },
+      NOW
+    )
+
+    expect(weeks.points).toEqual([
+      { t: "2026-09-28T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
+      { t: "2026-10-05T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
+    ])
+    expect(months.points.map((point) => point.t.slice(0, 10))).toEqual([
+      "2026-07-01",
+      "2026-08-01",
+      "2026-09-01",
+      "2026-10-01",
+    ])
+    expect(months.points.at(-2)).toMatchObject({ visitors: 1, pageviews: 1 })
+    expect(months.points.at(-1)).toMatchObject({ visitors: 1, pageviews: 2 })
+  })
+
+  it("steps whole periods back with offset, with nothing in progress", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      { visitor: "v1", session: "s1", at: "2026-09-29T10:00:00.000Z" },
+    ])
+
+    const timeseries = await getStatsTimeseries(
+      db,
+      site,
+      { range: "7d", offset: 1 },
+      NOW
+    )
+
+    expect(timeseries.inProgress).toBe(false)
+    expect(timeseries.points[0]?.t).toBe("2026-09-23T00:00:00.000+00:00")
+    expect(timeseries.points.at(-1)).toEqual({
+      t: "2026-09-29T00:00:00.000+00:00",
+      visitors: 1,
+      pageviews: 1,
+    })
+  })
+
+  it("covers every day of a custom period in the site's time zone", async () => {
+    const timeseries = await getStatsTimeseries(
+      db,
+      newSite("Asia/Kolkata"),
+      { range: "custom", from: "2026-09-01", to: "2026-09-03" },
+      NOW
+    )
+
+    expect(timeseries.points.map((point) => point.t)).toEqual([
+      "2026-09-01T00:00:00.000+05:30",
+      "2026-09-02T00:00:00.000+05:30",
+      "2026-09-03T00:00:00.000+05:30",
+    ])
+    expect(timeseries.inProgress).toBe(false)
+  })
+
+  it("refuses hourly buckets over more than 31 days", async () => {
+    await expect(
+      getStatsTimeseries(
+        db,
+        newSite(),
+        { ...preset("90d"), interval: "hour" },
+        NOW
+      )
+    ).rejects.toThrow("interval: hourly buckets need a period of 31 days")
+  })
 })
 
 describe("stats breakdown", () => {
-  const range = "7d"
+  const period = preset("7d")
 
   it("counts a session once, under the source of its first pageview", async () => {
     const site = newSite()
@@ -309,7 +399,7 @@ describe("stats breakdown", () => {
     const breakdown = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 10 },
+      { ...period, by: "source", limit: 10 },
       NOW
     )
 
@@ -354,7 +444,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "page", limit: 10 },
+      { ...period, by: "page", limit: 10 },
       NOW
     )
 
@@ -395,7 +485,7 @@ describe("stats breakdown", () => {
       const { rows } = await getStatsBreakdown(
         db,
         site,
-        { range, by, limit: 10 },
+        { ...period, by, limit: 10 },
         NOW
       )
 
@@ -441,7 +531,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "channel", limit: 10 },
+      { ...period, by: "channel", limit: 10 },
       NOW
     )
 
@@ -500,7 +590,7 @@ describe("stats breakdown", () => {
 
     const [entry, exit] = await Promise.all(
       (["entry_page", "exit_page"] as const).map((by) =>
-        getStatsBreakdown(db, site, { range, by, limit: 10 }, NOW)
+        getStatsBreakdown(db, site, { ...period, by, limit: 10 }, NOW)
       )
     )
 
@@ -539,7 +629,7 @@ describe("stats breakdown", () => {
     const breakdown = await getStatsBreakdown(
       db,
       site,
-      { range, by: "city", limit: 10 },
+      { ...period, by: "city", limit: 10 },
       NOW
     )
 
@@ -603,7 +693,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "region", limit: 10 },
+      { ...period, by: "region", limit: 10 },
       NOW
     )
 
@@ -629,7 +719,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 10 },
+      { ...period, by: "source", limit: 10 },
       NOW
     )
 
@@ -654,7 +744,7 @@ describe("stats breakdown", () => {
     const { rows } = await getStatsBreakdown(
       db,
       site,
-      { range, by: "source", limit: 2 },
+      { ...period, by: "source", limit: 2 },
       NOW
     )
 
@@ -692,7 +782,7 @@ describe("stats visitors", () => {
     getStatsVisitors(
       db,
       site,
-      { range: "7d", limit, secret: env.BETTER_AUTH_SECRET },
+      { ...preset("7d"), limit, secret: env.BETTER_AUTH_SECRET },
       NOW
     )
 
@@ -951,6 +1041,22 @@ describe("stats routes", () => {
     ],
     ["a visitors limit over 50", "/stats/visitors?range=7d&limit=51", "limit"],
     ["visitors without a range", "/stats/visitors", "range"],
+    [
+      "a custom period without an end",
+      "/stats/overview?range=custom&from=2026-10-01",
+      "to",
+    ],
+    [
+      "a custom period that ends before it starts",
+      "/stats/overview?range=custom&from=2026-10-02&to=2026-10-01",
+      "to",
+    ],
+    ["a negative offset", "/stats/overview?range=7d&offset=-1", "offset"],
+    [
+      "hourly buckets over 90 days",
+      "/stats/timeseries?range=90d&interval=hour",
+      "interval",
+    ],
   ])("answers 400 for %s", async (_, path, field) => {
     const owner = await signIn()
     const site = await createSite(owner.userId)

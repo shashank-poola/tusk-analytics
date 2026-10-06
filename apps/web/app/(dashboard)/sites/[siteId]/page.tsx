@@ -5,9 +5,10 @@ import { notFound } from "next/navigation"
 import {
   BREAKDOWN_CARD_KEYS,
   BREAKDOWN_CARDS,
-  parseBreakdownTabs,
-  parseRange,
+  parseView,
+  periodKey,
 } from "@/features/analytics/utils/analytics-params"
+import { periodLabel } from "@/features/analytics/utils/period-nav"
 import { SectionBoundary } from "@/features/analytics/components/section-boundary"
 import {
   BreakdownSection,
@@ -17,6 +18,7 @@ import {
   VisitorsSection,
 } from "@/features/analytics/components/analytics-sections"
 import { AnalyticsToolbar } from "@/features/analytics/components/analytics-toolbar"
+import { ChartEmptyState } from "@/features/analytics/components/empty-state"
 import { BreakdownCard } from "@/features/analytics/components/breakdowns/breakdown-card"
 import { OverviewCard } from "@/features/analytics/components/overview/overview-card"
 import {
@@ -54,19 +56,20 @@ export default async function SitePage({
     return <WaitingForFirstVisit site={site} initialStatus={installStatus} />
   }
 
-  const range = parseRange(search.range)
-  const tabs = parseBreakdownTabs(search)
-  const section = { siteId: site.id, range }
-  // Keys reset a section's boundaries, so a new range or tab shows its
+  const view = parseView(search)
+  const now = new Date()
+  const section = { siteId: site.id, period: view.period }
+  // Keys reset a section's boundaries, so a new period or tab shows its
   // skeleton (and replays the count-up) instead of stale numbers.
+  const key = periodKey(view.period)
   return (
     <div className="space-y-4 sm:space-y-5">
-      <AnalyticsToolbar site={site} sites={sites} range={range} tabs={tabs} />
+      <AnalyticsToolbar site={site} sites={sites} view={view} now={now} />
 
       <OverviewCard
         totals={
           <SectionBoundary
-            key={`kpis-${range}`}
+            key={`kpis-${key}`}
             title="the totals"
             fallback={<KpiStripSkeleton />}
           >
@@ -75,17 +78,22 @@ export default async function SitePage({
         }
         chart={
           <SectionBoundary
-            key={`chart-${range}`}
+            key={`chart-${key}-${view.interval}`}
             title="the chart"
             fallback={<ChartSkeleton />}
           >
-            <ChartSection {...section} />
+            <ChartSection
+              {...section}
+              interval={view.interval}
+              label={periodLabel(view.period, site.timezone, now)}
+              emptyState={<ChartEmptyState siteId={site.id} view={view} />}
+            />
           </SectionBoundary>
         }
       />
 
       <SectionBoundary
-        key={`highlights-${range}`}
+        key={`highlights-${key}`}
         title="the highlights"
         fallback={<HighlightsSkeleton />}
       >
@@ -94,19 +102,13 @@ export default async function SitePage({
 
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
         {BREAKDOWN_CARD_KEYS.map((card) => {
-          const by = tabs[card]
+          const by = view.tabs[card]
           const title =
             BREAKDOWN_CARDS[card].find((tab) => tab.by === by)?.label ?? card
           return (
-            <BreakdownCard
-              key={card}
-              card={card}
-              siteId={site.id}
-              range={range}
-              tabs={tabs}
-            >
+            <BreakdownCard key={card} card={card} siteId={site.id} view={view}>
               <SectionBoundary
-                key={`${by}-${range}`}
+                key={`${by}-${key}`}
                 title={title.toLowerCase()}
                 fallback={<BreakdownSkeleton />}
               >
@@ -119,7 +121,7 @@ export default async function SitePage({
 
       <VisitorsCard>
         <SectionBoundary
-          key={`visitors-${range}`}
+          key={`visitors-${key}`}
           title="recent visitors"
           fallback={<VisitorsSkeleton />}
         >

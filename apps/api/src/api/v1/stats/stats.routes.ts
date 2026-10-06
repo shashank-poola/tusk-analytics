@@ -15,6 +15,7 @@ import { requireUser } from "../../../middleware/require-user"
 import {
   breakdownQuerySchema,
   statsQuerySchema,
+  timeseriesQuerySchema,
   visitorsQuerySchema,
 } from "./stats.schema"
 import {
@@ -36,16 +37,16 @@ export const statsRoutes = new Hono<SiteEnv>()
     const overview = await getStatsOverview(
       createDb(c.env.DB),
       c.get("site"),
-      c.req.valid("query").range,
+      c.req.valid("query"),
       new Date()
     )
     return c.json(overview satisfies StatsOverviewResponse)
   })
-  .get("/timeseries", queryParams(statsQuerySchema), async (c) => {
+  .get("/timeseries", queryParams(timeseriesQuerySchema), async (c) => {
     const timeseries = await getStatsTimeseries(
       createDb(c.env.DB),
       c.get("site"),
-      c.req.valid("query").range,
+      c.req.valid("query"),
       new Date()
     )
     return c.json(timeseries satisfies StatsTimeseriesResponse)

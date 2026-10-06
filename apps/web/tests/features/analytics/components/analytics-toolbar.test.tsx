@@ -1,58 +1,108 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it } from "vitest"
+import type { ComponentProps } from "react"
+import { describe, expect, it, vi } from "vitest"
 
-import { parseBreakdownTabs } from "@/features/analytics/utils/analytics-params"
+import { parseView } from "@/features/analytics/utils/analytics-params"
 import { AnalyticsToolbar } from "@/features/analytics/components/analytics-toolbar"
 import { SiteFavicon } from "@/features/sites/components/site-favicon"
 
 import { SITE } from "@/tests/fixtures/analytics"
 
-const tabs = parseBreakdownTabs({ pages: "exit_page", devices: "os" })
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}))
+// next/form needs the app router; a plain GET form behaves the same here.
+vi.mock("next/form", () => ({
+  default: ({
+    scroll: _scroll,
+    ...props
+  }: ComponentProps<"form"> & { scroll?: boolean }) => <form {...props} />,
+}))
 
 describe("AnalyticsToolbar", () => {
-  function renderToolbar() {
+  /** Tuesday 2026-10-06, 21:38 UTC. */
+  const NOW = new Date("2026-10-06T21:38:00.000Z")
+
+  function renderToolbar(search: Record<string, string> = { range: "30d" }) {
     render(
-      <AnalyticsToolbar site={SITE} sites={[SITE]} range="7d" tabs={tabs} />
+      <AnalyticsToolbar
+        site={SITE}
+        sites={[SITE]}
+        view={parseView({ ...search, pages: "exit_page" })}
+        now={NOW}
+      />
     )
   }
 
-  it("names the site and the current range", () => {
-    renderToolbar()
+  function query(link: HTMLElement) {
+    const url = new URL(link.getAttribute("href") ?? "", "http://localhost")
+    return Object.fromEntries(url.searchParams)
+  }
 
-    expect(screen.getAllByText("myapp.com")[0]).toBeInTheDocument()
-    expect(screen.getByLabelText("Date range: Last 7 days")).toBeInTheDocument()
-  })
-
-  it("puts the site switcher in the site chip", () => {
+  it("shows the site, the period, the interval and refresh in one row", () => {
     renderToolbar()
 
     expect(
       screen.getByLabelText("Switch site, current: myapp.com")
     ).toBeInTheDocument()
+    expect(screen.getByLabelText("Period: Last 30 days")).toBeInTheDocument()
+    expect(screen.getByLabelText("Chart interval: Daily")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument()
   })
 
-  it("lists every range, marks the current one and keeps the open tabs", async () => {
+  it("steps back a whole period and can't step past now", () => {
     renderToolbar()
-    await userEvent.click(screen.getByLabelText("Date range: Last 7 days"))
 
-    const href = screen
-      .getByRole("link", { name: /Last 30 days/ })
-      .getAttribute("href")
-    const url = new URL(href ?? "", "http://localhost")
-    expect(url.pathname).toBe(`/sites/${SITE.id}`)
-    expect(Object.fromEntries(url.searchParams)).toEqual({
+    expect(
+      query(screen.getByRole("link", { name: "Previous period" }))
+    ).toEqual({ range: "30d", offset: "1", pages: "exit_page" })
+    expect(
+      screen.queryByRole("link", { name: "Next period" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("steps forward from an earlier period", () => {
+    renderToolbar({ range: "30d", offset: "1" })
+
+    expect(screen.getByLabelText("Period: Aug 8 – Sep 6")).toBeInTheDocument()
+    expect(query(screen.getByRole("link", { name: "Next period" }))).toEqual({
       range: "30d",
-      sources: "source",
       pages: "exit_page",
-      locations: "country",
-      devices: "os",
     })
-    expect(screen.getAllByRole("link", { name: /^Last/ })).toHaveLength(4)
-    expect(screen.getByRole("link", { name: /Last 7 days/ })).toHaveAttribute(
+  })
+
+  it("lists presets with key hints, marks the current one and keeps the tabs", async () => {
+    renderToolbar()
+    await userEvent.click(screen.getByLabelText("Period: Last 30 days"))
+
+    expect(screen.getByText("9:38 PM")).toBeInTheDocument()
+    const yesterday = screen.getByRole("link", { name: /Yesterday/ })
+    expect(query(yesterday)).toEqual({
+      range: "today",
+      offset: "1",
+      pages: "exit_page",
+    })
+    expect(yesterday).toHaveAttribute("aria-keyshortcuts", "Y")
+    expect(screen.getByRole("link", { name: /Last 30 days/ })).toHaveAttribute(
       "aria-current",
       "page"
     )
+    expect(screen.getByLabelText("From")).toHaveAttribute("max", "2026-10-06")
+  })
+
+  it("turns off hourly buckets when the period is too long", async () => {
+    renderToolbar({ range: "90d" })
+    await userEvent.click(screen.getByLabelText("Chart interval: Daily"))
+
+    expect(
+      screen.queryByRole("link", { name: "Hourly" })
+    ).not.toBeInTheDocument()
+    expect(query(screen.getByRole("link", { name: "Weekly" }))).toEqual({
+      range: "90d",
+      interval: "week",
+      pages: "exit_page",
+    })
   })
 })
 

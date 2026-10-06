@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
-import { parseBreakdownTabs } from "@/features/analytics/utils/analytics-params"
+import { parseView } from "@/features/analytics/utils/analytics-params"
 import {
   BreakdownBody,
   BreakdownCard,
@@ -94,11 +94,11 @@ describe("BreakdownBody", () => {
 })
 
 describe("BreakdownCard", () => {
-  const tabs = parseBreakdownTabs({ sources: "referrer", devices: "os" })
+  const view = parseView({ range: "30d", sources: "referrer", devices: "os" })
 
   function renderCard(card: "sources" | "pages" = "sources") {
     return render(
-      <BreakdownCard card={card} siteId={SITE.id} range="30d" tabs={tabs}>
+      <BreakdownCard card={card} siteId={SITE.id} view={view}>
         <p>Rows</p>
       </BreakdownCard>
     )
@@ -124,7 +124,7 @@ describe("BreakdownCard", () => {
     ).not.toHaveAttribute("aria-current")
   })
 
-  it("keeps the range and the other cards' tabs in each tab link", () => {
+  it("keeps the period and the other cards' tabs in each tab link", () => {
     renderCard()
 
     const href = screen
@@ -135,8 +135,6 @@ describe("BreakdownCard", () => {
     expect(Object.fromEntries(url.searchParams)).toEqual({
       range: "30d",
       sources: "channel",
-      pages: "page",
-      locations: "country",
       devices: "os",
     })
   })
@@ -150,7 +148,7 @@ describe("BreakdownCard", () => {
 
   it("shows the No data pill when its body is empty", () => {
     render(
-      <BreakdownCard card="pages" siteId={SITE.id} range="7d" tabs={tabs}>
+      <BreakdownCard card="pages" siteId={SITE.id} view={view}>
         <BreakdownBody title="Page" breakdown={breakdown("page", 0)} />
       </BreakdownCard>
     )

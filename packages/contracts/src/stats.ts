@@ -1,9 +1,8 @@
 import * as z from "zod"
 
-// Definitions of every metric: docs/metrics.md.
+import { statsIntervalSchema } from "./stats-period"
 
-export const statsRangeSchema = z.enum(["24h", "7d", "30d", "90d"])
-export type StatsRange = z.infer<typeof statsRangeSchema>
+// Definitions of every metric: docs/metrics.md.
 
 /**
  * `page` is counted per event; every other dimension per session.
@@ -55,9 +54,6 @@ export const statsOverviewResponseSchema = z.object({
 })
 export type StatsOverviewResponse = z.infer<typeof statsOverviewResponseSchema>
 
-export const statsIntervalSchema = z.enum(["hour", "day"])
-export type StatsInterval = z.infer<typeof statsIntervalSchema>
-
 export const statsTimeseriesResponseSchema = z.object({
   interval: statsIntervalSchema,
   points: z.array(
@@ -68,6 +64,8 @@ export const statsTimeseriesResponseSchema = z.object({
       pageviews: count,
     })
   ),
+  /** True while the last point's bucket is still running (the period ends now). */
+  inProgress: z.boolean(),
 })
 export type StatsTimeseriesResponse = z.infer<
   typeof statsTimeseriesResponseSchema

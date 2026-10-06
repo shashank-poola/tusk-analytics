@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm"
+import { type SQL, sql } from "drizzle-orm"
 
 import type { Database } from "../client"
 import { events } from "../schema"
@@ -18,8 +18,10 @@ export type StatsTotalsRow = {
   sessionDurationMs: number
 }
 
+export type TimeseriesInterval = "hour" | "day" | "week" | "month"
+
 type TimeseriesRow = {
-  /** `floor((created_at + offsetMs) / bucketMs)`. */
+  /** Start of the bucket in local ms (unix ms + offsetMs). */
   bucket: number
   visitors: number
   pageviews: number
@@ -76,23 +78,49 @@ export async function getTotals(
   )
 }
 
+const HOUR_MS = 60 * 60 * 1000
+const DAY_MS = 24 * HOUR_MS
+const WEEK_MS = 7 * DAY_MS
+/** Day 0 of the Unix epoch was a Thursday; weeks start on Monday. */
+const MONDAY_SHIFT_MS = 3 * DAY_MS
+
+/**
+ * The local start (unix ms + offsetMs) of the bucket a pageview falls in.
+ * Matches `bucketStarts` in packages/contracts/src/stats-period.ts. CASTs
+ * because D1 may bind the numbers as REAL, which would make `/` a float
+ * division.
+ */
+function bucketOf(interval: TimeseriesInterval, offsetMs: number): SQL {
+  const local = sql`(${events.createdAt} + ${offsetMs})`
+  switch (interval) {
+    case "hour":
+    case "day": {
+      const size = interval === "hour" ? HOUR_MS : DAY_MS
+      return sql`CAST(${local} / ${size} AS INTEGER) * ${size}`
+    }
+    case "week":
+      return sql`CAST((${local} + ${MONDAY_SHIFT_MS}) / ${WEEK_MS} AS INTEGER) * ${WEEK_MS} - ${MONDAY_SHIFT_MS}`
+    case "month":
+      return sql`CAST(strftime('%s', CAST(${local} / 1000 AS INTEGER), 'unixepoch', 'start of month') AS INTEGER) * 1000`
+  }
+}
+
 /**
  * Pageviews and distinct visitors per bucket, for buckets that have events;
  * the caller zero-fills the rest. `offsetMs` shifts UTC to the site's local
- * time so buckets start at local midnight or on the local hour.
+ * time so buckets start at local midnight, on the local hour, on Monday or
+ * on the 1st.
  */
 export function getTimeseries(
   db: Database,
   siteId: string,
   fromMs: number,
   toMs: number,
-  { bucketMs, offsetMs }: { bucketMs: number; offsetMs: number }
+  { interval, offsetMs }: { interval: TimeseriesInterval; offsetMs: number }
 ): Promise<TimeseriesRow[]> {
-  // CAST because D1 may bind the numbers as REAL, which would make `/`
-  // a float division.
   return db.all<TimeseriesRow>(sql`
     SELECT
-      CAST((${events.createdAt} + ${offsetMs}) / ${bucketMs} AS INTEGER) AS bucket,
+      ${bucketOf(interval, offsetMs)} AS bucket,
       count(DISTINCT ${events.visitorId}) AS visitors,
       count(*) AS pageviews
     FROM ${events}

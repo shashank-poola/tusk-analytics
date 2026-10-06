@@ -1,13 +1,5 @@
-import type { BreakdownBy, StatsRange } from "@workspace/contracts"
-
-/** `?range=` plus each breakdown card's open tab (analytics-params.ts). */
-type SiteSearch = {
-  range?: StatsRange
-  sources?: BreakdownBy
-  pages?: BreakdownBy
-  locations?: BreakdownBy
-  devices?: BreakdownBy
-}
+/** The dashboard's view: `viewSearch` in features/analytics/utils/analytics-params.ts. */
+type SiteSearch = Record<string, string | undefined>
 
 export const routes = {
   signIn: "/signup",

@@ -1,6 +1,9 @@
-import type { BreakdownBy, StatsRange } from "@workspace/contracts"
+import type {
+  BreakdownBy,
+  StatsInterval,
+  StatsPeriod,
+} from "@workspace/contracts"
 
-import { RANGE_PERIODS } from "@/features/analytics/utils/analytics-params"
 import {
   getBreakdown,
   getLiveVisitors,
@@ -9,7 +12,7 @@ import {
   getTimeseries,
 } from "@/features/analytics/server/analytics.queries"
 import { BreakdownBody } from "@/features/analytics/components/breakdowns/breakdown-card"
-import { ChartEmptyState, NoData } from "./empty-state"
+import { NoData } from "./empty-state"
 import { formatNumber } from "@/features/analytics/utils/format"
 import { buildHighlights } from "@/features/analytics/utils/highlights"
 import { HighlightsCard } from "@/features/analytics/components/summary/highlights-card"
@@ -21,11 +24,11 @@ import { VisitorsList } from "@/features/analytics/components/visitors/visitors-
 // requests run in parallel and stream in as they finish. Shared requests are
 // deduped by `cache` in analytics.queries.ts.
 
-type SectionProps = { siteId: string; range: StatsRange }
+type SectionProps = { siteId: string; period: StatsPeriod }
 
-export async function KpiSection({ siteId, range }: SectionProps) {
+export async function KpiSection({ siteId, period }: SectionProps) {
   const [overview, live] = await Promise.all([
-    getOverview(siteId, range),
+    getOverview(siteId, period),
     getLiveVisitors(siteId),
   ])
   return (
@@ -38,34 +41,42 @@ export async function KpiSection({ siteId, range }: SectionProps) {
 }
 
 /** Always draws the chart, flat when empty, so the card never changes size. */
-export async function ChartSection({ siteId, range }: SectionProps) {
+export async function ChartSection({
+  siteId,
+  period,
+  interval,
+  label,
+  emptyState,
+}: SectionProps & {
+  interval: StatsInterval
+  /** The period in words, e.g. "Last 7 days". */
+  label: string
+  /** Laid over the flat chart when the period has no visits. */
+  emptyState: React.ReactNode
+}) {
   const [timeseries, { current }] = await Promise.all([
-    getTimeseries(siteId, range),
-    getOverview(siteId, range),
+    getTimeseries(siteId, period, interval),
+    getOverview(siteId, period),
   ])
-  const period = RANGE_PERIODS[range]
   return (
     <div className="relative">
       <VisitorsChart
         timeseries={timeseries}
-        label={`Visitors and pageviews over ${period}`}
-        summary={`In ${period}: ${formatNumber(current.visitors)} visitors and ${formatNumber(current.pageviews)} pageviews.`}
+        label={`Visitors and pageviews, ${label}`}
+        summary={`${label}: ${formatNumber(current.visitors)} visitors and ${formatNumber(current.pageviews)} pageviews.`}
       />
-      {current.pageviews === 0 && (
-        <ChartEmptyState siteId={siteId} range={range} />
-      )}
+      {current.pageviews === 0 && emptyState}
     </div>
   )
 }
 
-export async function HighlightsSection({ siteId, range }: SectionProps) {
+export async function HighlightsSection({ siteId, period }: SectionProps) {
   const [{ current, previous }, sources, pages] = await Promise.all([
-    getOverview(siteId, range),
-    getBreakdown(siteId, range, "source"),
-    getBreakdown(siteId, range, "page"),
+    getOverview(siteId, period),
+    getBreakdown(siteId, period, "source"),
+    getBreakdown(siteId, period, "page"),
   ])
   const highlights = buildHighlights({
-    range,
     current,
     previous,
     sources: sources.rows,
@@ -76,16 +87,16 @@ export async function HighlightsSection({ siteId, range }: SectionProps) {
 
 export async function BreakdownSection({
   siteId,
-  range,
+  period,
   by,
   title,
 }: SectionProps & { by: BreakdownBy; title: string }) {
-  const breakdown = await getBreakdown(siteId, range, by)
+  const breakdown = await getBreakdown(siteId, period, by)
   return <BreakdownBody title={title} breakdown={breakdown} />
 }
 
-export async function VisitorsSection({ siteId, range }: SectionProps) {
-  const { visitors } = await getRecentVisitors(siteId, range)
+export async function VisitorsSection({ siteId, period }: SectionProps) {
+  const { visitors } = await getRecentVisitors(siteId, period)
   if (visitors.length === 0) return <NoData label="No visitors yet" />
   return <VisitorsList visitors={visitors} now={new Date()} />
 }

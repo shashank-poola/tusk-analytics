@@ -1,27 +1,35 @@
 import {
+  allowedIntervals,
   type BreakdownBy,
-  type StatsRange,
-  statsRangeSchema,
+  defaultInterval,
+  type PresetRange,
+  type StatsInterval,
+  statsIntervalSchema,
+  type StatsPeriod,
+  statsPeriodSchema,
 } from "@workspace/contracts"
 
-export const DEFAULT_RANGE: StatsRange = "7d"
+// Everything the dashboard shows is chosen in the URL, so every view is
+// shareable and server-rendered: the period (`range`, `offset` or
+// `from`/`to`), the chart's `interval` and each card's open tab.
 
-export const RANGES = statsRangeSchema.options
+export const DEFAULT_PERIOD: StatsPeriod = { range: "7d", offset: 0 }
 
-/** For sentences: "in the last 7 days". */
-export const RANGE_PERIODS: Record<StatsRange, string> = {
-  "24h": "the last 24 hours",
-  "7d": "the last 7 days",
-  "30d": "the last 30 days",
-  "90d": "the last 90 days",
-}
-
-/** For the range menu: "Last 7 days". */
-export const RANGE_LABELS: Record<StatsRange, string> = {
+/** For the period menu and the toolbar: "Last 7 days". */
+export const PRESET_LABELS: Record<PresetRange, string> = {
+  today: "Today",
   "24h": "Last 24 hours",
   "7d": "Last 7 days",
   "30d": "Last 30 days",
   "90d": "Last 90 days",
+  "12mo": "Last 12 months",
+}
+
+export const INTERVAL_LABELS: Record<StatsInterval, string> = {
+  hour: "Hourly",
+  day: "Daily",
+  week: "Weekly",
+  month: "Monthly",
 }
 
 type Tab = { by: BreakdownBy; label: string }
@@ -66,6 +74,13 @@ export const BREAKDOWN_CARD_KEYS = [
 /** The open tab of each card, as kept in the URL. */
 export type BreakdownTabs = Record<BreakdownCardKey, BreakdownBy>
 
+/** What the page shows, parsed from its search params. */
+export type DashboardView = {
+  period: StatsPeriod
+  interval: StatsInterval
+  tabs: BreakdownTabs
+}
+
 type SearchParamValue = string | string[] | undefined
 type SearchParams = Record<string, SearchParamValue>
 
@@ -73,10 +88,26 @@ function first(value: SearchParamValue): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
-/** `?range=`, or the default when it's missing or unknown. */
-export function parseRange(value: SearchParamValue): StatsRange {
-  const result = statsRangeSchema.safeParse(first(value))
-  return result.success ? result.data : DEFAULT_RANGE
+/** The period in the URL, or the default when it's missing or invalid. */
+export function parsePeriod(search: SearchParams): StatsPeriod {
+  const result = statsPeriodSchema.safeParse({
+    range: first(search.range),
+    offset: first(search.offset),
+    from: first(search.from),
+    to: first(search.to),
+  })
+  return result.success ? result.data : DEFAULT_PERIOD
+}
+
+/** `?interval=` when the period allows it, else the period's default. */
+export function parseInterval(
+  value: SearchParamValue,
+  period: StatsPeriod
+): StatsInterval {
+  const result = statsIntervalSchema.safeParse(first(value))
+  return result.success && allowedIntervals(period).includes(result.data)
+    ? result.data
+    : defaultInterval(period)
 }
 
 function pickTab(
@@ -95,4 +126,52 @@ export function parseBreakdownTabs(search: SearchParams): BreakdownTabs {
     locations: pickTab(BREAKDOWN_CARDS.locations, search.locations),
     devices: pickTab(BREAKDOWN_CARDS.devices, search.devices),
   }
+}
+
+export function parseView(search: SearchParams): DashboardView {
+  const period = parsePeriod(search)
+  return {
+    period,
+    interval: parseInterval(search.interval, period),
+    tabs: parseBreakdownTabs(search),
+  }
+}
+
+/** The period as API query params. */
+export function periodQuery(period: StatsPeriod): Record<string, string> {
+  if (period.range === "custom") {
+    return { range: "custom", from: period.from, to: period.to }
+  }
+  return period.offset === 0
+    ? { range: period.range }
+    : { range: period.range, offset: String(period.offset) }
+}
+
+/**
+ * The search params of `view`, leaving out defaults so URLs stay short. A
+ * change of period without an interval resets the interval to the new
+ * period's default.
+ */
+export function viewSearch(
+  view: DashboardView,
+  change: Partial<DashboardView> = {}
+): Record<string, string> {
+  const next = { ...view, ...change }
+  const interval =
+    change.period && !change.interval
+      ? defaultInterval(next.period)
+      : next.interval
+  const search = periodQuery(next.period)
+  if (interval !== defaultInterval(next.period)) search.interval = interval
+  for (const card of BREAKDOWN_CARD_KEYS) {
+    if (next.tabs[card] !== BREAKDOWN_CARDS[card][0].by) {
+      search[card] = next.tabs[card]
+    }
+  }
+  return search
+}
+
+/** A stable string for keys and caches: the same view, the same key. */
+export function periodKey(period: StatsPeriod): string {
+  return new URLSearchParams(periodQuery(period)).toString()
 }

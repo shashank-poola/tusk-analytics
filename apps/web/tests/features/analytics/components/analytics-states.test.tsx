@@ -15,6 +15,7 @@ import {
   ChartEmptyState,
   NoData,
 } from "@/features/analytics/components/empty-state"
+import { parseView } from "@/features/analytics/utils/analytics-params"
 
 import {
   breakdown,
@@ -47,8 +48,10 @@ vi.mock("@/features/onboarding/server/install-status-action", () => ({
 }))
 
 describe("chart empty state", () => {
-  it("points to the longest range first", () => {
-    render(<ChartEmptyState siteId={SITE.id} range="7d" />)
+  it("points to the last 90 days first", () => {
+    render(
+      <ChartEmptyState siteId={SITE.id} view={parseView({ range: "7d" })} />
+    )
 
     expect(screen.getByText("No visits in this period")).toBeInTheDocument()
     expect(
@@ -57,20 +60,34 @@ describe("chart empty state", () => {
   })
 
   it("points to the install snippet when even 90 days are empty", () => {
-    render(<ChartEmptyState siteId={SITE.id} range="90d" />)
+    render(
+      <ChartEmptyState siteId={SITE.id} view={parseView({ range: "90d" })} />
+    )
 
     expect(
       screen.getByRole("link", { name: "Check the install snippet" })
     ).toHaveAttribute("href", `/onboarding/${SITE.id}`)
   })
 
-  it("is what the chart shows when the range has no visits", async () => {
-    getTimeseries.mockResolvedValue({ interval: "hour", points: [] })
+  it("is laid over the chart when the period has no visits", async () => {
+    getTimeseries.mockResolvedValue({
+      interval: "hour",
+      points: [],
+      inProgress: true,
+    })
     getOverview.mockResolvedValue(overview(NO_TOTALS, NO_TOTALS))
 
-    render(await ChartSection({ siteId: SITE.id, range: "24h" }))
+    render(
+      await ChartSection({
+        siteId: SITE.id,
+        period: { range: "24h", offset: 0 },
+        interval: "hour",
+        label: "Last 24 hours",
+        emptyState: <p>Nothing here</p>,
+      })
+    )
 
-    expect(screen.getByText("No visits in this period")).toBeInTheDocument()
+    expect(screen.getByText("Nothing here")).toBeInTheDocument()
   })
 })
 
@@ -161,7 +178,10 @@ describe("site page states", () => {
     getBreakdown.mockResolvedValue(breakdown("source", 0))
 
     const { container } = render(
-      await HighlightsSection({ siteId: SITE.id, range: "7d" })
+      await HighlightsSection({
+        siteId: SITE.id,
+        period: { range: "7d", offset: 0 },
+      })
     )
 
     expect(container).toBeEmptyDOMElement()

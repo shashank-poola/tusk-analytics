@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  DEFAULT_RANGE,
+  DEFAULT_PERIOD,
   parseBreakdownTabs,
-  parseRange,
+  parseInterval,
+  parsePeriod,
+  parseView,
+  viewSearch,
 } from "@/features/analytics/utils/analytics-params"
 import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
 import {
@@ -142,14 +145,56 @@ describe("chart labels", () => {
     )
     expect(tooltipLabel(T, "hour")).toBe("Tue, Oct 6, 14:00")
   })
+
+  it("labels weeks by their Monday and months by name", () => {
+    const monday = "2026-09-28T00:00:00.000+00:00"
+    expect(tickLabel(monday, { interval: "week", points: 4 })).toBe("Sep 28")
+    expect(tooltipLabel(monday, "week")).toBe("Week of Sep 28")
+    expect(tickLabel(T, { interval: "month", points: 12 })).toBe("Oct")
+    expect(tooltipLabel(T, "month")).toBe("October 2026")
+  })
 })
 
 describe("search params", () => {
-  it("reads a known range and falls back to 7d otherwise", () => {
-    expect(parseRange("30d")).toBe("30d")
-    expect(parseRange(["24h", "90d"])).toBe("24h")
-    expect(parseRange("1y")).toBe(DEFAULT_RANGE)
-    expect(parseRange(undefined)).toBe("7d")
+  it("reads a preset, its offset or a custom period, and falls back to 7 days", () => {
+    expect(parsePeriod({ range: "30d" })).toEqual({ range: "30d", offset: 0 })
+    expect(parsePeriod({ range: ["24h", "90d"], offset: "2" })).toEqual({
+      range: "24h",
+      offset: 2,
+    })
+    expect(
+      parsePeriod({ range: "custom", from: "2026-09-01", to: "2026-09-30" })
+    ).toEqual({ range: "custom", from: "2026-09-01", to: "2026-09-30" })
+    expect(parsePeriod({ range: "1y" })).toEqual(DEFAULT_PERIOD)
+    expect(parsePeriod({ range: "custom", from: "2026-09-30" })).toEqual(
+      DEFAULT_PERIOD
+    )
+    expect(parsePeriod({})).toEqual({ range: "7d", offset: 0 })
+  })
+
+  it("keeps an interval the period allows and defaults otherwise", () => {
+    expect(parseInterval("week", { range: "30d", offset: 0 })).toBe("week")
+    expect(parseInterval("hour", { range: "90d", offset: 0 })).toBe("day")
+    expect(parseInterval(undefined, { range: "today", offset: 0 })).toBe("hour")
+  })
+
+  it("writes short URLs and resets the interval when the period changes", () => {
+    const view = parseView({
+      range: "30d",
+      interval: "week",
+      pages: "exit_page",
+    })
+
+    expect(viewSearch(view)).toEqual({
+      range: "30d",
+      interval: "week",
+      pages: "exit_page",
+    })
+    expect(viewSearch(view, { period: { range: "7d", offset: 1 } })).toEqual({
+      range: "7d",
+      offset: "1",
+      pages: "exit_page",
+    })
   })
 
   it("defaults every card to its first tab", () => {

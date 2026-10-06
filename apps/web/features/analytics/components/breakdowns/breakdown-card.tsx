@@ -1,4 +1,4 @@
-import type { StatsBreakdownResponse, StatsRange } from "@workspace/contracts"
+import type { StatsBreakdownResponse } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
 import Link from "next/link"
 
@@ -8,7 +8,8 @@ import { routes } from "@/lib/routes"
 import {
   BREAKDOWN_CARDS,
   type BreakdownCardKey,
-  type BreakdownTabs,
+  type DashboardView,
+  viewSearch,
 } from "@/features/analytics/utils/analytics-params"
 import { BreakdownDialog } from "./breakdown-dialog"
 import { BreakdownRows } from "./breakdown-rows"
@@ -20,9 +21,8 @@ const TOP_ROWS = 8
 type BreakdownCardProps = {
   card: BreakdownCardKey
   siteId: string
-  range: StatsRange
-  /** Every card's open tab, so switching one keeps the others. */
-  tabs: BreakdownTabs
+  /** The page's view: switching tab keeps the period and the other tabs. */
+  view: DashboardView
   children: React.ReactNode
 }
 
@@ -34,10 +34,10 @@ type BreakdownCardProps = {
 export function BreakdownCard({
   card,
   siteId,
-  range,
-  tabs,
+  view,
   children,
 }: BreakdownCardProps) {
+  const { tabs } = view
   const active = BREAKDOWN_CARDS[card].find(({ by }) => by === tabs[card])
   return (
     <Card
@@ -53,7 +53,10 @@ export function BreakdownCard({
             {BREAKDOWN_CARDS[card].map(({ by, label }) => (
               <li key={by}>
                 <Link
-                  href={routes.site(siteId, { range, ...tabs, [card]: by })}
+                  href={routes.site(
+                    siteId,
+                    viewSearch(view, { tabs: { ...tabs, [card]: by } })
+                  )}
                   scroll={false}
                   aria-current={by === tabs[card] ? "page" : undefined}
                   className={cn(

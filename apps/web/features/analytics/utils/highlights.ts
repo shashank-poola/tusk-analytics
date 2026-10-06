@@ -1,26 +1,16 @@
-import type {
-  StatsBreakdownResponse,
-  StatsRange,
-  StatsTotals,
-} from "@workspace/contracts"
+import type { StatsBreakdownResponse, StatsTotals } from "@workspace/contracts"
 
-import { RANGE_PERIODS } from "./analytics-params"
 import { formatNumber, formatPercent, relativeChange } from "./format"
 import { keyLabel } from "./labels"
 
 /** Smaller changes aren't worth a sentence. */
 const MIN_HIGHLIGHT_CHANGE = 0.05
 
-function previousPeriod(range: StatsRange): string {
-  return RANGE_PERIODS[range].replace("the last", "the previous")
-}
-
 export type Highlight = { kind: "source" | "page" | "change"; text: string }
 
 type Row = StatsBreakdownResponse["rows"][number]
 
 type HighlightInput = {
-  range: StatsRange
   current: StatsTotals
   previous: StatsTotals
   /** Sorted by visitors, as the breakdown API returns them. */
@@ -71,7 +61,6 @@ const COUNT_METRICS = [
 ] as const
 
 function changeHighlight({
-  range,
   current,
   previous,
 }: HighlightInput): Highlight | null {
@@ -87,7 +76,7 @@ function changeHighlight({
   const direction = biggest.change > 0 ? "up" : "down"
   return {
     kind: "change",
-    text: `${biggest.label} are ${direction} ${formatPercent(Math.abs(biggest.change))} on ${previousPeriod(range)}.`,
+    text: `${biggest.label} are ${direction} ${formatPercent(Math.abs(biggest.change))} on the previous period.`,
   }
 }
 

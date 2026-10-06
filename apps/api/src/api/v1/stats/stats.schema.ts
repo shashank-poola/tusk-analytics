@@ -2,29 +2,44 @@ import {
   BREAKDOWN_DEFAULT_LIMIT,
   BREAKDOWN_MAX_LIMIT,
   breakdownBySchema,
-  statsRangeSchema,
+  statsIntervalSchema,
+  statsPeriodSchema,
   VISITORS_DEFAULT_LIMIT,
   VISITORS_MAX_LIMIT,
 } from "@workspace/contracts"
 import * as z from "zod"
 
-export const statsQuerySchema = z.object({ range: statsRangeSchema })
+// Intersections rather than `.extend`: the period is a union (preset or
+// custom), and each half keeps its own rules.
 
-export const breakdownQuerySchema = statsQuerySchema.extend({
-  by: breakdownBySchema,
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(BREAKDOWN_MAX_LIMIT)
-    .default(BREAKDOWN_DEFAULT_LIMIT),
-})
+export const statsQuerySchema = statsPeriodSchema
 
-export const visitorsQuerySchema = statsQuerySchema.extend({
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(VISITORS_MAX_LIMIT)
-    .default(VISITORS_DEFAULT_LIMIT),
-})
+export const timeseriesQuerySchema = z.intersection(
+  statsPeriodSchema,
+  z.object({ interval: statsIntervalSchema.optional() })
+)
+
+export const breakdownQuerySchema = z.intersection(
+  statsPeriodSchema,
+  z.object({
+    by: breakdownBySchema,
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(BREAKDOWN_MAX_LIMIT)
+      .default(BREAKDOWN_DEFAULT_LIMIT),
+  })
+)
+
+export const visitorsQuerySchema = z.intersection(
+  statsPeriodSchema,
+  z.object({
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(VISITORS_MAX_LIMIT)
+      .default(VISITORS_DEFAULT_LIMIT),
+  })
+)

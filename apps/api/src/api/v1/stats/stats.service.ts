@@ -3,8 +3,10 @@ import {
   LIVE_WINDOW_MINUTES,
   type StatsBreakdownResponse,
   type StatsLiveResponse,
+  bucketStarts,
+  type StatsInterval,
   type StatsOverviewResponse,
-  type StatsRange,
+  type StatsPeriod,
   type StatsTimeseriesResponse,
   type StatsTotals,
   type StatsVisitorsResponse,
@@ -20,7 +22,7 @@ import {
   type StatsTotalsRow,
 } from "@workspace/db"
 
-import { resolveRange, toOffsetIso } from "./stats.range"
+import { chartInterval, siteWindow, toOffsetIso } from "./stats.range"
 import { createVisitorPseudonymizer } from "./visitor-pseudonym"
 
 // Metric definitions: docs/metrics.md. Every function takes `now` so tests
@@ -46,10 +48,10 @@ const toIso = (ms: number) => new Date(ms).toISOString()
 export async function getStatsOverview(
   db: Database,
   site: StatsSite,
-  range: StatsRange,
+  period: StatsPeriod,
   now: Date
 ): Promise<StatsOverviewResponse> {
-  const window = resolveRange(range, site.timezone, now)
+  const window = siteWindow(period, site.timezone, now)
   const [current, previous] = await Promise.all([
     getTotals(db, site.id, window.fromMs, window.toMs),
     getTotals(db, site.id, window.previousFromMs, window.previousToMs),
@@ -66,42 +68,44 @@ export async function getStatsOverview(
   }
 }
 
-/** One point per bucket in the range, zero-filled. */
+/**
+ * One point per bucket of `interval` (the period's default when missing),
+ * zero-filled. A 400 when hourly buckets would be too many.
+ */
 export async function getStatsTimeseries(
   db: Database,
   site: StatsSite,
-  range: StatsRange,
+  {
+    interval: requested,
+    ...period
+  }: StatsPeriod & { interval?: StatsInterval | undefined },
   now: Date
 ): Promise<StatsTimeseriesResponse> {
-  const window = resolveRange(range, site.timezone, now)
+  const interval = chartInterval(period, requested)
+  const window = siteWindow(period, site.timezone, now)
   const rows = await getTimeseries(db, site.id, window.fromMs, window.toMs, {
-    bucketMs: window.bucketMs,
+    interval,
     offsetMs: window.offsetMs,
   })
   const byBucket = new Map(rows.map((row) => [row.bucket, row]))
-
-  const points = Array.from({ length: window.buckets }, (_, index) => {
-    const bucket = window.firstBucket + index
-    const row = byBucket.get(bucket)
+  const points = bucketStarts(window, interval).map((start) => {
+    const row = byBucket.get(start + window.offsetMs)
     return {
-      t: toOffsetIso(
-        bucket * window.bucketMs - window.offsetMs,
-        window.offsetMs
-      ),
+      t: toOffsetIso(start, window.offsetMs),
       visitors: row?.visitors ?? 0,
       pageviews: row?.pageviews ?? 0,
     }
   })
-  return { interval: window.interval, points }
+  return { interval, points, inProgress: window.toMs === now.getTime() }
 }
 
 export async function getStatsBreakdown(
   db: Database,
   site: StatsSite,
-  { range, by, limit }: { range: StatsRange; by: BreakdownBy; limit: number },
+  { by, limit, ...period }: StatsPeriod & { by: BreakdownBy; limit: number },
   now: Date
 ): Promise<StatsBreakdownResponse> {
-  const window = resolveRange(range, site.timezone, now)
+  const window = siteWindow(period, site.timezone, now)
   const rows = await getBreakdown(db, site.id, window.fromMs, window.toMs, {
     dimension: by,
     limit,
@@ -127,14 +131,10 @@ export async function getStatsLive(
 export async function getStatsVisitors(
   db: Database,
   site: StatsSite,
-  {
-    range,
-    limit,
-    secret,
-  }: { range: StatsRange; limit: number; secret: string },
+  { limit, secret, ...period }: StatsPeriod & { limit: number; secret: string },
   now: Date
 ): Promise<StatsVisitorsResponse> {
-  const window = resolveRange(range, site.timezone, now)
+  const window = siteWindow(period, site.timezone, now)
   const [rows, pseudonymOf] = await Promise.all([
     getRecentVisitors(db, site.id, window.fromMs, window.toMs, { limit }),
     createVisitorPseudonymizer(secret, site.id),

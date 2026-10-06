@@ -119,25 +119,46 @@ Ties on `lastSeenAt` are ordered by `visitor_id`.
 
 ## Ranges
 
-| Range | Covers                                               | Buckets |
-| ----- | ---------------------------------------------------- | ------- |
-| `24h` | The current hour and the 23 before it, until now     | Hourly  |
-| `7d`  | Today and the 6 days before it, from local midnight  | Daily   |
-| `30d` | Today and the 29 days before it, from local midnight | Daily   |
-| `90d` | Today and the 89 days before it, from local midnight | Daily   |
+Every stats request names a **period**. Window math lives in
+`packages/contracts/src/stats-period.ts`, shared by the API and the
+dashboard so labels and queries agree.
 
-- Every range ends at **now**, so today is a partial day.
+| `range`  | Covers (at `offset` 0)                               | Default interval |
+| -------- | ---------------------------------------------------- | ---------------- |
+| `today`  | Today from local midnight, until now                 | Hourly           |
+| `24h`    | The current hour and the 23 before it, until now     | Hourly           |
+| `7d`     | Today and the 6 days before it, from local midnight  | Daily            |
+| `30d`    | Today and the 29 days before it, from local midnight | Daily            |
+| `90d`    | Today and the 89 days before it, from local midnight | Daily            |
+| `12mo`   | This month and the 11 before it, from the local 1st  | Monthly          |
+| `custom` | `from` 00:00 to the end of `to` (local dates)        | see below        |
+
+- A preset with `offset=n` is the same preset `n` whole periods earlier:
+  `7d&offset=1` is the 7 full days before the last 7, `today&offset=1` is
+  yesterday. Offsets run from 0 to 1000.
+- A custom period is at most 366 days, `from <= to`. Its default interval is
+  hourly up to 2 days, daily up to 92, monthly beyond.
+- A period ends at **now** at the latest, so a running period's last bucket
+  is partial (`inProgress: true` on the timeseries).
 - Hours and days are the site's local hours and days (`sites.timezone`).
-- **Previous period**: the same length immediately before the range
+- **Previous period**: the same length immediately before the period
   (`previousTo = from`, `previousFrom = from - (to - from)`). For `7d` at
   10:00 on a Wednesday that compares Thursday 00:00 → Wednesday 10:00 with
   the 6 days and 10 hours before it.
-- The timeseries has one point per bucket, including buckets with no events
-  (zero-filled). Visitors per bucket are distinct visitors in that bucket, so
-  daily visitors are not the sum of hourly visitors.
-- A point's `t` is the bucket's start as an ISO string with the site's UTC
-  offset, e.g. `2026-10-06T00:00:00.000+05:30`, so the dashboard can label it
-  without converting time zones.
+
+### Intervals
+
+`interval` is `hour`, `day`, `week` or `month`. Weeks start on Monday,
+months on the 1st, both local. Hourly buckets are only allowed for periods
+of up to 31 days (a 400 otherwise). The timeseries has one point per bucket
+of the period at its full length, including the running one and buckets with
+no events (zero-filled); the first week or month may start before the
+period. Visitors per bucket are distinct visitors in that bucket, so daily
+visitors are not the sum of hourly visitors.
+
+A point's `t` is the bucket's start as an ISO string with the site's UTC
+offset, e.g. `2026-10-06T00:00:00.000+05:30`, so the dashboard can label it
+without converting time zones.
 
 ### Time zones and DST
 
@@ -154,7 +175,7 @@ with rollups.
 
 ## Limits and performance
 
-- Ranges are capped at 90 days, breakdowns at 50 rows (default 10) and the
+- Periods are capped at 366 days (`12mo`, custom), breakdowns at 50 rows (default 10) and the
   visitors list at 50 (default 20). These caps are the protection for now:
   every request reads the raw events of its range through
   `events_site_time_idx (site_id, created_at)`. Totals read the range twice
@@ -163,6 +184,8 @@ with rollups.
   B-tree, since the index doesn't cover `visitor_id`) to pick the latest
   `limit` visitors, then a second pass over the range that keeps only those
   visitors' pageviews.
+- A `12mo` or long custom period reads up to a year of raw events per
+  request; fine for small sites, the first thing rollups should cover.
 - Retention: none enforced yet for events (open decision).
 - No caching or rollups yet. When raw scans get too slow, add daily rollup
   tables or a short-lived cache in front of these queries; the definitions
