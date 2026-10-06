@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 
 import { findViolation } from "./guard-bash"
 import { findWriteViolation, isSecretFile } from "./guard-write"
@@ -112,12 +112,14 @@ describe("guard-write", () => {
     expect(findWriteViolation("apps/api/src/app.ts", repo(true))).toBeNull()
   })
 
-  it("maps Windows paths to repo-relative POSIX paths", () => {
-    const root = join("C:", "repo")
+  // resolve() makes the paths absolute on the platform running the test, so
+  // on Windows they carry a drive letter and backslashes.
+  it("maps platform paths to repo-relative POSIX paths", () => {
+    const root = resolve("repo")
     expect(toRepoPath(join(root, "apps", "api", ".dev.vars"), root)).toBe(
       "apps/api/.dev.vars"
     )
-    expect(toRepoPath(join("C:", "elsewhere", "x.ts"), root)).toBeNull()
+    expect(toRepoPath(resolve("elsewhere", "x.ts"), root)).toBeNull()
   })
 })
 

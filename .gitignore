@@ -54,3 +54,6 @@ next-env.d.ts
 # Claude Code personal settings and memory
 .claude/settings.local.json
 CLAUDE.local.md
+
+# tracker build output, served by the API Worker (packages/tracker/build.ts)
+apps/api/public/script.js

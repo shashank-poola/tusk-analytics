@@ -15,7 +15,8 @@
       "dependsOn": ["^format"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "passThroughEnv": ["API_ORIGIN"]
     },
     "test": {
       "dependsOn": ["^test"]

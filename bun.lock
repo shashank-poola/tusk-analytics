@@ -114,6 +114,19 @@
         "globals": "^17.12.0",
       },
     },
+    "packages/tracker": {
+      "name": "@workspace/tracker",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@workspace/contracts": "workspace:*",
+        "@workspace/eslint-config": "workspace:*",
+        "@workspace/typescript-config": "workspace:*",
+        "eslint": "^10",
+        "jsdom": "^30.1.2",
+        "typescript": "^5",
+        "vitest": "~4.1.11",
+      },
+    },
     "packages/typescript-config": {
       "name": "@workspace/typescript-config",
       "version": "0.0.0",
@@ -659,6 +672,8 @@
     "@workspace/db": ["@workspace/db@workspace:packages/db"],
 
     "@workspace/eslint-config": ["@workspace/eslint-config@workspace:packages/eslint-config"],
+
+    "@workspace/tracker": ["@workspace/tracker@workspace:packages/tracker"],
 
     "@workspace/typescript-config": ["@workspace/typescript-config@workspace:packages/typescript-config"],
 

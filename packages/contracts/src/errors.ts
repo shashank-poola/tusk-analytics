@@ -5,6 +5,7 @@ const errorCodeSchema = z.enum([
   "unauthorized",
   "not_found",
   "site_already_exists",
+  "site_limit_reached",
   "internal_error",
 ])
 

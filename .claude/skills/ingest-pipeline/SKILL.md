@@ -1,73 +1,88 @@
 ---
 name: ingest-pipeline
-description: Rules and design for Viewtally's public collect endpoint that receives pageviews and custom events from the tracking script, covering speed, input validation, origin check against the site's domain, one batched D1 write, untrusted referrer/UTM handling and bot filtering. Use when building or changing the collect/ingest route, event parsing, source classification or bot detection in apps/api.
+description: Rules and design for Viewtally's public collect endpoint that receives pageviews from the tracking script, covering speed, input validation, origin check against the site's domain, the site cache, one batched D1 write, untrusted referrer/UTM handling, source classification, user-agent parsing and bot filtering. Use when building or changing the collect/ingest route, event parsing, source classification or bot detection in apps/api.
 ---
 
 # Ingest pipeline
 
-**Not built yet.** What exists: the `events` and `visitors` tables
-(`packages/db/src/schema/tracking.ts`) and `corsPublic`
-(`apps/api/src/middleware/cors-public.ts`). This skill is the intended
-design; build it with the `add-api-module` layout as
-`apps/api/src/api/v1/collect/`.
+## Where it lives
 
-## Route
+```
+apps/api/src/api/v1/ingest/
+  ingest.routes.ts     POST /api/v1/collect: corsPublic, body cap, parse, log drops
+  ingest.service.ts    drop checks, derived fields, db.batch
+  site-cache.ts        findSite: per-isolate cache in front of the sites read
+  ingest.schema.ts     body, derived value and path caps
+  bot-filter.ts        isBot(userAgent): substring list
+  user-agent.ts        parseUserAgent: browser / os / device buckets
+  referrer-source.ts   isSiteHost, referrerHost, classifySource (channel table)
+packages/contracts/src/ingest.ts   collectPayloadSchema, CollectPayload
+apps/api/test/ingest.test.ts       end-to-end against in-memory D1
+```
 
-`POST /api/v1/collect`, mounted with `corsPublic` and **without**
-`requireUser`/`requireSite`. The tracker sends `Content-Type: text/plain`
-(no CORS preflight), so read `await c.req.text()` and `JSON.parse` it inside a
-try/catch.
+The route is mounted at `/collect` in `apps/api/src/api/v1/index.ts`, so
+`corsPublic` (any origin, no credentials) applies to it only. No
+`requireUser`/`requireSite`: the endpoint is public and never reads the
+session.
 
 ## Per request, in order
 
-1. **Size cap.** Reject bodies over 8 KB (check `content-length`, then the
-   text length) before parsing.
-2. **Validate** with zod: site id (`vt_` + 16 chars of
-   `0123456789abcdefghjkmnpqrstvwxyz`), event name ≤ 64, URL ≤ 2048,
-   referrer ≤ 2048, visitor and session ids matching the tracker's format,
-   `props` ≤ 10 keys of string/number/boolean with values ≤ 256 chars.
-3. **Drop bots** before touching D1. See
-   [references/bots-and-sources.md](references/bots-and-sources.md).
-4. **Look up the site** by id. Cache `{ id, domain }` per isolate for ~60 s
-   (a `Map` with expiry) so most events skip the read.
-5. **Check origin.** The `Origin` header's hostname must equal `site.domain`
-   or be a subdomain of it (`www.` and `app.` count; `evilmyapp.com` doesn't).
-   On mismatch, or unknown site, still answer 202 and write nothing.
-6. **Derive server-side fields**: `country` from `c.req.raw.cf?.country`,
-   browser/os/device from `User-Agent`, `source` from referrer + UTM,
-   `path` from the URL without query string or fragment.
-7. **One batched write**: `db.batch([insert event, upsert visitor])`. The
-   visitor upsert sets `first*` columns only on insert and updates only
-   `lastSeenAt` on conflict (`onConflictDoUpdate` on `(siteId, visitorId)`).
-8. **Respond 202 with an empty body** and do step 7 inside
-   `c.executionCtx.waitUntil(...)`, so the page's beacon isn't held open by
-   D1. Catch and `console.error` failures inside the `waitUntil` promise.
+1. **Size cap.** `bodyLimit` at 4 KB → 413.
+2. **Parse.** Body is `text/plain` JSON (no preflight), so
+   `JSON.parse(await c.req.text())`; not JSON → 400 `Body must be JSON`.
+   Validate with `collectPayloadSchema` via `parseOrThrow` → 400 naming the
+   field. URL and referrer ≤ 2048, ids are UUIDs, `name` is `pageview`.
+3. **Drop checks** (service, cheapest first): missing/empty or bot
+   User-Agent → `bot`; no parsable `Origin` (including `null`) →
+   `missing_origin`; site id not found → `unknown_site`; Origin hostname
+   not exactly `site.domain` or `www.<domain>` → `origin_mismatch`.
+4. **Site lookup** goes through a per-isolate `Map` cache keyed by site id
+   (60 s TTL, 1000 entries, oldest evicted, unknown ids cached too).
+   Correctness never depends on it; a miss costs one D1 read.
+5. **Derive server-side** (never from the client): `path` = URL pathname
+   capped at 1024 (percent-encoding can make it longer than the URL);
+   `utm_source/medium/campaign` from the URL; referrer hostname (own
+   domain or `www.` → none); `source`; `country` from `request.cf.country`
+   (`/^[A-Z]{2}$/` only); browser/os/device from User-Agent. Derived
+   strings have control characters stripped, are trimmed and capped at 256.
+6. **One `db.batch`**: insert visitor `ON CONFLICT (site_id, visitor_id)
+DO NOTHING` (first touch is never overwritten), insert event (with
+   `sessionId`), and only when `newSession` is true, update the visitor's
+   `lastSeenAt` where it is older than now (so a first visit isn't written
+   twice). Two or three rows written per event. A failed batch is rethrown
+   with only D1's cause: Drizzle's message contains the bound values, which
+   must not reach the logs.
+7. **202, empty body**, awaited (no `waitUntil`).
 
-The answer is the same (202) for valid, invalid-origin, bot and unknown-site
-requests, so the endpoint can't be used to probe which site ids exist.
-Malformed bodies get 400.
+Dropped events also get 202 plus a `console.log` with `reason`, `siteId`
+and `rayId`, so the endpoint can't be used to probe which site ids or
+domains exist, and customers' consoles stay clean. Only malformed bodies
+get a 4xx.
 
 ## Never trust tracker input
 
-Referrer, UTM, path and props are attacker-controlled; anyone can POST
-anything.
+Referrer, UTM, path and URL are attacker-controlled; anyone can POST
+anything with any Origin from outside a browser. The origin check only
+keeps honest browsers on other sites out.
 
-- Store as plain text after length caps; strip control characters.
-- `source` comes from a fixed mapping (hostname → channel); unknown
-  referrers store the bare hostname only if it matches
-  `^[a-z0-9.-]{1,253}$`, else `null`.
+- Store as plain text after the caps above. `source` for an unknown
+  referrer is its hostname as parsed by `URL`.
 - The dashboard renders all of these as React text nodes. No
   `dangerouslySetInnerHTML`, no building URLs for `href` without checking
   the scheme is `http:` or `https:`.
-- An `identify` event can set `visitors.externalUserId` only when it is
-  null (first write wins), so a forged identify can't re-point an existing
-  visitor's payments.
 
-## Tests (apps/api/test/collect.test.ts)
+Details on bots and the source table:
+[references/bots-and-sources.md](references/bots-and-sources.md).
 
-Valid pageview → one `events` row, one `visitors` row; second pageview from
-the same visitor → `first*` unchanged, `lastSeenAt` moves; wrong `Origin` →
-202, no rows; bot user agent → 202, no rows; 9 KB body → 400; oversized
-UTM → rejected or truncated as designed; `<script>` in UTM stored verbatim
-as text. In tests, wait for `waitUntil` work before asserting (use
-`createExecutionContext`/`waitOnExecutionContext` from `cloudflare:test`).
+## Not built yet
+
+Custom events and props, `identify` (must only set
+`visitors.externalUserId` when it is null), rate limiting per site or IP,
+sampling of drop logs.
+
+## Tests
+
+`apps/api/test/ingest.test.ts` (route + D1), `user-agent.test.ts` (real UA
+fixtures and bot list), `referrer-source.test.ts` (source table),
+`packages/contracts/test/ingest.test.ts` (payload schema). Each ingest test
+creates its own site, so the site cache never hides a change.

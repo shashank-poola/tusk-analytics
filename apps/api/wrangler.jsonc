@@ -9,6 +9,18 @@
   // Deploys are production. `bun run dev` overrides this with
   // `--var ENVIRONMENT:development`.
   "vars": { "ENVIRONMENT": "production" },
+  // Wrangler runs this before dev and deploy (including CI's dry run), so
+  // public/script.js always exists, and reruns it in dev when the tracker's
+  // source changes.
+  "build": {
+    "command": "bun run build",
+    "cwd": "../../packages/tracker",
+    "watch_dir": "../../packages/tracker/src",
+  },
+  // Serves public/script.js (the tracker) at /script.js without invoking the
+  // Worker. Paths with no file, like /api/*, still reach the Worker. Headers
+  // for these files are set in public/_headers.
+  "assets": { "directory": "./public" },
   "d1_databases": [
     {
       "binding": "DB",

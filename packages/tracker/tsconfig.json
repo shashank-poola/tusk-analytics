@@ -1,0 +1,16 @@
+{
+  "extends": "@workspace/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": ["es2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "types": []
+  },
+  // build.ts and test-page/serve.ts run on Bun, like the root scripts/, and
+  // aren't type-checked (no Bun types in the repo).
+  "include": ["src", "test"],
+  "exclude": ["node_modules"]
+}

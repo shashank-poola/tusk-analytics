@@ -1,0 +1,22 @@
+{
+  "name": "@workspace/tracker",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun build.ts",
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@workspace/contracts": "workspace:*",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^10",
+    "jsdom": "^30.1.2",
+    "typescript": "^5",
+    "vitest": "~4.1.11"
+  }
+}

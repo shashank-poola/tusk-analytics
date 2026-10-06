@@ -20,7 +20,7 @@ apps/web/
   app/(dashboard)/onboarding/    add a site; [siteId]/ shows the install snippet
   app/(dashboard)/sites/[siteId] site page (placeholder until stats exist)
   components/<area>/*.tsx        auth/, brand/, dashboard/ (+ theme-provider.tsx)
-  features/<area>/               sites/ (*.queries.ts), onboarding/ (form, action, snippet)
+  features/<area>/               sites/ (*.queries.ts), onboarding/ (form, action, snippet, verify panel)
   lib/                           api-client, auth-client, auth-errors, env, routes, session, snippets
   tests/                         Vitest + Testing Library (jsdom)
 packages/ui/src/styles/globals.css   Tailwind import + @source globs only
