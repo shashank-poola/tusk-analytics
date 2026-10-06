@@ -12,38 +12,42 @@
  * Values and usage: docs/design/dashboard.md.
  */
 :root {
-  --background: oklch(0.985 0.003 265);
-  --surface: oklch(1 0 0);
-  --foreground: oklch(0.21 0.02 265);
-  --muted: oklch(0.96 0.006 265);
-  --muted-foreground: oklch(0.52 0.02 265);
-  --border: oklch(0.915 0.008 265);
-  --accent: oklch(0.52 0.19 262);
-  --accent-foreground: oklch(0.99 0 0);
-  --accent-soft: oklch(0.95 0.03 262);
+  /* Brand: Blue Ribbon #1E61F0, Black #000000, Catskill White #F1F4F9. */
+  --background: #f1f4f9;
+  --surface: #ffffff;
+  --foreground: #0b0d12;
+  --muted: #e9edf4;
+  --muted-foreground: #5d6472;
+  --border: #e0e5ee;
+  --accent: #1e61f0;
+  --accent-foreground: #ffffff;
+  --accent-soft: #e2ebfd;
   --highlight: oklch(0.8 0.15 75);
   --positive: oklch(0.55 0.13 155);
   --negative: oklch(0.56 0.19 27);
+  --live: oklch(0.68 0.17 150);
   --chart-1: var(--accent);
-  --chart-2: oklch(0.74 0.07 262);
-  --shadow-color: 230 35% 20%;
+  --chart-2: #b4cbfa;
+  --shadow-color: 222 60% 25%;
 }
 
 .dark {
-  --background: oklch(0.165 0.012 265);
-  --surface: oklch(0.205 0.014 265);
-  --foreground: oklch(0.96 0.005 265);
-  --muted: oklch(0.255 0.014 265);
-  --muted-foreground: oklch(0.71 0.015 265);
-  --border: oklch(0.3 0.014 265);
-  --accent: oklch(0.7 0.15 262);
-  --accent-foreground: oklch(0.17 0.012 265);
-  --accent-soft: oklch(0.3 0.07 262);
+  --background: #0a0a0c;
+  --surface: #141417;
+  --foreground: #f1f4f9;
+  --muted: #1e1f24;
+  --muted-foreground: #9b9fab;
+  --border: #25262c;
+  /* Lighter than the brand blue so text and thin lines stay legible. */
+  --accent: #5c8ff7;
+  --accent-foreground: #0a0a0c;
+  --accent-soft: #19284a;
   --highlight: oklch(0.82 0.14 75);
   --positive: oklch(0.75 0.13 155);
   --negative: oklch(0.72 0.15 27);
+  --live: oklch(0.75 0.17 150);
   --chart-1: var(--accent);
-  --chart-2: oklch(0.52 0.08 262);
+  --chart-2: #24407c;
   --shadow-color: 230 40% 2%;
   color-scheme: dark;
 }
@@ -61,6 +65,7 @@
   --color-highlight: var(--highlight);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
+  --color-live: var(--live);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --shadow-card:

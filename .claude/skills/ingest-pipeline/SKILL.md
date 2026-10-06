@@ -14,8 +14,8 @@ apps/api/src/api/v1/ingest/
   site-cache.ts        findSite: per-isolate cache in front of the sites read
   ingest.schema.ts     body, derived value and path caps
   bot-filter.ts        isBot(userAgent): substring list
-  user-agent.ts        parseUserAgent: browser / os / device buckets
-  referrer-source.ts   isSiteHost, referrerHost, classifySource (channel table)
+  user-agent.ts        parseUserAgent: ua-parser-js 1.x (MIT; 2.x is AGPL) → slugs
+  referrer-source.ts   isSiteHost, referrerHost, classifySource (map in @workspace/contracts)
 packages/contracts/src/ingest.ts   collectPayloadSchema, CollectPayload
 apps/api/test/ingest.test.ts       end-to-end against in-memory D1
 ```
@@ -43,7 +43,9 @@ session.
    capped at 1024 (percent-encoding can make it longer than the URL);
    `utm_source/medium/campaign` from the URL; referrer hostname (own
    domain or `www.` → none); `source`; `country` from `request.cf.country`
-   (`/^[A-Z]{2}$/` only); browser/os/device from User-Agent. Derived
+   (`/^[A-Z]{2}$/` only); `region` and `city`, which Cloudflare derives from
+   the IP, from `request.cf` (strings only, capped at 100, stored on events
+   only; the IP itself is never stored); browser/os/device from User-Agent. Derived
    strings have control characters stripped, are trimmed and capped at 256.
 6. **One `db.batch`**: insert visitor `ON CONFLICT (site_id, visitor_id)
 DO NOTHING` (first touch is never overwritten), insert event (with

@@ -40,23 +40,77 @@ function createRandom(seed: number) {
   return { next, pick, uuid }
 }
 
-// Sources as ingest stores them (referrer host → source, see
-// apps/api/src/api/v1/ingest/referrer-source.ts).
-const SOURCES = [
-  [{ source: "google", referrer: "www.google.com" }, 35],
-  [{ source: "direct", referrer: null }, 25],
-  [{ source: "x", referrer: "t.co" }, 14],
-  [{ source: "github", referrer: "github.com" }, 14],
-  [{ source: "hackernews", referrer: "news.ycombinator.com" }, 12],
-] as const
+type Source = {
+  source: string
+  referrer: string | null
+  utmSource?: string
+  utmMedium?: string
+  utmCampaign?: string
+}
 
-const COUNTRIES = [
-  ["US", 35],
-  ["IN", 25],
-  ["DE", 15],
-  ["GB", 15],
-  ["BR", 10],
-] as const
+// Sources as ingest stores them (referrer host or lowercased utm_source →
+// source, see apps/api/src/api/v1/ingest/referrer-source.ts), covering every
+// channel in packages/db/src/queries/channels.ts.
+const SOURCES: readonly (readonly [Source, number])[] = [
+  [{ source: "google", referrer: "www.google.com" }, 30],
+  [{ source: "direct", referrer: null }, 22],
+  [{ source: "x", referrer: "t.co" }, 10],
+  [{ source: "github", referrer: "github.com" }, 9],
+  [{ source: "hackernews", referrer: "news.ycombinator.com" }, 8],
+  [{ source: "reddit", referrer: "www.reddit.com" }, 4],
+  [{ source: "chatgpt", referrer: "chatgpt.com" }, 4],
+  [{ source: "perplexity", referrer: "www.perplexity.ai" }, 2],
+  [{ source: "bing", referrer: "www.bing.com" }, 3],
+  [{ source: "www.indiehackers.com", referrer: "www.indiehackers.com" }, 3],
+  [
+    {
+      source: "google",
+      referrer: "www.google.com",
+      utmSource: "google",
+      utmMedium: "cpc",
+      utmCampaign: "brand-search",
+    },
+    4,
+  ],
+  [
+    {
+      source: "newsletter",
+      referrer: null,
+      utmSource: "newsletter",
+      utmMedium: "email",
+      utmCampaign: "october-digest",
+    },
+    3,
+  ],
+  [
+    {
+      source: "producthunt",
+      referrer: "www.producthunt.com",
+      utmSource: "producthunt",
+      utmMedium: "social",
+      utmCampaign: "launch-week",
+    },
+    3,
+  ],
+]
+
+type Location = { country: string; region: string; city: string }
+
+const LOCATIONS: readonly (readonly [Location, number])[] = [
+  [{ country: "US", region: "California", city: "San Francisco" }, 12],
+  [{ country: "US", region: "California", city: "Los Angeles" }, 6],
+  [{ country: "US", region: "New York", city: "New York" }, 10],
+  [{ country: "US", region: "Texas", city: "Austin" }, 7],
+  [{ country: "IN", region: "Karnataka", city: "Bengaluru" }, 12],
+  [{ country: "IN", region: "Maharashtra", city: "Mumbai" }, 8],
+  [{ country: "IN", region: "Delhi", city: "New Delhi" }, 5],
+  [{ country: "DE", region: "Berlin", city: "Berlin" }, 8],
+  [{ country: "DE", region: "Bavaria", city: "Munich" }, 7],
+  [{ country: "GB", region: "England", city: "London" }, 11],
+  [{ country: "GB", region: "Scotland", city: "Edinburgh" }, 4],
+  [{ country: "BR", region: "Sao Paulo", city: "São Paulo" }, 7],
+  [{ country: "BR", region: "Rio de Janeiro", city: "Rio de Janeiro" }, 3],
+]
 
 type Client = { device: string; os: string; browser: string }
 const CLIENTS: readonly (readonly [Client, number])[] = [
@@ -107,14 +161,14 @@ const WEEKDAY_WEIGHT = [0.55, 1, 1, 1, 0.95, 0.85, 0.6] // Sunday first
 const RETURNING_SHARE = 0.3
 const BOUNCE_SHARE = 0.42
 
-type Visitor = { id: string; country: string; client: Client }
+type Visitor = { id: string; location: Location; client: Client }
 
 export type TrafficOptions = { events: number; days: number; seed: number }
 
 export type Session = {
   id: string
   visitor: Visitor
-  source: (typeof SOURCES)[number][0]
+  source: Source
   /** In order; the first is the landing page. */
   pageviews: { path: string; at: number }[]
 }
@@ -156,7 +210,7 @@ export function generateSessions(
         : undefined
     const visitor: Visitor = returning ?? {
       id: random.uuid(),
-      country: random.pick(COUNTRIES),
+      location: random.pick(LOCATIONS),
       client: random.pick(CLIENTS),
     }
     if (!returning) visitors.push(visitor)

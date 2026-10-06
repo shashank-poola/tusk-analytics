@@ -1,16 +1,25 @@
 import type { BreakdownBy, StatsRange } from "@workspace/contracts"
 
-type SiteSearch = { range?: StatsRange; tab?: BreakdownBy }
+/** `?range=` plus each breakdown card's open tab (analytics-params.ts). */
+type SiteSearch = {
+  range?: StatsRange
+  sources?: BreakdownBy
+  pages?: BreakdownBy
+  locations?: BreakdownBy
+  devices?: BreakdownBy
+}
 
 export const routes = {
   signIn: "/signup",
   dashboard: "/dashboard",
   onboarding: "/onboarding",
+  settings: "/settings",
   installSnippet: (siteId: string) => `/onboarding/${siteId}`,
-  site: (siteId: string, { range, tab }: SiteSearch = {}) => {
+  site: (siteId: string, search: SiteSearch = {}) => {
     const query = new URLSearchParams()
-    if (range) query.set("range", range)
-    if (tab) query.set("tab", tab)
+    for (const [name, value] of Object.entries(search)) {
+      if (value) query.set(name, value)
+    }
     return query.size ? `/sites/${siteId}?${query}` : `/sites/${siteId}`
   },
   terms: "/terms",

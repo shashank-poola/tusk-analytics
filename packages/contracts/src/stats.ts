@@ -5,7 +5,11 @@ import * as z from "zod"
 export const statsRangeSchema = z.enum(["24h", "7d", "30d", "90d"])
 export type StatsRange = z.infer<typeof statsRangeSchema>
 
-/** `page` is counted per event; every other dimension per session. */
+/**
+ * `page` is counted per event; every other dimension per session.
+ * `entry_page` and `exit_page` are a session's first and last path in the
+ * range; `region` and `city` rows also carry their `country`.
+ */
 export const breakdownBySchema = z.enum([
   "source",
   "page",
@@ -13,6 +17,13 @@ export const breakdownBySchema = z.enum([
   "device",
   "browser",
   "os",
+  "channel",
+  "referrer",
+  "campaign",
+  "entry_page",
+  "exit_page",
+  "region",
+  "city",
 ])
 export type BreakdownBy = z.infer<typeof breakdownBySchema>
 
@@ -27,6 +38,8 @@ export const statsTotalsSchema = z.object({
   sessions: count,
   /** Share of sessions with one pageview, from 0 to 1. */
   bounceRate: z.number().min(0).max(1),
+  /** Mean of (last pageview - first pageview) per session, in seconds. */
+  avgSessionSeconds: z.number().nonnegative(),
 })
 export type StatsTotals = z.infer<typeof statsTotalsSchema>
 
@@ -68,9 +81,60 @@ export const statsBreakdownResponseSchema = z.object({
       key: z.string().nullable(),
       visitors: count,
       pageviews: count,
+      /** ISO 3166-1 alpha-2, only on `region` and `city` rows. */
+      country: z.string().nullable().optional(),
     })
   ),
 })
 export type StatsBreakdownResponse = z.infer<
   typeof statsBreakdownResponseSchema
 >
+
+/** Keys of the `channel` breakdown, derived from source and utm_medium. */
+export const channelSchema = z.enum([
+  "direct",
+  "search",
+  "social",
+  "ai",
+  "email",
+  "paid",
+  "referral",
+])
+export type Channel = z.infer<typeof channelSchema>
+
+/** "Online": distinct visitors with a pageview in the last few minutes. */
+export const LIVE_WINDOW_MINUTES = 5
+
+export const statsLiveResponseSchema = z.object({ visitors: count })
+export type StatsLiveResponse = z.infer<typeof statsLiveResponseSchema>
+
+export const VISITORS_DEFAULT_LIMIT = 20
+export const VISITORS_MAX_LIMIT = 50
+
+const nullableText = z.string().nullable()
+
+/** Recent visitors in the range, latest first. Every text field is untrusted. */
+export const statsVisitorsResponseSchema = z.object({
+  visitors: z.array(
+    z.object({
+      /** Site-scoped pseudonym of the visitor (not the tracker cookie id); stable, used as an avatar seed and list key. */
+      id: z.string(),
+      /** Values of the visitor's first pageview in the range. */
+      source: nullableText,
+      country: nullableText,
+      region: nullableText,
+      city: nullableText,
+      device: nullableText,
+      browser: nullableText,
+      os: nullableText,
+      pageviews: count,
+      sessions: count,
+      firstSeenAt: z.iso.datetime(),
+      lastSeenAt: z.iso.datetime(),
+      /** Path of the latest pageview in the range. */
+      lastPage: z.string(),
+    })
+  ),
+})
+export type StatsVisitorsResponse = z.infer<typeof statsVisitorsResponseSchema>
+export type StatsVisitor = StatsVisitorsResponse["visitors"][number]

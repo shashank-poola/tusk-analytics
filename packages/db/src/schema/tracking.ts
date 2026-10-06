@@ -69,6 +69,10 @@ export const events = sqliteTable(
     utmMedium: text("utm_medium"),
     utmCampaign: text("utm_campaign"),
     country: text("country"),
+    /** `request.cf.region`, e.g. `California`. */
+    region: text("region"),
+    /** `request.cf.city`, e.g. `San Francisco`. */
+    city: text("city"),
     browser: text("browser"),
     os: text("os"),
     device: text("device", { enum: DEVICES }),

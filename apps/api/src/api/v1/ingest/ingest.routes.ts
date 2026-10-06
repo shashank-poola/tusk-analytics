@@ -47,6 +47,8 @@ export const ingestRoutes = new Hono<AppEnv>().use(corsPublic).post(
       origin: c.req.header("Origin"),
       userAgent: c.req.header("User-Agent"),
       country: c.req.raw.cf?.country,
+      region: c.req.raw.cf?.region,
+      city: c.req.raw.cf?.city,
       now: new Date(),
     })
 

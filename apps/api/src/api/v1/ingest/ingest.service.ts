@@ -2,7 +2,11 @@ import type { CollectPayload } from "@workspace/contracts"
 import { and, type Database, eq, events, lt, visitors } from "@workspace/db"
 
 import { isBot } from "./bot-filter"
-import { MAX_DERIVED_VALUE_LENGTH, MAX_PATH_LENGTH } from "./ingest.schema"
+import {
+  MAX_DERIVED_VALUE_LENGTH,
+  MAX_PATH_LENGTH,
+  MAX_PLACE_NAME_LENGTH,
+} from "./ingest.schema"
 import { classifySource, isSiteHost, referrerHost } from "./referrer-source"
 import { findSite } from "./site-cache"
 import { parseUserAgent } from "./user-agent"
@@ -19,6 +23,9 @@ type IngestInput = {
   userAgent: string | undefined
   /** `request.cf.country`; untyped on the raw request, so checked here. */
   country: unknown
+  /** `request.cf.region` and `request.cf.city`, checked like `country`. */
+  region: unknown
+  city: unknown
   now: Date
 }
 
@@ -32,13 +39,23 @@ function hostnameOf(origin: string): string | null {
 }
 
 /** Strips control characters, trims and caps a derived value; "" → null. */
-function cleanValue(value: string | null): string | null {
+function cleanValue(
+  value: string | null,
+  maxLength = MAX_DERIVED_VALUE_LENGTH
+): string | null {
   const cleaned = value
     // eslint-disable-next-line no-control-regex
     ?.replace(/[\u0000-\u001f\u007f]/g, "")
     .trim()
-    .slice(0, MAX_DERIVED_VALUE_LENGTH)
+    .slice(0, maxLength)
   return cleaned || null
+}
+
+/** A `request.cf` region or city name; null when missing or not a string. */
+function cleanPlaceName(value: unknown): string | null {
+  return typeof value === "string"
+    ? cleanValue(value, MAX_PLACE_NAME_LENGTH)
+    : null
 }
 
 /**
@@ -48,7 +65,7 @@ function cleanValue(value: string | null): string | null {
  */
 export async function ingestEvent(
   db: Database,
-  { payload, origin, userAgent = "", country, now }: IngestInput
+  { payload, origin, userAgent = "", country, region, city, now }: IngestInput
 ): Promise<IngestResult> {
   if (isBot(userAgent)) return { status: "dropped", reason: "bot" }
   const originHost = origin ? hostnameOf(origin) : null
@@ -99,6 +116,8 @@ export async function ingestEvent(
     utmMedium,
     utmCampaign,
     country: validCountry,
+    region: cleanPlaceName(region),
+    city: cleanPlaceName(city),
     browser,
     os,
     device,

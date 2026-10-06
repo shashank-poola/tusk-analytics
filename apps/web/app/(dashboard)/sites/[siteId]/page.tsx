@@ -2,41 +2,42 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import {
-  parseDeviceTab,
+  BREAKDOWN_CARD_KEYS,
+  BREAKDOWN_CARDS,
+  parseBreakdownTabs,
   parseRange,
-} from "@/features/analytics/analytics-params"
-import { AnalyticsSection } from "@/features/analytics/analytics-section"
+} from "@/features/analytics/utils/analytics-params"
+import { SectionBoundary } from "@/features/analytics/components/section-boundary"
 import {
   BreakdownSection,
   ChartSection,
   GreetingSection,
   HighlightsSection,
   KpiSection,
-} from "@/features/analytics/analytics-sections"
-import { BreakdownCard } from "@/features/analytics/breakdown-card"
-import { ChartCard } from "@/features/analytics/chart-card"
-import { DeviceTabs } from "@/features/analytics/device-tabs"
-import { RangePicker } from "@/features/analytics/range-picker"
+  VisitorsSection,
+} from "@/features/analytics/components/analytics-sections"
+import { AnalyticsToolbar } from "@/features/analytics/components/analytics-toolbar"
+import { BreakdownCard } from "@/features/analytics/components/breakdowns/breakdown-card"
+import { OverviewCard } from "@/features/analytics/components/overview/overview-card"
 import {
   BreakdownSkeleton,
   ChartSkeleton,
   GreetingSkeleton,
   HighlightsSkeleton,
-  KpiCardsSkeleton,
-} from "@/features/analytics/skeletons"
-import { WaitingForFirstVisit } from "@/features/onboarding/waiting-for-first-visit"
-import { getInstallStatus, getSite } from "@/features/sites/sites.queries"
+  KpiStripSkeleton,
+  VisitorsSkeleton,
+} from "@/features/analytics/components/skeletons"
+import { VisitorsCard } from "@/features/analytics/components/visitors/visitors-card"
+import { WaitingForFirstVisit } from "@/features/onboarding/components/waiting-for-first-visit"
+import {
+  getInstallStatus,
+  getSite,
+} from "@/features/sites/server/sites.queries"
 import { getSession } from "@/lib/session"
 
 export const metadata: Metadata = {
   title: "Site · Viewtally",
 }
-
-const BREAKDOWNS = [
-  { title: "Sources", by: "source" },
-  { title: "Pages", by: "page" },
-  { title: "Countries", by: "country" },
-] as const
 
 export default async function SitePage({
   params,
@@ -56,80 +57,89 @@ export default async function SitePage({
   }
 
   const range = parseRange(search.range)
-  const tab = parseDeviceTab(search.tab)
+  const tabs = parseBreakdownTabs(search)
   const section = { siteId: site.id, range }
   // Keys reset a section's boundaries, so a new range or tab shows its
   // skeleton (and replays the count-up) instead of stale numbers.
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <AnalyticsSection
-          key={`greeting-${range}`}
-          title="the summary"
-          fallback={<GreetingSkeleton />}
-        >
-          <GreetingSection
-            {...section}
-            name={session?.user.name ?? null}
-            domain={site.domain}
-          />
-        </AnalyticsSection>
-        <RangePicker siteId={site.id} range={range} tab={tab} />
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <SectionBoundary
+        key={`greeting-${range}`}
+        title="the summary"
+        fallback={<GreetingSkeleton />}
+      >
+        <GreetingSection
+          {...section}
+          name={session?.user.name ?? null}
+          domain={site.domain}
+        />
+      </SectionBoundary>
 
-      <section aria-label="Totals">
-        <AnalyticsSection
-          key={`kpis-${range}`}
-          title="the totals"
-          fallback={<KpiCardsSkeleton />}
-        >
-          <KpiSection {...section} />
-        </AnalyticsSection>
-      </section>
+      <AnalyticsToolbar site={site} range={range} tabs={tabs} />
 
-      <ChartCard>
-        <AnalyticsSection
-          key={`chart-${range}`}
-          title="the chart"
-          fallback={<ChartSkeleton />}
-        >
-          <ChartSection {...section} />
-        </AnalyticsSection>
-      </ChartCard>
+      <OverviewCard
+        totals={
+          <SectionBoundary
+            key={`kpis-${range}`}
+            title="the totals"
+            fallback={<KpiStripSkeleton />}
+          >
+            <KpiSection {...section} />
+          </SectionBoundary>
+        }
+        chart={
+          <SectionBoundary
+            key={`chart-${range}`}
+            title="the chart"
+            fallback={<ChartSkeleton />}
+          >
+            <ChartSection {...section} />
+          </SectionBoundary>
+        }
+      />
 
-      <AnalyticsSection
+      <SectionBoundary
         key={`highlights-${range}`}
         title="the highlights"
         fallback={<HighlightsSkeleton />}
       >
         <HighlightsSection {...section} />
-      </AnalyticsSection>
+      </SectionBoundary>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        {BREAKDOWNS.map(({ title, by }) => (
-          <BreakdownCard key={by} title={title}>
-            <AnalyticsSection
-              key={`${by}-${range}`}
-              title={title.toLowerCase()}
-              fallback={<BreakdownSkeleton />}
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+        {BREAKDOWN_CARD_KEYS.map((card) => {
+          const by = tabs[card]
+          const title =
+            BREAKDOWN_CARDS[card].find((tab) => tab.by === by)?.label ?? card
+          return (
+            <BreakdownCard
+              key={card}
+              card={card}
+              siteId={site.id}
+              range={range}
+              tabs={tabs}
             >
-              <BreakdownSection {...section} by={by} title={title} />
-            </AnalyticsSection>
-          </BreakdownCard>
-        ))}
-        <BreakdownCard
-          title="Devices"
-          tabs={<DeviceTabs siteId={site.id} range={range} active={tab} />}
-        >
-          <AnalyticsSection
-            key={`${tab}-${range}`}
-            title="devices"
-            fallback={<BreakdownSkeleton />}
-          >
-            <BreakdownSection {...section} by={tab} title="Devices" />
-          </AnalyticsSection>
-        </BreakdownCard>
+              <SectionBoundary
+                key={`${by}-${range}`}
+                title={title.toLowerCase()}
+                fallback={<BreakdownSkeleton />}
+              >
+                <BreakdownSection {...section} by={by} title={title} />
+              </SectionBoundary>
+            </BreakdownCard>
+          )
+        })}
       </div>
+
+      <VisitorsCard>
+        <SectionBoundary
+          key={`visitors-${range}`}
+          title="recent visitors"
+          fallback={<VisitorsSkeleton />}
+        >
+          <VisitorsSection {...section} />
+        </SectionBoundary>
+      </VisitorsCard>
     </div>
   )
 }

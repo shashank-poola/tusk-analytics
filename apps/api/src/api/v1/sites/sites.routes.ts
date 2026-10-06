@@ -17,6 +17,8 @@ import {
   listSitesQuerySchema,
   MAX_CREATE_SITE_BODY_BYTES,
 } from "./sites.schema"
+import { faviconHeaders } from "./favicon-response"
+import { getSiteFavicon } from "./site-favicon"
 import {
   createSite,
   getInstallStatus,
@@ -60,4 +62,11 @@ export const sitesRoutes = new Hono<UserEnv>()
   .get("/:siteId/install-status", requireSite, async (c) => {
     const status = await getInstallStatus(createDb(c.env.DB), c.get("site").id)
     return c.json(status satisfies InstallStatus)
+  })
+  // Loaded by the dashboard as <img src>, so it answers with the image bytes.
+  .get("/:siteId/favicon", requireSite, async (c) => {
+    const favicon = await getSiteFavicon(c.get("site"), (promise) =>
+      c.executionCtx.waitUntil(promise)
+    )
+    return c.body(favicon.bytes, 200, faviconHeaders(favicon.contentType))
   })

@@ -1,17 +1,25 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist_Mono } from "next/font/google"
+import localFont from "next/font/local"
 
 import "@workspace/ui/globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/providers/theme-provider"
 
 export const metadata: Metadata = {
   title: "Viewtally",
   description: "Web analytics that links every payment to its traffic source.",
 }
 
-const fontSans = Geist({
-  subsets: ["latin"],
+// Gellix is the brand typeface. Only the weights the UI uses are loaded.
+const fontSans = localFont({
+  src: [
+    { path: "../public/font/Gellix-TRIAL-Regular.otf", weight: "400" },
+    { path: "../public/font/Gellix-TRIAL-Medium.otf", weight: "500" },
+    { path: "../public/font/Gellix-TRIAL-SemiBold.otf", weight: "600" },
+    { path: "../public/font/Gellix-TRIAL-Bold.otf", weight: "700" },
+  ],
   variable: "--font-sans",
+  display: "swap",
 })
 
 const fontMono = Geist_Mono({

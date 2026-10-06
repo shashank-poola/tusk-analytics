@@ -30,13 +30,11 @@ skill.
 2. `utm_source` present → its value, lowercased (not mapped through the
    table).
 3. Else the referrer hostname, matched with all its parent domains against
-   the table: `bing.com` → bing, `duckduckgo.com` → duckduckgo, `x.com`,
-   `twitter.com`, `t.co` → x, `facebook.com` → facebook, `linkedin.com`,
-   `lnkd.in` → linkedin, `reddit.com` → reddit, `news.ycombinator.com` →
-   hackernews, `github.com` → github, `producthunt.com` → producthunt,
-   `chatgpt.com`, `chat.openai.com` → chatgpt, `perplexity.ai` →
-   perplexity; `google.<country tld>` (regex) → google. Unknown hosts →
-   the bare hostname.
+   `REFERRERS` in `packages/contracts/src/referrers.ts` (`sourceForHost`):
+   `t.co` → x, `l.facebook.com` → facebook, `news.ycombinator.com` →
+   hackernews, `google.<country tld>` (regex) → google, and so on. The
+   dashboard reads the same map for names and icons. Unknown hosts → the
+   bare hostname.
 4. Neither → `direct`.
 
 `visitors.firstSource` stores the result for the visitor's first event

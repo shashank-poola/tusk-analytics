@@ -9,7 +9,10 @@ description: How Viewtally computes dashboard metrics (visitors, pageviews, sess
 
 ```
 docs/metrics.md                          definitions: the source of truth
-packages/db/src/queries/stats.ts         getTotals, getTimeseries, getBreakdown
+packages/db/src/queries/stats.ts         getTotals, getTimeseries, getLiveVisitors
+packages/db/src/queries/stats-breakdown  getBreakdown, SESSION_DIMENSIONS
+packages/db/src/queries/stats-visitors   getRecentVisitors (visitors list)
+packages/db/src/queries/channels.ts      channel rules (source/utm_medium lists)
 apps/api/src/api/v1/stats/stats.range.ts ranges, previous period, UTC offset
 apps/api/src/api/v1/stats/stats.service  zero-fill, bounce rate, response shape
 packages/contracts/src/stats.ts          StatsRange, BreakdownBy, responses
@@ -47,10 +50,13 @@ apps/api/test/stats.test.ts              hand-computed fixtures per rule
 ## Adding a breakdown dimension
 
 1. Add the value to `breakdownBySchema` in `packages/contracts/src/stats.ts`.
-2. Add `key: events.<column>` to `SESSION_DIMENSIONS` (typecheck fails in
-   the service until both lists agree).
-3. Add a tab in `features/analytics/breakdown-tabs.tsx` and a column label
-   in `COLUMN_LABELS` in `breakdown-table.tsx`.
+2. Add `{ key: events.<column> }` to `SESSION_DIMENSIONS` in
+   `stats-breakdown.ts` (typecheck fails in the service until both lists
+   agree).
+3. Add a tab to a card in `BREAKDOWN_CARDS`
+   (`apps/web/features/analytics/utils/analytics-params.ts`), a label in
+   `keyLabel` and an icon in `visualFor`
+   (`components/breakdowns/breakdown-icon.tsx`).
 4. Extend the `it.each` dimension test in `apps/api/test/stats.test.ts`.
 
 ## Adding a metric

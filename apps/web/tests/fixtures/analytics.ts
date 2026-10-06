@@ -2,6 +2,7 @@ import type {
   StatsBreakdownResponse,
   StatsOverviewResponse,
   StatsTotals,
+  StatsVisitor,
 } from "@workspace/contracts"
 
 // Shared fixtures for the analytics component tests.
@@ -19,6 +20,7 @@ export const NO_TOTALS: StatsTotals = {
   pageviews: 0,
   sessions: 0,
   bounceRate: 0,
+  avgSessionSeconds: 0,
 }
 
 export function overview(
@@ -49,5 +51,24 @@ export function breakdown(
       visitors: count - index,
       pageviews: (count - index) * 3,
     })),
+  }
+}
+
+export function visitor(overrides: Partial<StatsVisitor> = {}): StatsVisitor {
+  return {
+    id: "visitor-1",
+    source: "hackernews",
+    country: "IN",
+    region: "Karnataka",
+    city: "Bengaluru",
+    device: "mobile",
+    browser: "chrome",
+    os: "android",
+    pageviews: 4,
+    sessions: 2,
+    firstSeenAt: "2026-10-05T10:00:00.000Z",
+    lastSeenAt: "2026-10-06T11:55:00.000Z",
+    lastPage: "/pricing",
+    ...overrides,
   }
 }

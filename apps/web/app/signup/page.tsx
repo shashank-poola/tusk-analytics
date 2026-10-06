@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-import { AuthShowcase } from "@/components/auth/auth-showcase"
-import { SignIn } from "@/components/auth/sign-in"
+import { AuthShowcase } from "@/features/auth/components/auth-showcase"
+import { SignIn } from "@/features/auth/components/sign-in"
 import { routes } from "@/lib/routes"
 import { getSession } from "@/lib/session"
 

@@ -100,8 +100,8 @@ describe("POST /api/v1/collect", () => {
       path: "/pricing",
       referrer: "news.ycombinator.com",
       source: "hackernews",
-      browser: "Chrome",
-      os: "macOS",
+      browser: "chrome",
+      os: "macos",
       device: "desktop",
     })
   })
@@ -329,6 +329,8 @@ describe("site cache", () => {
         origin: `https://${domain}`,
         userAgent: CHROME_ON_MAC,
         country: "DE",
+        region: undefined,
+        city: undefined,
         now: new Date(startedAt + msLater),
       })
     const UNKNOWN = { status: "dropped", reason: "unknown_site" }
@@ -357,4 +359,62 @@ describe("path", () => {
     expect(event?.path.startsWith("/%E4%B8%80")).toBe(true)
     expect(visitor?.firstLandingPath).toBe(event?.path)
   })
+})
+
+describe("location", () => {
+  it("stores country, region and city from request.cf on the event only", async () => {
+    const site = await siteForNewUser()
+
+    const res = await app.request(
+      new Request("https://api.test/api/v1/collect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+          "User-Agent": CHROME_ON_MAC,
+          Origin: `https://${site.domain}`,
+        },
+        body: JSON.stringify(pageview(site.id)),
+        cf: { country: "US", region: "California", city: "San Francisco" },
+      }),
+      undefined,
+      env
+    )
+
+    expect(res.status).toBe(202)
+    const [event] = await eventRows(site.id)
+    expect(event).toMatchObject({
+      country: "US",
+      region: "California",
+      city: "San Francisco",
+    })
+    const [visitor] = await visitorRows(site.id)
+    expect(visitor).not.toHaveProperty("region")
+    expect(visitor?.firstCountry).toBe("US")
+  })
+
+  it.each([
+    ["missing", undefined, null],
+    ["not a string", 42, null],
+    ["blank", "   ", null],
+    ["padded with control characters", " \u0000Bayern\n", "Bayern"],
+    ["over 100 characters", "a".repeat(150), "a".repeat(100)],
+  ])(
+    "cleans a region or city that is %s",
+    async (_, value: unknown, expected) => {
+      const site = await siteForNewUser()
+
+      await ingestEvent(db, {
+        payload: pageview(site.id),
+        origin: `https://${site.domain}`,
+        userAgent: CHROME_ON_MAC,
+        country: "DE",
+        region: value,
+        city: value,
+        now: new Date(),
+      })
+
+      const [event] = await eventRows(site.id)
+      expect(event).toMatchObject({ region: expected, city: expected })
+    }
+  )
 })

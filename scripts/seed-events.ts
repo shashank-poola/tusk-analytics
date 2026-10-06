@@ -115,14 +115,16 @@ function main() {
 
   const insertVisitor = db.prepare(`
     INSERT INTO visitors (site_id, visitor_id, first_source, first_referrer,
+      first_utm_source, first_utm_medium, first_utm_campaign,
       first_landing_path, first_country, first_seen_at, last_seen_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT (site_id, visitor_id)
     DO UPDATE SET last_seen_at = max(last_seen_at, excluded.last_seen_at)`)
   const insertEvent = db.prepare(`
     INSERT INTO events (site_id, visitor_id, session_id, name, path, referrer,
-      source, country, browser, os, device, created_at)
-    VALUES (?, ?, ?, 'pageview', ?, ?, ?, ?, ?, ?, ?, ?)`)
+      source, utm_source, utm_medium, utm_campaign, country, region, city,
+      browser, os, device, created_at)
+    VALUES (?, ?, ?, 'pageview', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 
   let written = 0
   db.transaction(() => {
@@ -134,15 +136,19 @@ function main() {
         visitor.id,
         source.source,
         source.referrer,
+        source.utmSource ?? null,
+        source.utmMedium ?? null,
+        source.utmCampaign ?? null,
         landing.path,
-        visitor.country,
+        visitor.location.country,
         landing.at,
         landing.at
       )
       for (const pageview of pageviews) {
         // Pages after the landing page are internal navigation: no referrer
-        // host, so ingest classifies them as direct.
+        // host or UTM tags, so ingest classifies them as direct.
         const isLanding = pageview === landing
+        const { country, region, city } = visitor.location
         insertEvent.run(
           options.siteId,
           visitor.id,
@@ -150,7 +156,12 @@ function main() {
           pageview.path,
           isLanding ? source.referrer : null,
           isLanding ? source.source : "direct",
-          visitor.country,
+          isLanding ? (source.utmSource ?? null) : null,
+          isLanding ? (source.utmMedium ?? null) : null,
+          isLanding ? (source.utmCampaign ?? null) : null,
+          country,
+          region,
+          city,
           visitor.client.browser,
           visitor.client.os,
           visitor.client.device,

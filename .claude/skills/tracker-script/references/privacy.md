@@ -30,11 +30,23 @@ The full page URL (origin, path, query; never the hash) so the server can
 read `utm_source`, `utm_medium` and `utm_campaign`. The server keeps the
 path and those three values only. `document.referrer` is reduced to its
 hostname server-side. The User-Agent header is reduced to browser, OS and
-device buckets.
+device buckets (ua-parser-js, then an allowlist of known slugs; anything
+else is stored as null).
+
+The dashboard (not the tracker) asks Google's favicon service for referrer
+hostnames not in the known referrer map, from the site owner's browser.
+Only the hostname is sent; see `docs/design/dashboard.md`.
+
+The client IP is never sent by the tracker or stored: at ingest, Cloudflare
+derives country, region and city from it (`request.cf.country`, `.region`,
+`.city`), and only those are stored, on `events` (country also on
+`visitors` as first touch). The dashboard's visitors list shows a per-site
+pseudonym (HMAC of the visitor id), never the `vt_vid` cookie value.
 
 ## Never collected
 
-IP addresses (the server uses `cf.country` and doesn't store the IP),
+IP addresses (the server uses `cf.country`, `cf.region` and `cf.city` and
+doesn't store the IP), precise location (finer than city),
 full user agents, query strings in paths, page titles, form values,
 element text, screen resolution, timezone, fonts or any other
 fingerprinting signal, and emails or names. A future `identify` must take
@@ -43,5 +55,6 @@ containing `@`.
 
 ## Retention
 
-Raw `events` rows should have a retention limit; none is enforced yet.
-Flag any feature that would keep raw events indefinitely.
+Raw `events` rows should have a retention limit; none is enforced yet (open
+decision). Region and city make each row more identifying, so flag any
+feature that would keep raw events indefinitely.

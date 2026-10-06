@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { AddSiteForm } from "@/features/onboarding/add-site-form"
+import { AddSiteForm } from "@/features/onboarding/components/add-site-form"
 
 export const metadata: Metadata = {
   title: "Add a site · Viewtally",
