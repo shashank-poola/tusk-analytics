@@ -33,6 +33,8 @@ const PEAK_ICON_PX = 20
 
 type VisitorsChartProps = {
   timeseries: StatsTimeseriesResponse
+  /** Draw the previous period as a dotted line behind the visitors. */
+  compare: boolean
   /** Short name for the chart, e.g. "Visitors, last 7 days". */
   label: string
   /** The totals in words, for screen readers. */
@@ -41,14 +43,19 @@ type VisitorsChartProps = {
 
 type DotProps = { cx?: number; cy?: number; index?: number }
 
+/** Up to this many points, each one gets a dot (sparse data reads better). */
+const DOTTED_POINTS = 31
+
 /**
- * Visitors only: one smooth line over a soft gradient, dashed for the
- * bucket still running. The biggest peaks carry the icon of the source
- * that brought most of their visitors; the tooltip adds pageviews and the
- * change versus the same bucket of the previous period.
+ * Visitors: one smooth line with a soft glow over a fading gradient,
+ * dashed for the bucket still running, dots on each point when there are
+ * few, a crosshair and tooltip on hover. The biggest peaks carry the icon
+ * of their top source. With `compare`, the previous period is a dotted
+ * line behind it (the Google Analytics / Plausible pattern).
  */
 export function VisitorsChart({
   timeseries: { points, previousPoints, interval, inProgress },
+  compare,
   label,
   summary,
 }: VisitorsChartProps) {
@@ -118,12 +125,17 @@ export function VisitorsChart({
               <stop
                 offset="0%"
                 stopColor="var(--color-visitors)"
-                stopOpacity={0.35}
+                stopOpacity={0.3}
+              />
+              <stop
+                offset="60%"
+                stopColor="var(--color-visitors)"
+                stopOpacity={0.08}
               />
               <stop
                 offset="100%"
                 stopColor="var(--color-visitors)"
-                stopOpacity={0.02}
+                stopOpacity={0}
               />
             </linearGradient>
           </defs>
@@ -159,14 +171,40 @@ export function VisitorsChart({
               <ChartTooltipBody
                 interval={interval}
                 runningT={inProgress ? (points[last]?.t ?? null) : null}
+                compare={compare}
               />
             }
           />
+          {compare && (
+            <Line
+              dataKey="previous"
+              type="monotone"
+              stroke="var(--muted-foreground)"
+              strokeOpacity={0.7}
+              strokeWidth={1.75}
+              strokeDasharray="2 5"
+              strokeLinecap="round"
+              dot={false}
+              activeDot={false}
+              tooltipType="none"
+              {...animation}
+            />
+          )}
           <Area
             dataKey="visitors"
             type="monotone"
             stroke="none"
             fill={`url(#${gradientId})`}
+            dot={
+              points.length <= DOTTED_POINTS
+                ? {
+                    r: 2.5,
+                    strokeWidth: 2,
+                    stroke: "var(--color-visitors)",
+                    fill: "var(--surface)",
+                  }
+                : false
+            }
             activeDot={{
               r: 5,
               strokeWidth: 3,
@@ -181,6 +219,7 @@ export function VisitorsChart({
             stroke="var(--color-visitors)"
             strokeWidth={2.5}
             strokeLinecap="round"
+            className="[filter:drop-shadow(0_6px_10px_color-mix(in_oklab,var(--chart-1)_35%,transparent))]"
             dot={false}
             activeDot={false}
             tooltipType="none"

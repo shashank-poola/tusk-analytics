@@ -27,6 +27,8 @@ type ChartTooltipBodyProps = {
   interval: StatsInterval
   /** The last bucket is still running, so its change is not final. */
   runningT: string | null
+  /** The previous period is drawn, so its row gets the line's mark. */
+  compare: boolean
 }
 
 function isDatum(value: unknown): value is ChartDatum {
@@ -42,6 +44,7 @@ export function ChartTooltipBody({
   payload,
   interval,
   runningT,
+  compare,
 }: ChartTooltipBodyProps) {
   const datum = payload?.[0]?.payload
   if (!active || !isDatum(datum)) return null
@@ -66,7 +69,14 @@ export function ChartTooltipBody({
           </span>
         </Row>
         <Row label="Pageviews">{formatNumber(datum.pageviews)}</Row>
-        <Row label={`Visitors, ${tooltipLabel(datum.previousT, interval)}`}>
+        <Row
+          swatch={
+            compare
+              ? "w-3 border-t-2 border-dotted border-muted-foreground"
+              : undefined
+          }
+          label={`Visitors, ${tooltipLabel(datum.previousT, interval)}`}
+        >
           {formatNumber(datum.previous)}
         </Row>
       </dl>

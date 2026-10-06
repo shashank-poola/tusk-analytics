@@ -4,6 +4,7 @@ import { SiteSwitcher } from "@/features/sites/components/site-switcher"
 
 import type { DashboardView } from "@/features/analytics/utils/analytics-params"
 import { CHIP_CLASSES } from "./toolbar/chip"
+import { CompareToggle } from "./toolbar/compare-toggle"
 import { FilterChips } from "./toolbar/filter-chips"
 import { IntervalMenu } from "./toolbar/interval-menu"
 import { PeriodPicker } from "./toolbar/period-picker"
@@ -34,6 +35,7 @@ export function AnalyticsToolbar({
         timeZone={site.timezone}
         now={now}
       />
+      <CompareToggle siteId={site.id} view={view} />
       <IntervalMenu siteId={site.id} view={view} />
       <RefreshButton />
       <FilterChips siteId={site.id} view={view} />

@@ -58,10 +58,13 @@ export async function ChartSection({
   siteId,
   scope,
   interval,
+  compare,
   label,
   emptyState,
 }: SectionProps & {
   interval: StatsInterval
+  /** Draw the previous period too. */
+  compare: boolean
   /** The period in words, e.g. "Last 7 days". */
   label: string
   /** Laid over the flat chart when the period has no visits. */
@@ -75,6 +78,7 @@ export async function ChartSection({
     <div className="relative">
       <VisitorsChart
         timeseries={timeseries}
+        compare={compare}
         label={`Visitors, ${label}`}
         summary={`${label}: ${formatNumber(current.visitors)} visitors and ${formatNumber(current.pageviews)} pageviews.`}
       />

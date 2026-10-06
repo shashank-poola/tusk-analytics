@@ -8,7 +8,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-import { Menu, MENU_ITEM_CLASSES } from "@/components/ui/menu"
+import { Menu } from "@/components/ui/menu"
 import { routes } from "@/lib/routes"
 
 import {
@@ -23,8 +23,7 @@ import {
   siteClock,
   siteToday,
 } from "@/features/analytics/utils/period-nav"
-import { KBD_CLASSES } from "./chip"
-import { CustomPeriodForm } from "./custom-period-form"
+import { type PeriodOption, PeriodMenu } from "./period-menu"
 import { PeriodShortcuts } from "./period-shortcuts"
 
 type MenuEntry = { label: string; period: StatsPeriod; key?: string }
@@ -46,6 +45,8 @@ const MORE_ENTRIES: MenuEntry[] = [
   { label: PRESET_LABELS["90d"], period: preset("90d") },
   { label: PRESET_LABELS["12mo"], period: preset("12mo") },
 ]
+
+const PERIOD_PARAMS = new Set(["range", "offset", "from", "to", "interval"])
 
 const SEGMENT_CLASSES =
   "inline-grid h-full w-10 place-items-center text-muted-foreground transition-colors sm:w-8"
@@ -78,6 +79,19 @@ export function PeriodPicker({
   const previous = previousPeriod(view.period)
   const next = nextPeriod(view.period, today)
   const label = periodLabel(view.period, timeZone, now)
+  const custom = view.period.range === "custom" ? view.period : null
+  const option = ({ label, period, key }: MenuEntry): PeriodOption => ({
+    label,
+    href: href(period),
+    active: samePeriod(period, view.period),
+    shortcut: key,
+  })
+  // Everything but the period and interval, which the custom range replaces.
+  const keptSearch = Object.fromEntries(
+    Object.entries(viewSearch(view)).filter(
+      ([name]) => !PERIOD_PARAMS.has(name)
+    )
+  )
   const shortcuts = Object.fromEntries(
     MAIN_ENTRIES.flatMap(({ key, period }) =>
       key ? [[key, href(period)]] : []
@@ -103,7 +117,7 @@ export function PeriodPicker({
         <Menu
           label={`Period: ${label}`}
           triggerClassName="h-full min-h-0 rounded-none px-3 sm:min-h-0"
-          panelClassName="w-64"
+          panelClassName="w-auto"
           trigger={
             <>
               <CalendarDays
@@ -118,44 +132,16 @@ export function PeriodPicker({
             </>
           }
         >
-          <p className="px-3 pt-1 pb-2 text-xs text-muted-foreground">
-            Current time:{" "}
-            <span className="font-semibold text-foreground">
-              {siteClock(timeZone, now)}
-            </span>
-          </p>
-          <PeriodLinks
-            entries={MAIN_ENTRIES}
-            current={view.period}
-            href={href}
+          <PeriodMenu
+            clock={siteClock(timeZone, now)}
+            main={MAIN_ENTRIES.map(option)}
+            more={MORE_ENTRIES.map(option)}
+            customBase={routes.site(siteId, keptSearch)}
+            customActive={custom !== null}
+            today={today}
+            customFrom={custom?.from ?? null}
+            customTo={custom?.to ?? null}
           />
-          <details
-            className="group/more"
-            open={MORE_ENTRIES.some(({ period }) =>
-              samePeriod(period, view.period)
-            )}
-          >
-            <summary
-              className={cn(
-                MENU_ITEM_CLASSES,
-                "cursor-pointer list-none text-muted-foreground [&::-webkit-details-marker]:hidden"
-              )}
-            >
-              <span className="flex-1">More periods</span>
-              <ChevronDown
-                aria-hidden="true"
-                className="size-4 transition-transform group-open/more:rotate-180"
-              />
-            </summary>
-            <PeriodLinks
-              entries={MORE_ENTRIES}
-              current={view.period}
-              href={href}
-            />
-          </details>
-          <div className="mt-1.5 border-t border-border pt-1.5">
-            <CustomPeriodForm siteId={siteId} view={view} today={today} />
-          </div>
         </Menu>
       </div>
       {next ? (
@@ -180,42 +166,5 @@ export function PeriodPicker({
         </span>
       )}
     </div>
-  )
-}
-
-type PeriodLinksProps = {
-  entries: MenuEntry[]
-  current: StatsPeriod
-  href: (period: StatsPeriod) => string
-}
-
-function PeriodLinks({ entries, current, href }: PeriodLinksProps) {
-  return (
-    <ul>
-      {entries.map(({ label, period, key }) => {
-        const active = samePeriod(period, current)
-        return (
-          <li key={label}>
-            <Link
-              href={href(period)}
-              scroll={false}
-              aria-current={active ? "page" : undefined}
-              aria-keyshortcuts={key?.toUpperCase()}
-              className={cn(
-                MENU_ITEM_CLASSES,
-                active && "bg-muted font-semibold"
-              )}
-            >
-              <span className="flex-1">{label}</span>
-              {key && (
-                <kbd aria-hidden="true" className={KBD_CLASSES}>
-                  {key.toUpperCase()}
-                </kbd>
-              )}
-            </Link>
-          </li>
-        )
-      })}
-    </ul>
   )
 }

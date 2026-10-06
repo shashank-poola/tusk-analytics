@@ -103,6 +103,7 @@ export default async function SitePage({
             <ChartSection
               {...section}
               interval={view.interval}
+              compare={view.compare}
               label={periodLabel(view.period, site.timezone, now)}
               emptyState={<ChartEmptyState siteId={site.id} view={view} />}
             />

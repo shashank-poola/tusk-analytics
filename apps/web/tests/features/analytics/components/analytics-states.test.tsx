@@ -89,6 +89,7 @@ describe("chart empty state", () => {
         siteId: SITE.id,
         scope: { period: { range: "24h", offset: 0 }, filters: {} },
         interval: "hour",
+        compare: false,
         label: "Last 24 hours",
         emptyState: <p>Nothing here</p>,
       })

@@ -2,7 +2,8 @@ import { cn } from "@workspace/ui/lib/utils"
 import { Check, ChevronDown } from "lucide-react"
 import Link from "next/link"
 
-import { Menu, MENU_ITEM_CLASSES } from "@/components/ui/menu"
+import { Menu } from "@/components/ui/menu"
+import { MENU_ITEM_CLASSES } from "@/components/ui/menu-styles"
 import { routes } from "@/lib/routes"
 
 import {

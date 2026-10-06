@@ -64,6 +64,8 @@ export type DashboardView = {
   insights: InsightTab
   /** The funnel the Funnel tab shows (`?funnel=`); its first when null. */
   funnel: string | null
+  /** Draw the previous period on the chart too (`?compare=1`). */
+  compare: boolean
 }
 
 /** What every stats request is narrowed to. */
@@ -129,6 +131,7 @@ export function parseView(search: SearchParams): DashboardView {
       INSIGHT_TABS.find((tab) => tab.id === insights)?.id ??
       DEFAULT_INSIGHT_TAB,
     funnel: funnel.success ? funnel.data : null,
+    compare: first(search.compare) === "1",
   }
 }
 
@@ -178,6 +181,7 @@ export function viewSearch(
   }
   if (next.insights !== DEFAULT_INSIGHT_TAB) search.insights = next.insights
   if (next.funnel) search.funnel = next.funnel
+  if (next.compare) search.compare = "1"
   return search
 }
 

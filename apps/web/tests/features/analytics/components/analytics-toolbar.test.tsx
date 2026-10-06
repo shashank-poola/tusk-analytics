@@ -9,8 +9,9 @@ import { SiteFavicon } from "@/features/sites/components/site-favicon"
 
 import { SITE } from "@/tests/fixtures/analytics"
 
+const { push } = vi.hoisted(() => ({ push: vi.fn() }))
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push, refresh: vi.fn() }),
 }))
 // next/form needs the app router; a plain GET form behaves the same here.
 vi.mock("next/form", () => ({
@@ -88,7 +89,48 @@ describe("AnalyticsToolbar", () => {
       "aria-current",
       "page"
     )
-    expect(screen.getByLabelText("From")).toHaveAttribute("max", "2026-10-06")
+  })
+
+  it("picks a custom range on a two-month calendar, never past today", async () => {
+    renderToolbar()
+    await userEvent.click(screen.getByLabelText("Period: Last 30 days"))
+    await userEvent.click(screen.getByRole("button", { name: "Custom" }))
+
+    expect(
+      screen.getByRole("region", { name: "September 2026" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("region", { name: "October 2026" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Wednesday, October 7, 2026" })
+    ).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled()
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Saturday, October 3, 2026" })
+    )
+    await userEvent.click(
+      screen.getByRole("button", { name: "Monday, September 28, 2026" })
+    )
+    expect(screen.getByLabelText("Start")).toHaveValue("2026-09-28")
+    expect(screen.getByLabelText("End")).toHaveValue("2026-10-03")
+    await userEvent.click(screen.getByRole("button", { name: "Apply" }))
+
+    const url = new URL(push.mock.calls.at(-1)?.[0] ?? "", "http://x")
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      pages: "exit_link",
+      range: "custom",
+      from: "2026-09-28",
+      to: "2026-10-03",
+    })
+  })
+
+  it("toggles the comparison with the previous period", () => {
+    renderToolbar({ range: "today" })
+
+    const toggle = screen.getByRole("link", { name: "vs Yesterday, off" })
+    expect(query(toggle)).toMatchObject({ range: "today", compare: "1" })
   })
 
   it("turns off hourly buckets when the period is too long", async () => {

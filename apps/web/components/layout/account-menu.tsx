@@ -9,7 +9,8 @@ import { authClient } from "@/lib/auth-client"
 import { routes } from "@/lib/routes"
 
 import { Avatar } from "@/components/ui/avatar"
-import { Menu, MENU_ITEM_CLASSES } from "@/components/ui/menu"
+import { Menu } from "@/components/ui/menu"
+import { MENU_ITEM_CLASSES } from "@/components/ui/menu-styles"
 
 type AccountMenuProps = {
   name: string | null

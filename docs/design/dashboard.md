@@ -11,7 +11,7 @@ attention without getting in the way. Metric definitions live in
 ┌ header (no bottom rule) ────────────────────────────────────────────┐
 │ ▮ viewtally                                      [☾] [photo/face ▾] │
 └─────────────────────────────────────────────────────────────────────┘
-  [favicon site ▾] [‹ | Last 7 days ▾ | ›] [Daily ▾] [⟳] [Country: India ×]
+  [site ▾] [‹ | Last 7 days ▾ | ›] [vs previous 7 days] [Daily ▾] [⟳] [Country: India ×]
 
   ┌ Overview card ──────────────────────────────────────────────────┐
   │ Visitors │ Pageviews │ Bounce rate │ Session time │ Online ●    │
@@ -32,8 +32,13 @@ attention without getting in the way. Metric definitions live in
   the bottom card in `?insights=`. A row click adds a filter
   (`?country=IN`), shown as a removable chip in the filter row.
 - The period is `?range=` (+ `offset` for ‹ ›) or `custom` with
-  `from`/`to`; the chart interval is `?interval=`. Keys T, Y, H, W, M jump
-  to Today, Yesterday, 24 hours, 7 and 30 days.
+  `from`/`to`, picked on a two-month calendar (no date library); the chart
+  interval is `?interval=`. Keys T, Y, H, W, M jump to Today, Yesterday,
+  24 hours, 7 and 30 days. "vs …" (`?compare=1`) adds the previous period
+  to the chart as a dotted line.
+- Chart: visitors only, a 2.5 px line with a soft glow over a fading
+  gradient, dots on every point up to 31 points, a dashed crosshair and a
+  tooltip with pageviews and the change versus the previous period.
 - KPI strip: 2 columns on phones, 3 on `sm`, one row of 5 on `lg`; no info
   icons. Every number has its change under it ("38% ↑"); from an empty
   previous period that's "100% ↑". With no visits the chart stays (flat)
