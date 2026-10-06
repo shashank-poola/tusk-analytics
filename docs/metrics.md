@@ -3,30 +3,40 @@
 The single source of truth for what the dashboard counts. Code that computes
 a metric links here; change this file first when a definition changes.
 
-Queries: `packages/db/src/queries/stats.ts`. Ranges and buckets:
-`apps/api/src/api/v1/stats/stats.range.ts`.
+Queries: `packages/db/src/queries/stats.ts` (totals, timeseries, online),
+`stats-breakdown.ts`, `stats-visitors.ts` and `channels.ts` next to it.
+Ranges and buckets: `apps/api/src/api/v1/stats/stats.range.ts`.
 
 ## What is counted
 
 Only events with `name = 'pageview'`. Custom events (not built yet) never
 count towards these metrics.
 
-| Metric      | Definition                                                         |
-| ----------- | ------------------------------------------------------------------ |
-| Pageviews   | Number of pageview events.                                         |
-| Visitors    | Distinct `visitor_id`.                                             |
-| Sessions    | Distinct `session_id`.                                             |
-| Bounce rate | Sessions with exactly one pageview ÷ sessions. 0 with no sessions. |
+| Metric       | Definition                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Pageviews    | Number of pageview events.                                                                                                 |
+| Visitors     | Distinct `visitor_id`.                                                                                                     |
+| Sessions     | Distinct `session_id`.                                                                                                     |
+| Bounce rate  | Sessions with exactly one pageview ÷ sessions. 0 with no sessions.                                                         |
+| Session time | Mean over sessions of (last pageview's `created_at` − first pageview's), in seconds. A one-pageview session counts as 0 s. |
+| Online       | Distinct `visitor_id` with a pageview in the last 5 minutes (`now − 5 min <= created_at < now`), whatever the range.       |
 
-Every metric is computed over events with `range.from <= created_at <
-range.to`. A session that started before the range counts only with its
-events inside the range.
+Every metric except online is computed over events with `range.from <=
+created_at < range.to`. A session that started before the range counts only
+with its events inside the range, so its session time is the part inside the
+range.
+
+Session time measures from the first to the last pageview: the time spent on
+the last page is unknown (there is no leave event), which is why a bounce
+counts as 0 s. It is `avgSessionSeconds` in the overview response and isn't
+rounded.
 
 ## Attribution
 
-**Per session** for source, country, device, browser and OS: a session counts
-once, under the values of its first pageview inside the range (earliest
-`created_at`; if two share the same millisecond, either one). A visit that arrived from google and then
+**Per session** for source, channel, referrer, campaign, entry page,
+country, region, city, device, browser and OS: a session counts once, under
+the values of its first pageview inside the range (earliest `created_at`; if
+two share the same millisecond, either one). A visit that arrived from google and then
 browsed three internal pages counts once under `google`, never under
 `direct`, even though ingest stores `direct` on the internal pageviews. Its
 visitor counts under `google`, and all four pageviews count towards
@@ -40,6 +50,72 @@ distinct visitors who viewed that path.
 
 Missing values (no country, an unknown browser) are grouped under a `null`
 key, which the dashboard shows as "Unknown".
+
+### Dimensions
+
+| Dimension    | Value                                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `source`     | `events.source`: lowercased `utm_source`, else the referrer's known name (`google`, `x`), else its hostname, else `direct`. |
+| `channel`    | The source grouped into a channel, see below.                                                                               |
+| `referrer`   | `events.referrer`: the referrer's hostname, `null` for none (direct, or navigation inside the site).                        |
+| `campaign`   | `events.utm_campaign`, as tagged.                                                                                           |
+| `page`       | Per event: the pageview's `path`.                                                                                           |
+| `entry_page` | The `path` of the session's first pageview in the range.                                                                    |
+| `exit_page`  | The `path` of the session's **last** pageview in the range (latest `created_at`; ties: either one).                         |
+| `country`    | ISO 3166-1 alpha-2 from Cloudflare's `request.cf.country`.                                                                  |
+| `region`     | `request.cf.region` (state, province), grouped with its country: rows carry `country`.                                      |
+| `city`       | `request.cf.city`, grouped with its country, so Paris, FR and Paris, US are two rows.                                       |
+| `device`     | `desktop`, `mobile` or `tablet`, from the User-Agent.                                                                       |
+| `browser`    | Browser family from the User-Agent.                                                                                         |
+| `os`         | Operating system from the User-Agent.                                                                                       |
+
+Region and city are derived by Cloudflare from the visitor's IP at ingest
+(`request.cf.region`, `request.cf.city`) and stored on the event only (not
+on `visitors`); the IP itself is never stored. Events from before they were
+collected have `null`. Unknown regions or cities form one row with `key` and
+`country` both `null`, whatever the visitors' countries.
+
+### Channels
+
+Computed at query time from the session's first pageview's `source` and
+`utm_medium` (compared lowercased). The first rule that matches wins. The
+value lists live in `packages/db/src/queries/channels.ts`; change them there.
+
+| Channel    | Rule                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| `paid`     | `utm_medium` is a paid medium: `cpc`, `ppc`, `cpm`, `cpv`, `paid`, `paidsearch`, `paid_social`, `display`, ...  |
+| `email`    | `utm_medium` or `source` is `email`, `e-mail` or `newsletter`.                                                  |
+| `direct`   | `source` is `direct` or missing.                                                                                |
+| `search`   | `source` is a search engine: `google`, `bing`, `duckduckgo`, `yahoo`, `ecosia`, `brave`, `baidu`, `yandex`.     |
+| `social`   | `source` is a social or community site: `x`, `facebook`, `linkedin`, `reddit`, `hackernews`, `producthunt`, ... |
+| `ai`       | `source` is an AI assistant: `chatgpt`, `perplexity`, `claude`, `gemini`, `copilot`.                            |
+| `referral` | Anything else: other sites by hostname, `github`, and untagged `utm_source` values.                             |
+
+Hacker News and Product Hunt are `social` (people discussing a launch);
+GitHub is `referral` (a link from a README or repo behaves like a site
+linking to you). A paid campaign stays `paid` whatever its source.
+
+## Visitors list
+
+The most recent visitors in the range, latest first, up to `limit` (20 by
+default, at most 50). For each `visitor_id` with a pageview in the range:
+
+- `id`: a site-scoped pseudonym, never the tracker's `visitor_id` (the
+  `vt_vid` cookie value). It is HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`
+  over `viewtally:visitor-pseudonym:v1:<siteId>:<visitorId>`, in hex, cut
+  to 24 characters. Stable across requests, different for the same browser
+  on two sites; rotating the secret changes every pseudonym (avatars,
+  nicknames).
+- `source`, `country`, `region`, `city`, `device`, `browser`, `os`: from
+  the visitor's first pageview in the range (not their all-time first touch).
+- `pageviews` and `sessions` (distinct `session_id`) in the range.
+- `firstSeenAt` / `lastSeenAt`: their first and latest pageview in the range.
+- `lastPage`: the `path` of their latest pageview in the range.
+
+Region and city here are the same Cloudflare IP-derived values as in the
+breakdowns; the IP is not stored.
+
+Ties on `lastSeenAt` are ordered by `visitor_id`.
 
 ## Ranges
 
@@ -78,9 +154,16 @@ with rollups.
 
 ## Limits and performance
 
-- Ranges are capped at 90 days and breakdowns at 50 rows (default 10). These
-  caps are the protection for now: every request reads the raw events of its
-  range through `events_site_time_idx (site_id, created_at)`.
+- Ranges are capped at 90 days, breakdowns at 50 rows (default 10) and the
+  visitors list at 50 (default 20). These caps are the protection for now:
+  every request reads the raw events of its range through
+  `events_site_time_idx (site_id, created_at)`. Totals read the range twice
+  (once for the per-session bounce and session-time subquery). The visitors
+  list also reads it twice: a full pass grouped and sorted by visitor (a temp
+  B-tree, since the index doesn't cover `visitor_id`) to pick the latest
+  `limit` visitors, then a second pass over the range that keeps only those
+  visitors' pageviews.
+- Retention: none enforced yet for events (open decision).
 - No caching or rollups yet. When raw scans get too slow, add daily rollup
   tables or a short-lived cache in front of these queries; the definitions
   above stay the same.

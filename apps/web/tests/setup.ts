@@ -29,6 +29,12 @@ HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
   this.open = false
 }
 
+// lib/avatar imports "server-only", which throws outside a server build.
+vi.mock("@/lib/avatar", () => ({
+  generatedAvatar: () => "data:image/svg+xml;base64,AA==",
+  userAvatar: () => "data:image/svg+xml;base64,AA==",
+}))
+
 stubMatchMedia(true)
 
 afterEach(() => {

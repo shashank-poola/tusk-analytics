@@ -13,6 +13,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.4.3",
+    "@dicebear/core": "^9.4.3",
     "@workspace/contracts": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "1.7.7",

@@ -27,12 +27,14 @@ function normalizeDomain(input: string): string {
     .replace(/^www\./, "")
 }
 
-function isIpAddress(host: string): boolean {
+/** Whether `host` (lowercase, as URL.hostname gives it) is an IP literal. */
+export function isIpAddress(host: string): boolean {
   // IPv6 survives normalization with its colons or brackets.
   return /^\d+(?:\.\d+){3}$/.test(host) || /[:[\]]/.test(host)
 }
 
-function isHostname(host: string): boolean {
+/** Whether `host` is a public-looking DNS name: two or more valid labels. */
+export function isHostname(host: string): boolean {
   if (host.length > MAX_HOSTNAME_LENGTH) return false
 
   const labels = host.split(".")

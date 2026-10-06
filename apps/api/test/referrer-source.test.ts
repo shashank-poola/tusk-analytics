@@ -39,6 +39,12 @@ describe("classifySource", () => {
     ["chatgpt.com", "chatgpt"],
     ["chat.openai.com", "chatgpt"],
     ["www.perplexity.ai", "perplexity"],
+    ["l.instagram.com", "instagram"],
+    ["m.youtube.com", "youtube"],
+    ["youtu.be", "youtube"],
+    ["t.me", "telegram"],
+    ["web.whatsapp.com", "whatsapp"],
+    ["constructor", "constructor"],
     ["blog.example.org", "blog.example.org"],
     ["notgoogle.com", "notgoogle.com"],
   ])("maps the referrer %j to %j", (referrer, expected) => {

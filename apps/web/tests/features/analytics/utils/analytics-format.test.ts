@@ -1,0 +1,178 @@
+import { describe, expect, it } from "vitest"
+
+import {
+  DEFAULT_RANGE,
+  parseBreakdownTabs,
+  parseRange,
+} from "@/features/analytics/utils/analytics-params"
+import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
+import {
+  bounceRateChange,
+  countChange,
+  formatCompact,
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  formatTimeAgo,
+} from "@/features/analytics/utils/format"
+import { keyLabel } from "@/features/analytics/utils/labels"
+
+describe("number formatting", () => {
+  it("formats counts compactly for cards and in full for sentences", () => {
+    expect(formatCompact(950)).toBe("950")
+    expect(formatCompact(1234)).toBe("1.2K")
+    expect(formatCompact(2_500_000)).toBe("2.5M")
+    expect(formatNumber(1234)).toBe("1,234")
+  })
+
+  it("formats a bounce rate as a whole percentage", () => {
+    expect(formatPercent(0.4567)).toBe("46%")
+    expect(formatPercent(0)).toBe("0%")
+  })
+})
+
+describe("formatDuration", () => {
+  it("shows seconds, minutes with seconds, then hours with minutes", () => {
+    expect(formatDuration(42)).toBe("42s")
+    expect(formatDuration(116)).toBe("1m 56s")
+    expect(formatDuration(3725)).toBe("1h 2m")
+  })
+
+  it("rounds to whole seconds", () => {
+    expect(formatDuration(0)).toBe("0s")
+    expect(formatDuration(41.6)).toBe("42s")
+  })
+})
+
+describe("formatTimeAgo", () => {
+  const NOW = new Date("2026-10-06T12:00:00.000Z")
+  const ago = (seconds: number) =>
+    new Date(NOW.getTime() - seconds * 1000).toISOString()
+
+  it("says just now for the last few seconds", () => {
+    expect(formatTimeAgo(ago(10), NOW)).toBe("just now")
+  })
+
+  it("counts minutes, hours and days back", () => {
+    expect(formatTimeAgo(ago(5 * 60), NOW)).toBe("5 minutes ago")
+    expect(formatTimeAgo(ago(3 * 3600), NOW)).toBe("3 hours ago")
+    expect(formatTimeAgo(ago(86_400), NOW)).toBe("yesterday")
+    expect(formatTimeAgo(ago(3 * 86_400), NOW)).toBe("3 days ago")
+  })
+})
+
+describe("change versus the previous period", () => {
+  it("gives a signed relative change and its direction", () => {
+    expect(countChange(120, 100)).toEqual({ direction: "up", text: "+20%" })
+    expect(countChange(75, 100)).toEqual({ direction: "down", text: "-25%" })
+    expect(countChange(100, 100)).toEqual({ direction: "flat", text: "0%" })
+  })
+
+  it("has no change when the previous value is 0", () => {
+    expect(countChange(40, 0)).toEqual({ direction: "none" })
+  })
+
+  it("gives bounce rate changes in percentage points", () => {
+    expect(bounceRateChange(0.44, 0.4, 10)).toEqual({
+      direction: "up",
+      text: "+4 pts",
+    })
+    expect(bounceRateChange(0.355, 0.4, 10)).toEqual({
+      direction: "down",
+      text: "-4.5 pts",
+    })
+  })
+
+  it("has no bounce rate change when the previous period had no sessions", () => {
+    expect(bounceRateChange(0.5, 0, 0)).toEqual({ direction: "none" })
+  })
+})
+
+describe("breakdown labels", () => {
+  it("names known sources and shows unknown ones as stored", () => {
+    expect(keyLabel("source", "hackernews")).toBe("Hacker News")
+    expect(keyLabel("source", "news.example.com")).toBe("news.example.com")
+    expect(keyLabel("source", null)).toBe("Unknown")
+  })
+
+  it("names countries in full and says Unknown when missing", () => {
+    expect(keyLabel("country", "IN")).toBe("India")
+    expect(keyLabel("country", "GB")).toBe("United Kingdom")
+    expect(keyLabel("country", null)).toBe("Unknown")
+  })
+
+  it("says what a missing referrer, campaign or channel means", () => {
+    expect(keyLabel("referrer", null)).toBe("Direct / None")
+    expect(keyLabel("campaign", null)).toBe("No campaign")
+    expect(keyLabel("channel", null)).toBe("Unknown")
+  })
+
+  it("names channels and shows unknown ones as stored", () => {
+    expect(keyLabel("channel", "search")).toBe("Organic search")
+    expect(keyLabel("channel", "carrier-pigeon")).toBe("carrier-pigeon")
+  })
+})
+
+describe("browser, os and source labels", () => {
+  it("names the slugs ingest stores and shows unknown ones as stored", () => {
+    expect(keyLabel("browser", "samsung-internet")).toBe("Samsung Internet")
+    expect(keyLabel("os", "macos")).toBe("macOS")
+    expect(keyLabel("browser", "yandex")).toBe("yandex")
+  })
+
+  it("names known sources from the shared referrer map", () => {
+    expect(keyLabel("source", "hackernews")).toBe("Hacker News")
+    expect(keyLabel("source", "direct")).toBe("Direct")
+    expect(keyLabel("source", "blog.example.org")).toBe("blog.example.org")
+  })
+})
+
+describe("chart labels", () => {
+  const T = "2026-10-06T14:00:00.000+05:30"
+
+  it("labels hours by time, a week by weekday and longer ranges by date", () => {
+    expect(tickLabel(T, { interval: "hour", points: 24 })).toBe("14:00")
+    expect(tickLabel(T, { interval: "day", points: 7 })).toBe("Tue 6")
+    expect(tickLabel(T, { interval: "day", points: 30 })).toBe("Oct 6")
+  })
+
+  it("reads the local date from t without shifting time zones", () => {
+    expect(tooltipLabel("2026-10-05T00:00:00.000+05:30", "day")).toBe(
+      "Mon, Oct 5"
+    )
+    expect(tooltipLabel(T, "hour")).toBe("Tue, Oct 6, 14:00")
+  })
+})
+
+describe("search params", () => {
+  it("reads a known range and falls back to 7d otherwise", () => {
+    expect(parseRange("30d")).toBe("30d")
+    expect(parseRange(["24h", "90d"])).toBe("24h")
+    expect(parseRange("1y")).toBe(DEFAULT_RANGE)
+    expect(parseRange(undefined)).toBe("7d")
+  })
+
+  it("defaults every card to its first tab", () => {
+    expect(parseBreakdownTabs({})).toEqual({
+      sources: "source",
+      pages: "page",
+      locations: "country",
+      devices: "browser",
+    })
+  })
+
+  it("reads each card's tab from its own param", () => {
+    expect(
+      parseBreakdownTabs({ sources: "referrer", devices: ["os", "device"] })
+    ).toEqual({
+      sources: "referrer",
+      pages: "page",
+      locations: "country",
+      devices: "os",
+    })
+  })
+
+  it("ignores a tab that belongs to another card", () => {
+    expect(parseBreakdownTabs({ sources: "country" }).sources).toBe("source")
+  })
+})

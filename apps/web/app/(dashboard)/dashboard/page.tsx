@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-import { listSites } from "@/features/sites/sites.queries"
+import { listSites } from "@/features/sites/server/sites.queries"
 import { routes } from "@/lib/routes"
 
 /** Sends people to their newest site, or to onboarding if they have none. */

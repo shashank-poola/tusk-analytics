@@ -1,12 +1,15 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
-import { InstallSnippet } from "@/features/onboarding/install-snippet"
-import { VerifyInstallation } from "@/features/onboarding/verify-installation"
-import { getInstallStatus, getSite } from "@/features/sites/sites.queries"
+import { InstallSnippet } from "@/features/onboarding/components/install-snippet"
+import { VerifyInstallation } from "@/features/onboarding/components/verify-installation"
+import {
+  getInstallStatus,
+  getSite,
+} from "@/features/sites/server/sites.queries"
 import { scriptUrl } from "@/lib/env"
 import { routes } from "@/lib/routes"
-import { buildSnippets } from "@/lib/snippets"
+import { buildSnippets } from "@/features/onboarding/utils/snippets"
 
 export const metadata: Metadata = {
   title: "Install Viewtally · Viewtally",

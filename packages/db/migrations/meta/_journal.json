@@ -15,6 +15,13 @@
       "when": 1791207280890,
       "tag": "0001_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791299170834,
+      "tag": "0002_events_region_city",
+      "breakpoints": true
     }
   ]
 }

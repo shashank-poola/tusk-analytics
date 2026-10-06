@@ -1,27 +1,12 @@
-import { type SQL, sql } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 
 import type { Database } from "../client"
 import { events } from "../schema"
+import { pageviewsInRange } from "./pageviews-in-range"
 
 // Metric definitions: docs/metrics.md. Every query reads one site's pageviews
 // in [fromMs, toMs) through events_site_time_idx (site_id, created_at), and
 // the caller must check that the signed-in user owns `siteId`.
-
-const PAGEVIEW = "pageview"
-
-/**
- * Columns a breakdown can group by per session. Fixed here so a request can
- * only pick a key, never a column name; `page` is grouped per event.
- */
-const SESSION_DIMENSIONS = {
-  source: events.source,
-  country: events.country,
-  device: events.device,
-  browser: events.browser,
-  os: events.os,
-}
-
-type BreakdownDimension = keyof typeof SESSION_DIMENSIONS | "page"
 
 export type StatsTotalsRow = {
   visitors: number
@@ -29,6 +14,8 @@ export type StatsTotalsRow = {
   sessions: number
   /** Sessions with exactly one pageview. */
   bounces: number
+  /** Sum over sessions of (last pageview - first pageview), in ms. */
+  sessionDurationMs: number
 }
 
 type TimeseriesRow = {
@@ -38,23 +25,11 @@ type TimeseriesRow = {
   pageviews: number
 }
 
-type BreakdownRow = {
-  key: string | null
-  visitors: number
-  pageviews: number
-}
-
-function pageviewsInRange(siteId: string, fromMs: number, toMs: number): SQL {
-  return sql`${events.siteId} = ${siteId}
-    AND ${events.createdAt} >= ${fromMs}
-    AND ${events.createdAt} < ${toMs}
-    AND ${events.name} = ${PAGEVIEW}`
-}
-
 /**
- * Two reads of the range (the bounce count runs once, not per row). Measured
- * against one pass with a window count per session, it reads about a third
- * fewer rows, and D1 bills per row read.
+ * Two reads of the range: the per-session subquery runs once, not per row,
+ * and yields both the bounce count and the session time. Measured against
+ * one pass with a window count per session, it reads about a third fewer
+ * rows, and D1 bills per row read.
  */
 export async function getTotals(
   db: Database,
@@ -63,22 +38,42 @@ export async function getTotals(
   toMs: number
 ): Promise<StatsTotalsRow> {
   const inRange = pageviewsInRange(siteId, fromMs, toMs)
+  // `per_session` is a one-row aggregate, so its columns are the same on
+  // every joined row; coalesce covers a range without pageviews. CROSS JOIN
+  // fixes the loop order in SQLite: `per_session` outside, computed once.
+  // Joined the other way round, the planner may rerun it per event.
   const [row] = await db.all<StatsTotalsRow>(sql`
     SELECT
       count(DISTINCT ${events.visitorId}) AS visitors,
       count(*) AS pageviews,
       count(DISTINCT ${events.sessionId}) AS sessions,
-      (
-        SELECT count(*) FROM (
-          SELECT 1 FROM ${events}
-          WHERE ${inRange}
-          GROUP BY ${events.sessionId}
-          HAVING count(*) = 1
-        )
-      ) AS bounces
-    FROM ${events}
+      coalesce(per_session.bounces, 0) AS bounces,
+      coalesce(per_session.duration_ms, 0) AS sessionDurationMs
+    FROM (
+      SELECT
+        sum(pageviews = 1) AS bounces,
+        sum(last_at - first_at) AS duration_ms
+      FROM (
+        SELECT
+          count(*) AS pageviews,
+          min(${events.createdAt}) AS first_at,
+          max(${events.createdAt}) AS last_at
+        FROM ${events}
+        WHERE ${inRange}
+        GROUP BY ${events.sessionId}
+      )
+    ) AS per_session
+    CROSS JOIN ${events}
     WHERE ${inRange}`)
-  return row ?? { visitors: 0, pageviews: 0, sessions: 0, bounces: 0 }
+  return (
+    row ?? {
+      visitors: 0,
+      pageviews: 0,
+      sessions: 0,
+      bounces: 0,
+      sessionDurationMs: 0,
+    }
+  )
 }
 
 /**
@@ -106,56 +101,16 @@ export function getTimeseries(
     ORDER BY bucket`)
 }
 
-/**
- * Top values of `dimension` by visitors, then key (unknown last).
- * `page` counts every pageview under its path. Other dimensions count each
- * session once, under the value of its first pageview in the range, with
- * all of the session's pageviews.
- */
-export function getBreakdown(
+/** Distinct visitors with a pageview in [fromMs, toMs): "online now". */
+export async function getLiveVisitors(
   db: Database,
   siteId: string,
   fromMs: number,
-  toMs: number,
-  { dimension, limit }: { dimension: BreakdownDimension; limit: number }
-): Promise<BreakdownRow[]> {
-  if (dimension === "page") {
-    return db.all<BreakdownRow>(sql`
-      SELECT
-        ${events.path} AS key,
-        count(DISTINCT ${events.visitorId}) AS visitors,
-        count(*) AS pageviews
-      FROM ${events}
-      WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
-      GROUP BY key
-      ORDER BY visitors DESC, key
-      LIMIT ${limit}`)
-  }
-
-  const column = SESSION_DIMENSIONS[dimension]
-  // With exactly one min() in a grouped query, SQLite takes the bare columns
-  // (visitor_id, key) from the row holding the minimum: the session's first
-  // pageview in the range (https://sqlite.org/lang_select.html#bareagg).
-  // One sort instead of the two a row_number() window needs; it reads about
-  // a third of the rows. Keep it the only min()/max() in this SELECT: a
-  // second one makes the bare columns come from an arbitrary row.
-  return db.all<BreakdownRow>(sql`
-    WITH sessions AS (
-      SELECT
-        ${events.visitorId} AS visitor_id,
-        ${column} AS key,
-        min(${events.createdAt}) AS started_at,
-        count(*) AS pageviews
-      FROM ${events}
-      WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
-      GROUP BY ${events.sessionId}
-    )
-    SELECT
-      key,
-      count(DISTINCT visitor_id) AS visitors,
-      sum(pageviews) AS pageviews
-    FROM sessions
-    GROUP BY key
-    ORDER BY visitors DESC, key IS NULL, key
-    LIMIT ${limit}`)
+  toMs: number
+): Promise<number> {
+  const [row] = await db.all<{ visitors: number }>(sql`
+    SELECT count(DISTINCT ${events.visitorId}) AS visitors
+    FROM ${events}
+    WHERE ${pageviewsInRange(siteId, fromMs, toMs)}`)
+  return row?.visitors ?? 0
 }

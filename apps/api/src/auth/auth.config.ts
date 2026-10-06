@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
+import { userNameSchema } from "@workspace/contracts"
 import {
   account,
   createDb,
@@ -8,11 +9,34 @@ import {
   verification,
 } from "@workspace/db"
 // "minimal" leaves out Kysely, which we don't need with the Drizzle adapter.
+import { APIError } from "better-auth/api"
 import { betterAuth } from "better-auth/minimal"
 import { magicLink } from "better-auth/plugins"
+import * as z from "zod"
 
 import type { Bindings } from "../config/env"
 import { sendMagicLinkEmail } from "./auth.email"
+
+const MAX_IMAGE_URL_LENGTH = 2048
+
+/**
+ * The avatar is rendered as <img src>, so only https URLs: no javascript:,
+ * data: or mixed content. null removes it.
+ */
+const userImageSchema = z
+  .url({ protocol: /^https$/, error: "Use an https:// image URL." })
+  .max(
+    MAX_IMAGE_URL_LENGTH,
+    `Keep the image URL under ${MAX_IMAGE_URL_LENGTH} characters.`
+  )
+  .nullable()
+
+function badRequest(code: string, error: z.ZodError, fallback: string) {
+  return new APIError("BAD_REQUEST", {
+    code,
+    message: error.issues[0]?.message ?? fallback,
+  })
+}
 
 /**
  * Workers hand out bindings per request, so build a new instance per request
@@ -32,6 +56,32 @@ export function createAuth(env: Bindings) {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,
+      },
+    },
+    databaseHooks: {
+      user: {
+        update: {
+          // Better Auth checks neither field beyond its type; the settings
+          // page edits both, so validate them at this boundary.
+          before: async (user) => {
+            const data = { ...user }
+            if (user.name !== undefined) {
+              const name = userNameSchema.safeParse(user.name)
+              if (!name.success) {
+                throw badRequest("INVALID_NAME", name.error, "Invalid name")
+              }
+              data.name = name.data
+            }
+            if (user.image !== undefined) {
+              const image = userImageSchema.safeParse(user.image)
+              if (!image.success) {
+                throw badRequest("INVALID_IMAGE", image.error, "Invalid image")
+              }
+              data.image = image.data
+            }
+            return { data }
+          },
+        },
       },
     },
     plugins: [

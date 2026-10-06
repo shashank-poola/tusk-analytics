@@ -47,7 +47,7 @@ export function uniqueEmail(): string {
  * Rate limits are per IP, so each sign-in gets its own address to keep tests
  * independent of each other.
  */
-function randomIp(): string {
+export function randomIp(): string {
   const [a = 0, b = 0, c = 0] = crypto.getRandomValues(new Uint8Array(3))
   return `10.${a}.${b}.${c}`
 }

@@ -19,3 +19,26 @@ export function requestErrorMessage(error: { status: number }): string {
   }
   return FALLBACK
 }
+
+// Codes Better Auth returns from account and profile requests on /settings.
+const ACCOUNT_MESSAGES: Record<string, string> = {
+  INVALID_NAME: "Enter a name of up to 80 characters.",
+  FAILED_TO_UNLINK_LAST_ACCOUNT:
+    "This is your only connected provider, so it can't be disconnected.",
+  ACCOUNT_NOT_FOUND: "That provider is no longer connected. Refresh the page.",
+  SOCIAL_ACCOUNT_ALREADY_LINKED:
+    "That Google account is already linked to another Viewtally account.",
+}
+
+export function accountErrorMessage(error: {
+  status: number
+  code?: string
+}): string {
+  if (error.status === 429) {
+    return "Too many attempts. Wait a minute and try again."
+  }
+  return (
+    (error.code && ACCOUNT_MESSAGES[error.code]) ??
+    "That didn't work. Please try again."
+  )
+}
