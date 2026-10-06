@@ -223,14 +223,50 @@ describe("stats timeseries", () => {
     expect(statsTimeseriesResponseSchema.parse(timeseries)).toEqual({
       interval: "day",
       points: [
-        { t: "2026-09-30T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-01T00:00:00.000+00:00", visitors: 1, pageviews: 2 },
-        { t: "2026-10-02T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-03T00:00:00.000+00:00", visitors: 2, pageviews: 2 },
-        { t: "2026-10-04T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-05T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
-        { t: "2026-10-06T00:00:00.000+00:00", visitors: 0, pageviews: 0 },
+        {
+          t: "2026-09-30T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-01T00:00:00.000+00:00",
+          visitors: 1,
+          pageviews: 2,
+          topSource: null,
+        },
+        {
+          t: "2026-10-02T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-03T00:00:00.000+00:00",
+          visitors: 2,
+          pageviews: 2,
+          topSource: null,
+        },
+        {
+          t: "2026-10-04T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-05T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
+        {
+          t: "2026-10-06T00:00:00.000+00:00",
+          visitors: 0,
+          pageviews: 0,
+          topSource: null,
+        },
       ],
+      previousPoints: expect.any(Array),
       inProgress: true,
     })
   })
@@ -245,7 +281,7 @@ describe("stats timeseries", () => {
     const { points } = await getStatsTimeseries(db, site, preset("7d"), NOW)
 
     expect(points).toHaveLength(7)
-    expect(points.find((p) => p.pageviews > 0)).toEqual({
+    expect(points.find((p) => p.pageviews > 0)).toMatchObject({
       t: "2026-10-05T00:00:00.000+05:30",
       visitors: 1,
       pageviews: 1,
@@ -265,7 +301,7 @@ describe("stats timeseries", () => {
     expect(timeseries.points).toHaveLength(24)
     expect(timeseries.points[0]?.t).toBe("2026-10-05T13:00:00.000+00:00")
     expect(timeseries.points.at(-1)?.t).toBe("2026-10-06T12:00:00.000+00:00")
-    expect(timeseries.points.at(-2)).toEqual({
+    expect(timeseries.points.at(-2)).toMatchObject({
       t: "2026-10-06T11:00:00.000+00:00",
       visitors: 2,
       pageviews: 2,
@@ -294,7 +330,7 @@ describe("stats timeseries", () => {
       NOW
     )
 
-    expect(weeks.points).toEqual([
+    expect(weeks.points).toMatchObject([
       { t: "2026-09-28T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
       { t: "2026-10-05T00:00:00.000+00:00", visitors: 1, pageviews: 1 },
     ])
@@ -323,7 +359,7 @@ describe("stats timeseries", () => {
 
     expect(timeseries.inProgress).toBe(false)
     expect(timeseries.points[0]?.t).toBe("2026-09-23T00:00:00.000+00:00")
-    expect(timeseries.points.at(-1)).toEqual({
+    expect(timeseries.points.at(-1)).toMatchObject({
       t: "2026-09-29T00:00:00.000+00:00",
       visitors: 1,
       pageviews: 1,
@@ -355,6 +391,84 @@ describe("stats timeseries", () => {
         NOW
       )
     ).rejects.toThrow("interval: hourly buckets need a period of 31 days")
+  })
+
+  it("pairs each point with the same bucket of the full period before", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Tuesday a week before NOW's Tuesday: the last previous point.
+      { visitor: "v1", session: "s1", at: "2026-09-29T08:00:00.000Z" },
+      { visitor: "v2", session: "s2", at: "2026-09-29T09:00:00.000Z" },
+      // Wednesday 2026-09-23: the first previous point.
+      { visitor: "v3", session: "s3", at: "2026-09-23T09:00:00.000Z" },
+    ])
+
+    const { points, previousPoints } = await getStatsTimeseries(
+      db,
+      site,
+      preset("7d"),
+      NOW
+    )
+
+    expect(previousPoints).toHaveLength(points.length)
+    expect(previousPoints[0]).toEqual({
+      t: "2026-09-23T00:00:00.000+00:00",
+      visitors: 1,
+      pageviews: 1,
+    })
+    expect(previousPoints.at(-1)).toEqual({
+      t: "2026-09-29T00:00:00.000+00:00",
+      visitors: 2,
+      pageviews: 2,
+    })
+  })
+
+  it("names each bucket's top source by its sessions' first pageview, never direct", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      // Thursday: google brings two visitors, x one, direct three.
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-01T09:00:00.000Z",
+        source: "google",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-01T10:00:00.000Z",
+        source: "google",
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-01T11:00:00.000Z",
+        source: "x",
+      },
+      { visitor: "v4", session: "s4", at: "2026-10-01T12:00:00.000Z" },
+      { visitor: "v5", session: "s5", at: "2026-10-01T12:00:00.000Z" },
+      { visitor: "v6", session: "s6", at: "2026-10-01T12:00:00.000Z" },
+      // A session from x whose later pageviews are direct still counts as x.
+      {
+        visitor: "v7",
+        session: "s7",
+        at: "2026-10-02T09:00:00.000Z",
+        source: "x",
+      },
+      { visitor: "v7", session: "s7", at: "2026-10-02T09:01:00.000Z" },
+    ])
+
+    const { points } = await getStatsTimeseries(db, site, preset("7d"), NOW)
+
+    expect(points.map((point) => point.topSource)).toEqual([
+      null,
+      "google",
+      "x",
+      null,
+      null,
+      null,
+      null,
+    ])
   })
 })
 

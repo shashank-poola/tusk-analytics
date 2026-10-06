@@ -17,6 +17,7 @@ import {
   getLiveVisitors,
   getRecentVisitors,
   getTimeseries,
+  getTopSourceByBucket,
   getTotals,
   type Site,
   type StatsTotalsRow,
@@ -70,7 +71,8 @@ export async function getStatsOverview(
 
 /**
  * One point per bucket of `interval` (the period's default when missing),
- * zero-filled. A 400 when hourly buckets would be too many.
+ * zero-filled, each with its top source, plus the full period before it,
+ * bucket by bucket. A 400 when hourly buckets would be too many.
  */
 export async function getStatsTimeseries(
   db: Database,
@@ -83,20 +85,54 @@ export async function getStatsTimeseries(
 ): Promise<StatsTimeseriesResponse> {
   const interval = chartInterval(period, requested)
   const window = siteWindow(period, site.timezone, now)
-  const rows = await getTimeseries(db, site.id, window.fromMs, window.toMs, {
+  const { offsetMs } = window
+  const span = window.endMs - window.fromMs
+  const previous = {
+    fromMs: window.fromMs - span,
+    endMs: window.fromMs,
+    offsetMs,
+  }
+  const options = { interval, offsetMs }
+  const [rows, previousRows, topSources] = await Promise.all([
+    getTimeseries(db, site.id, window.fromMs, window.toMs, options),
+    getTimeseries(db, site.id, previous.fromMs, previous.endMs, options),
+    getTopSourceByBucket(db, site.id, window.fromMs, window.toMs, options),
+  ])
+
+  const toPoints = (bucketStartsMs: number[], found: typeof rows) => {
+    const byBucket = new Map(found.map((row) => [row.bucket, row]))
+    return bucketStartsMs.map((start) => {
+      const row = byBucket.get(start + offsetMs)
+      return {
+        t: toOffsetIso(start, offsetMs),
+        visitors: row?.visitors ?? 0,
+        pageviews: row?.pageviews ?? 0,
+      }
+    })
+  }
+  const starts = bucketStarts(window, interval)
+  const topSourceOf = new Map(topSources.map((row) => [row.bucket, row.source]))
+  const points = toPoints(starts, rows).map((point, index) => ({
+    ...point,
+    topSource: topSourceOf.get((starts[index] ?? 0) + offsetMs) ?? null,
+  }))
+  // Same length as `points`, so the chart can pair them by index. Week and
+  // month buckets can split the previous period one bucket differently.
+  const previousFound = toPoints(bucketStarts(previous, interval), previousRows)
+  const previousPoints = starts.map(
+    (start, index) =>
+      previousFound[index] ?? {
+        t: toOffsetIso(start - span, offsetMs),
+        visitors: 0,
+        pageviews: 0,
+      }
+  )
+  return {
     interval,
-    offsetMs: window.offsetMs,
-  })
-  const byBucket = new Map(rows.map((row) => [row.bucket, row]))
-  const points = bucketStarts(window, interval).map((start) => {
-    const row = byBucket.get(start + window.offsetMs)
-    return {
-      t: toOffsetIso(start, window.offsetMs),
-      visitors: row?.visitors ?? 0,
-      pageviews: row?.pageviews ?? 0,
-    }
-  })
-  return { interval, points, inProgress: window.toMs === now.getTime() }
+    points,
+    previousPoints,
+    inProgress: window.toMs === now.getTime(),
+  }
 }
 
 export async function getStatsBreakdown(

@@ -2,13 +2,21 @@ import type { Metadata } from "next"
 import { SITE_LIST_MAX_LIMIT } from "@workspace/contracts"
 import { notFound } from "next/navigation"
 
+import { routes } from "@/lib/routes"
+
 import {
   BREAKDOWN_CARD_KEYS,
   BREAKDOWN_CARDS,
   parseView,
   periodKey,
+  viewSearch,
 } from "@/features/analytics/utils/analytics-params"
-import { periodLabel } from "@/features/analytics/utils/period-nav"
+import {
+  nextPeriod,
+  periodLabel,
+  previousPeriod,
+  siteToday,
+} from "@/features/analytics/utils/period-nav"
 import { SectionBoundary } from "@/features/analytics/components/section-boundary"
 import {
   BreakdownSection,
@@ -62,11 +70,19 @@ export default async function SitePage({
   // Keys reset a section's boundaries, so a new period or tab shows its
   // skeleton (and replays the count-up) instead of stale numbers.
   const key = periodKey(view.period)
+  const next = nextPeriod(view.period, siteToday(site.timezone, now))
   return (
     <div className="space-y-4 sm:space-y-5">
       <AnalyticsToolbar site={site} sites={sites} view={view} now={now} />
 
       <OverviewCard
+        previousHref={routes.site(
+          site.id,
+          viewSearch(view, { period: previousPeriod(view.period) })
+        )}
+        nextHref={
+          next && routes.site(site.id, viewSearch(view, { period: next }))
+        }
         totals={
           <SectionBoundary
             key={`kpis-${key}`}

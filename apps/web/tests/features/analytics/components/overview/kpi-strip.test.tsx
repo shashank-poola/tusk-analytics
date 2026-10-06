@@ -72,18 +72,26 @@ describe("KpiStrip", () => {
   it("shows each change versus the previous period", () => {
     renderStrip()
 
-    expect(metric(/^Visitors/).getByText("+20%")).toBeInTheDocument()
-    expect(metric(/^Pageviews/).getByText("0%")).toBeInTheDocument()
-    expect(metric(/^Session time/).getByText("+16%")).toBeInTheDocument()
+    expect(item(/^Visitors/)).toHaveTextContent(
+      "up 20% versus the previous period"
+    )
+    expect(item(/^Pageviews/)).toHaveTextContent(
+      "unchanged at 0% versus the previous period"
+    )
+    expect(item(/^Session time/)).toHaveTextContent(
+      "up 16% versus the previous period"
+    )
   })
 
-  it("gives the bounce rate change in percentage points", () => {
+  it("gives the bounce rate change relative to the previous rate", () => {
     renderStrip()
 
-    expect(metric(/^Bounce rate/).getByText("+4 pts")).toBeInTheDocument()
+    expect(item(/^Bounce rate/)).toHaveTextContent(
+      "up 10% versus the previous period"
+    )
   })
 
-  it("shows dashes instead of numbers when the range has no pageviews", () => {
+  it("shows dashes instead of numbers when the period has no pageviews", () => {
     renderStrip(NO_TOTALS, PREVIOUS, 0)
 
     for (const name of [
@@ -94,7 +102,9 @@ describe("KpiStrip", () => {
     ]) {
       expect(metric(name).getByText("No data")).toBeInTheDocument()
     }
-    expect(screen.queryByText(/pts$/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/versus the previous period/)
+    ).not.toBeInTheDocument()
   })
 
   it("has no change to compare when the previous period was empty", () => {

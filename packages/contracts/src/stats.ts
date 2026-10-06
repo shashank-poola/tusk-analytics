@@ -54,16 +54,29 @@ export const statsOverviewResponseSchema = z.object({
 })
 export type StatsOverviewResponse = z.infer<typeof statsOverviewResponseSchema>
 
+const timeseriesPointSchema = z.object({
+  /** Bucket start in the site's UTC offset, e.g. `2026-10-06T00:00:00.000+05:30`. */
+  t: z.iso.datetime({ offset: true }),
+  visitors: count,
+  pageviews: count,
+})
+
 export const statsTimeseriesResponseSchema = z.object({
   interval: statsIntervalSchema,
   points: z.array(
-    z.object({
-      /** Bucket start in the site's UTC offset, e.g. `2026-10-06T00:00:00.000+05:30`. */
-      t: z.iso.datetime({ offset: true }),
-      visitors: count,
-      pageviews: count,
+    timeseriesPointSchema.extend({
+      /**
+       * The source that brought the most visitors in this bucket, direct
+       * excluded; null when none did. Untrusted: render as text.
+       */
+      topSource: z.string().nullable(),
     })
   ),
+  /**
+   * The full period before, bucket by bucket, aligned with `points` by
+   * index (same length).
+   */
+  previousPoints: z.array(timeseriesPointSchema),
   /** True while the last point's bucket is still running (the period ends now). */
   inProgress: z.boolean(),
 })

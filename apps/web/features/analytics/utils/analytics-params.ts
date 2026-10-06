@@ -2,6 +2,7 @@ import {
   allowedIntervals,
   type BreakdownBy,
   defaultInterval,
+  periodDays,
   type PresetRange,
   type StatsInterval,
   statsIntervalSchema,
@@ -148,19 +149,19 @@ export function periodQuery(period: StatsPeriod): Record<string, string> {
 }
 
 /**
- * The search params of `view`, leaving out defaults so URLs stay short. A
- * change of period without an interval resets the interval to the new
- * period's default.
+ * The search params of `view`, leaving out defaults so URLs stay short.
+ * Moving to a period of another length resets the interval to that
+ * period's default; stepping to the previous or next period keeps it.
  */
 export function viewSearch(
   view: DashboardView,
   change: Partial<DashboardView> = {}
 ): Record<string, string> {
   const next = { ...view, ...change }
+  const resized =
+    change.period && periodDays(change.period) !== periodDays(view.period)
   const interval =
-    change.period && !change.interval
-      ? defaultInterval(next.period)
-      : next.interval
+    resized && !change.interval ? defaultInterval(next.period) : next.interval
   const search = periodQuery(next.period)
   if (interval !== defaultInterval(next.period)) search.interval = interval
   for (const card of BREAKDOWN_CARD_KEYS) {

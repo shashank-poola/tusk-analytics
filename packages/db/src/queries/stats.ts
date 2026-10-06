@@ -90,8 +90,12 @@ const MONDAY_SHIFT_MS = 3 * DAY_MS
  * because D1 may bind the numbers as REAL, which would make `/` a float
  * division.
  */
-function bucketOf(interval: TimeseriesInterval, offsetMs: number): SQL {
-  const local = sql`(${events.createdAt} + ${offsetMs})`
+function bucketOf(
+  interval: TimeseriesInterval,
+  offsetMs: number,
+  at: SQL = sql`${events.createdAt}`
+): SQL {
+  const local = sql`(${at} + ${offsetMs})`
   switch (interval) {
     case "hour":
     case "day": {
@@ -126,6 +130,57 @@ export function getTimeseries(
     FROM ${events}
     WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
     GROUP BY bucket
+    ORDER BY bucket`)
+}
+
+type TopSourceRow = {
+  /** Start of the bucket in local ms, as in `getTimeseries`. */
+  bucket: number
+  source: string
+}
+
+/**
+ * The source that brought the most visitors in each bucket, by the bucket
+ * of each session's first pageview in the range; direct visits don't count.
+ * Ties go to the source that sorts first. Buckets without such sessions
+ * have no row. Sessions use the same bare-column min() as `getBreakdown`.
+ */
+export function getTopSourceByBucket(
+  db: Database,
+  siteId: string,
+  fromMs: number,
+  toMs: number,
+  { interval, offsetMs }: { interval: TimeseriesInterval; offsetMs: number }
+): Promise<TopSourceRow[]> {
+  return db.all<TopSourceRow>(sql`
+    WITH sessions AS (
+      SELECT
+        ${events.visitorId} AS visitor_id,
+        ${events.source} AS source,
+        min(${events.createdAt}) AS first_at
+      FROM ${events}
+      WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
+      GROUP BY ${events.sessionId}
+    ),
+    per_bucket AS (
+      SELECT
+        ${bucketOf(interval, offsetMs, sql`first_at`)} AS bucket,
+        source,
+        count(DISTINCT visitor_id) AS visitors
+      FROM sessions
+      WHERE source IS NOT NULL AND source <> ${"direct"}
+      GROUP BY bucket, source
+    )
+    SELECT bucket, source FROM (
+      SELECT
+        bucket,
+        source,
+        row_number() OVER (
+          PARTITION BY bucket ORDER BY visitors DESC, source
+        ) AS rank
+      FROM per_bucket
+    )
+    WHERE rank = 1
     ORDER BY bucket`)
 }
 

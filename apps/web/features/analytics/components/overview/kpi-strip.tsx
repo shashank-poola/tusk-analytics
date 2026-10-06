@@ -4,12 +4,8 @@ import {
 } from "@workspace/contracts"
 
 import { CountUp, type CountUpFormat } from "./count-up"
-import { DeltaChip } from "./delta-chip"
-import {
-  bounceRateChange,
-  type Change,
-  countChange,
-} from "@/features/analytics/utils/format"
+import { ChangeIndicator } from "./change-indicator"
+import { type Change, countChange } from "@/features/analytics/utils/format"
 import { LIVE_POLL_INTERVAL_MS, LiveCount } from "./live-count"
 import { MetricHint } from "./metric-hint"
 
@@ -71,11 +67,10 @@ export function KpiStrip({
       value: current.bounceRate,
       format: "percent",
       lowerIsBetter: true,
-      change: bounceRateChange(
-        current.bounceRate,
-        previous.bounceRate,
-        previous.sessions
-      ),
+      change:
+        previous.sessions === 0
+          ? { direction: "none" }
+          : countChange(current.bounceRate, previous.bounceRate),
     },
     {
       label: "Session time",
@@ -93,7 +88,7 @@ export function KpiStrip({
     <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
       {kpis.map((kpi) => (
         <KpiItem key={kpi.label} label={kpi.label} hint={kpi.hint}>
-          <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-[1.75rem]">
+          <p className="text-2xl font-bold tracking-tight tabular-nums sm:text-[1.75rem]">
             {empty ? (
               <Dash />
             ) : (
@@ -101,9 +96,12 @@ export function KpiStrip({
             )}
           </p>
           {empty ? (
-            <span className="h-6" />
+            <span className="h-4" />
           ) : (
-            <DeltaChip change={kpi.change} lowerIsBetter={kpi.lowerIsBetter} />
+            <ChangeIndicator
+              change={kpi.change}
+              lowerIsBetter={kpi.lowerIsBetter}
+            />
           )}
         </KpiItem>
       ))}
@@ -117,10 +115,10 @@ export function KpiStrip({
           </span>
         }
       >
-        <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-[1.75rem]">
+        <p className="text-2xl font-bold tracking-tight tabular-nums sm:text-[1.75rem]">
           <LiveCount siteId={siteId} initialCount={liveVisitors} />
         </p>
-        <span className="h-6" />
+        <span className="h-4" />
       </KpiItem>
     </ul>
   )
@@ -137,9 +135,9 @@ function KpiItem({ label, hint, badge, children }: KpiItemProps) {
   return (
     <li
       // Hairlines between items on one row, like table columns.
-      className="relative flex flex-col gap-1.5 border-border px-4 py-4 sm:px-5 lg:border-r lg:last:border-r-0"
+      className="relative flex flex-col gap-1 border-border px-4 py-4 sm:px-5 lg:my-4 lg:border-r lg:py-0 lg:last:border-r-0"
     >
-      <h3 className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+      <h3 className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <MetricHint label={label} hint={hint} />
         {badge}
       </h3>

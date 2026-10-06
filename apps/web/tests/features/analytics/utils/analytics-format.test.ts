@@ -10,7 +10,6 @@ import {
 } from "@/features/analytics/utils/analytics-params"
 import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
 import {
-  bounceRateChange,
   countChange,
   formatCompact,
   formatDuration,
@@ -65,29 +64,14 @@ describe("formatTimeAgo", () => {
 })
 
 describe("change versus the previous period", () => {
-  it("gives a signed relative change and its direction", () => {
-    expect(countChange(120, 100)).toEqual({ direction: "up", text: "+20%" })
-    expect(countChange(75, 100)).toEqual({ direction: "down", text: "-25%" })
+  it("gives the size of a relative change and its direction", () => {
+    expect(countChange(120, 100)).toEqual({ direction: "up", text: "20%" })
+    expect(countChange(75, 100)).toEqual({ direction: "down", text: "25%" })
     expect(countChange(100, 100)).toEqual({ direction: "flat", text: "0%" })
   })
 
   it("has no change when the previous value is 0", () => {
     expect(countChange(40, 0)).toEqual({ direction: "none" })
-  })
-
-  it("gives bounce rate changes in percentage points", () => {
-    expect(bounceRateChange(0.44, 0.4, 10)).toEqual({
-      direction: "up",
-      text: "+4 pts",
-    })
-    expect(bounceRateChange(0.355, 0.4, 10)).toEqual({
-      direction: "down",
-      text: "-4.5 pts",
-    })
-  })
-
-  it("has no bounce rate change when the previous period had no sessions", () => {
-    expect(bounceRateChange(0.5, 0, 0)).toEqual({ direction: "none" })
   })
 })
 
@@ -178,7 +162,7 @@ describe("search params", () => {
     expect(parseInterval(undefined, { range: "today", offset: 0 })).toBe("hour")
   })
 
-  it("writes short URLs and resets the interval when the period changes", () => {
+  it("writes short URLs and resets the interval for a period of another length", () => {
     const view = parseView({
       range: "30d",
       interval: "week",
@@ -190,9 +174,14 @@ describe("search params", () => {
       interval: "week",
       pages: "exit_page",
     })
-    expect(viewSearch(view, { period: { range: "7d", offset: 1 } })).toEqual({
+    expect(viewSearch(view, { period: { range: "7d", offset: 0 } })).toEqual({
       range: "7d",
+      pages: "exit_page",
+    })
+    expect(viewSearch(view, { period: { range: "30d", offset: 1 } })).toEqual({
+      range: "30d",
       offset: "1",
+      interval: "week",
       pages: "exit_page",
     })
   })
