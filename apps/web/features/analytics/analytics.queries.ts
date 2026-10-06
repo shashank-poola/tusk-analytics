@@ -1,6 +1,7 @@
 import "server-only"
 
 import {
+  BREAKDOWN_MAX_LIMIT,
   type BreakdownBy,
   type StatsBreakdownResponse,
   statsBreakdownResponseSchema,
@@ -48,11 +49,21 @@ export const getTimeseries = cache(
     getStats(siteId, "timeseries", { range }, statsTimeseriesResponseSchema)
 )
 
+/**
+ * The top rows by visitors, up to the API's maximum of 50. Cards show five
+ * and "View all" shows the rest, so one request serves both, and the
+ * highlights reuse it through `cache`.
+ */
 export const getBreakdown = cache(
   (
     siteId: string,
     range: StatsRange,
     by: BreakdownBy
   ): Promise<StatsBreakdownResponse> =>
-    getStats(siteId, "breakdown", { range, by }, statsBreakdownResponseSchema)
+    getStats(
+      siteId,
+      "breakdown",
+      { range, by, limit: String(BREAKDOWN_MAX_LIMIT) },
+      statsBreakdownResponseSchema
+    )
 )

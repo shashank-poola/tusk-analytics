@@ -32,9 +32,9 @@ export function SignIn({ errorCode }: SignInProps) {
 
       {sentTo ? (
         <>
-          <p className="mt-2 text-[0.8125rem] text-neutral-400">
+          <p className="mt-2 text-[0.8125rem] text-muted-foreground">
             We sent a sign-in link to{" "}
-            <span className="text-white">{sentTo}</span>. It expires in 5
+            <span className="text-foreground">{sentTo}</span>. It expires in 5
             minutes.
           </p>
           <AuthButton
@@ -48,7 +48,7 @@ export function SignIn({ errorCode }: SignInProps) {
         </>
       ) : (
         <>
-          <p className="mt-2 text-[0.8125rem] text-neutral-400">
+          <p className="mt-2 text-[0.8125rem] text-muted-foreground">
             Sign in or create your account to get started.
           </p>
           <div className="mt-6 space-y-2.5">
@@ -60,20 +60,23 @@ export function SignIn({ errorCode }: SignInProps) {
       )}
 
       {error && (
-        <p role="alert" className="mt-4 text-xs text-red-400">
+        <p role="alert" className="mt-4 text-xs text-negative">
           {error}
         </p>
       )}
 
-      <p className="mt-6 text-[0.6875rem] text-neutral-500">
+      <p className="mt-6 text-[0.6875rem] text-muted-foreground">
         By continuing, you agree to our{" "}
-        <Link href={routes.terms} className="font-medium text-white underline">
+        <Link
+          href={routes.terms}
+          className="font-medium text-foreground underline"
+        >
           Terms
         </Link>{" "}
         and{" "}
         <Link
           href={routes.privacy}
-          className="font-medium text-white underline"
+          className="font-medium text-foreground underline"
         >
           Privacy Notice
         </Link>
@@ -85,10 +88,10 @@ export function SignIn({ errorCode }: SignInProps) {
 
 function Divider() {
   return (
-    <div className="flex items-center gap-3 py-1 text-[0.6875rem] text-neutral-500">
-      <span className="h-px flex-1 bg-white/10" />
+    <div className="flex items-center gap-3 py-1 text-[0.6875rem] text-muted-foreground">
+      <span className="h-px flex-1 bg-border" />
       or
-      <span className="h-px flex-1 bg-white/10" />
+      <span className="h-px flex-1 bg-border" />
     </div>
   )
 }

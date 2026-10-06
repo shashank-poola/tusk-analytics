@@ -1,8 +1,8 @@
 import type { ComponentProps } from "react"
 
 const VARIANTS = {
-  solid: "bg-white text-neutral-950 hover:bg-neutral-200",
-  outline: "border border-white/20 text-white hover:bg-white/5",
+  solid: "bg-foreground text-background hover:opacity-90",
+  outline: "border border-border text-foreground hover:bg-muted",
 }
 
 type AuthButtonProps = ComponentProps<"button"> & {
@@ -17,7 +17,7 @@ export function AuthButton({
 }: AuthButtonProps) {
   return (
     <button
-      className={`flex h-10 w-full items-center justify-center gap-2.5 rounded-full text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-60 ${VARIANTS[variant]} ${className ?? ""}`}
+      className={`flex h-11 w-full items-center justify-center gap-2.5 rounded-full text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-60 sm:h-10 ${VARIANTS[variant]} ${className ?? ""}`}
       {...props}
     />
   )

@@ -4,19 +4,23 @@ import type { StatsTimeseriesResponse } from "@workspace/contracts"
 import {
   type ChartConfig,
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
 } from "@workspace/ui/components/chart"
+import { useId } from "react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
-import { bucketLabel, formatCompact } from "./format"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
+
+import { tickLabel, tooltipLabel } from "./chart-axis"
+import { formatCompact } from "./format"
 
 const chartConfig = {
   visitors: { label: "Visitors", color: "var(--chart-1)" },
   pageviews: { label: "Pageviews", color: "var(--chart-2)" },
 } satisfies ChartConfig
+
+const ANIMATION_MS = 300
 
 type VisitorsChartProps = {
   timeseries: StatsTimeseriesResponse
@@ -31,50 +35,83 @@ export function VisitorsChart({
   label,
   summary,
 }: VisitorsChartProps) {
-  const data = points.map((point) => ({
-    ...point,
-    label: bucketLabel(point.t, interval),
-  }))
+  // useId output can contain characters that break `url(#…)` references.
+  const gradientId = `visitors-fill-${useId().replace(/[^\w-]/g, "")}`
+  const reducedMotion = usePrefersReducedMotion()
+  const scale = { interval, points: points.length }
+  const animation = {
+    isAnimationActive: !reducedMotion,
+    animationDuration: ANIMATION_MS,
+  }
 
   return (
-    <figure>
+    <figure className="m-0">
       <ChartContainer
         config={chartConfig}
-        className="aspect-auto h-64 w-full"
+        className="aspect-auto h-56 w-full sm:h-72"
         role="img"
         aria-label={label}
       >
-        <AreaChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
-          <CartesianGrid vertical={false} />
+        <AreaChart data={points} margin={{ left: 4, right: 12, top: 8 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor="var(--color-visitors)"
+                stopOpacity={0.28}
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--color-visitors)"
+                stopOpacity={0}
+              />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} strokeDasharray="4 4" />
           <XAxis
-            dataKey="label"
+            dataKey="t"
             tickLine={false}
             axisLine={false}
-            minTickGap={24}
+            tickMargin={8}
+            minTickGap={28}
+            tickFormatter={(t: string) => tickLabel(t, scale)}
           />
           <YAxis
-            width={40}
+            width={36}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}
             tickFormatter={formatCompact}
           />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip
+            cursor={{ stroke: "var(--color-border)", strokeWidth: 1.5 }}
+            content={
+              <ChartTooltipContent
+                indicator="dot"
+                labelFormatter={(_, payload) => {
+                  const t: unknown = payload[0]?.payload?.t
+                  return typeof t === "string" ? tooltipLabel(t, interval) : ""
+                }}
+              />
+            }
+          />
           <Area
             dataKey="pageviews"
             type="monotone"
             stroke="var(--color-pageviews)"
-            fill="var(--color-pageviews)"
-            fillOpacity={0.1}
+            strokeWidth={1.5}
+            fill="transparent"
+            {...animation}
           />
           <Area
             dataKey="visitors"
             type="monotone"
             stroke="var(--color-visitors)"
-            fill="var(--color-visitors)"
-            fillOpacity={0.1}
+            strokeWidth={2}
+            fill={`url(#${gradientId})`}
+            activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--surface)" }}
+            {...animation}
           />
-          <ChartLegend content={<ChartLegendContent />} />
         </AreaChart>
       </ChartContainer>
       <figcaption className="sr-only">{summary}</figcaption>

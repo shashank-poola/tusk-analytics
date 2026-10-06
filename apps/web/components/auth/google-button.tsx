@@ -40,6 +40,7 @@ export function GoogleButton({ onError }: GoogleButtonProps) {
   )
 }
 
+// Google's sign-in branding rules require its own logo colours.
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">

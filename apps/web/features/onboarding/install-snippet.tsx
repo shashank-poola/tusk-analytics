@@ -55,7 +55,7 @@ export function InstallSnippet({
       <div
         role="tablist"
         aria-label="Framework"
-        className="flex gap-1 border-b border-neutral-200"
+        className="flex gap-1 border-b border-border"
       >
         {FRAMEWORKS.map((value) => (
           <button
@@ -68,8 +68,8 @@ export function InstallSnippet({
             onClick={() => selectTab(value)}
             className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
               value === framework
-                ? "border-neutral-950 text-neutral-950"
-                : "border-transparent text-neutral-500 hover:text-neutral-950"
+                ? "border-accent text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {TABS[value].label}
@@ -81,26 +81,26 @@ export function InstallSnippet({
         role="tabpanel"
         id="snippet-panel"
         aria-labelledby={`tab-${framework}`}
-        className="relative mt-4"
+        className="dark relative mt-4"
       >
-        <pre className="overflow-x-auto rounded-lg bg-neutral-950 p-4 pr-24 font-mono text-[0.8125rem] leading-relaxed text-white">
+        <pre className="overflow-x-auto rounded-2xl border border-border bg-background p-4 pr-24 font-mono text-[0.8125rem] leading-relaxed text-foreground">
           <code>{code}</code>
         </pre>
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute top-3 right-3 rounded-full border border-white/20 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/10"
+          className="absolute top-3 right-3 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           {copyState === "copied" ? "Copied" : "Copy"}
         </button>
       </div>
       {copyState === "failed" && (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="mt-2 text-sm text-negative">
           Couldn&apos;t copy. Select the code and copy it yourself.
         </p>
       )}
 
-      <ol className="mt-8 list-decimal space-y-2 pl-5 text-sm text-neutral-700">
+      <ol className="mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
         <li>{TABS[framework].pasteStep}</li>
         <li>Deploy your site.</li>
         <li>Visit your site so Viewtally records the first pageview.</li>
@@ -108,7 +108,7 @@ export function InstallSnippet({
 
       <Link
         href={continueHref}
-        className="mt-8 inline-flex rounded-full bg-neutral-950 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+        className="mt-8 inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 sm:min-h-9"
       >
         Continue
       </Link>

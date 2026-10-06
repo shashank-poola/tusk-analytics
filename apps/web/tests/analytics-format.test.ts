@@ -1,25 +1,27 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  DEFAULT_DEVICE_TAB,
   DEFAULT_RANGE,
-  DEFAULT_TAB,
+  parseDeviceTab,
   parseRange,
-  parseTab,
 } from "@/features/analytics/analytics-params"
+import { tickLabel, tooltipLabel } from "@/features/analytics/chart-axis"
 import {
   bounceRateChange,
-  bucketLabel,
   countChange,
-  countryName,
   formatCompact,
+  formatNumber,
   formatPercent,
 } from "@/features/analytics/format"
+import { countryFlag, keyLabel } from "@/features/analytics/labels"
 
 describe("number formatting", () => {
-  it("formats counts compactly", () => {
+  it("formats counts compactly for cards and in full for sentences", () => {
     expect(formatCompact(950)).toBe("950")
     expect(formatCompact(1234)).toBe("1.2K")
     expect(formatCompact(2_500_000)).toBe("2.5M")
+    expect(formatNumber(1234)).toBe("1,234")
   })
 
   it("formats a bounce rate as a whole percentage", () => {
@@ -44,9 +46,9 @@ describe("change versus the previous period", () => {
       direction: "up",
       text: "+4 pts",
     })
-    expect(bounceRateChange(0.35, 0.4, 10)).toEqual({
+    expect(bounceRateChange(0.355, 0.4, 10)).toEqual({
       direction: "down",
-      text: "-5 pts",
+      text: "-4.5 pts",
     })
   })
 
@@ -55,16 +57,40 @@ describe("change versus the previous period", () => {
   })
 })
 
-describe("labels", () => {
-  it("names countries in full and says Unknown when missing", () => {
-    expect(countryName("IN")).toBe("India")
-    expect(countryName("GB")).toBe("United Kingdom")
-    expect(countryName(null)).toBe("Unknown")
+describe("breakdown labels", () => {
+  it("names known sources and shows unknown ones as stored", () => {
+    expect(keyLabel("source", "hackernews")).toBe("Hacker News")
+    expect(keyLabel("source", "news.example.com")).toBe("news.example.com")
+    expect(keyLabel("source", null)).toBe("Unknown")
   })
 
-  it("labels buckets in the site's local time, from the offset in t", () => {
-    expect(bucketLabel("2026-10-05T00:00:00.000+05:30", "day")).toBe("Oct 5")
-    expect(bucketLabel("2026-10-05T14:00:00.000-07:00", "hour")).toBe("14:00")
+  it("names countries in full and says Unknown when missing", () => {
+    expect(keyLabel("country", "IN")).toBe("India")
+    expect(keyLabel("country", "GB")).toBe("United Kingdom")
+    expect(keyLabel("country", null)).toBe("Unknown")
+  })
+
+  it("builds a flag emoji from a two-letter code, and nothing otherwise", () => {
+    expect(countryFlag("IN")).toBe("🇮🇳")
+    expect(countryFlag(null)).toBeNull()
+    expect(countryFlag("XYZ")).toBeNull()
+  })
+})
+
+describe("chart labels", () => {
+  const T = "2026-10-06T14:00:00.000+05:30"
+
+  it("labels hours by time, a week by weekday and longer ranges by date", () => {
+    expect(tickLabel(T, { interval: "hour", points: 24 })).toBe("14:00")
+    expect(tickLabel(T, { interval: "day", points: 7 })).toBe("Tue 6")
+    expect(tickLabel(T, { interval: "day", points: 30 })).toBe("Oct 6")
+  })
+
+  it("reads the local date from t without shifting time zones", () => {
+    expect(tooltipLabel("2026-10-05T00:00:00.000+05:30", "day")).toBe(
+      "Mon, Oct 5"
+    )
+    expect(tooltipLabel(T, "hour")).toBe("Tue, Oct 6, 14:00")
   })
 })
 
@@ -76,9 +102,9 @@ describe("search params", () => {
     expect(parseRange(undefined)).toBe("7d")
   })
 
-  it("reads a known tab and falls back to sources otherwise", () => {
-    expect(parseTab("browser")).toBe("browser")
-    expect(parseTab("path")).toBe(DEFAULT_TAB)
-    expect(parseTab(undefined)).toBe("source")
+  it("reads the Devices sub-tab and falls back to device otherwise", () => {
+    expect(parseDeviceTab("browser")).toBe("browser")
+    expect(parseDeviceTab("source")).toBe(DEFAULT_DEVICE_TAB)
+    expect(parseDeviceTab(undefined)).toBe("device")
   })
 })

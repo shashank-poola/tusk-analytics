@@ -57,3 +57,6 @@ CLAUDE.local.md
 
 # tracker build output, served by the API Worker (packages/tracker/build.ts)
 apps/api/public/script.js
+
+# Local design references, not part of the repo
+.context/

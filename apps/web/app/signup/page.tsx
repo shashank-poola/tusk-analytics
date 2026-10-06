@@ -20,7 +20,7 @@ export default async function SignUpPage({
   return (
     <div className="flex min-h-svh">
       <AuthShowcase />
-      <main className="flex flex-1 items-center justify-center bg-neutral-950 px-6 py-12 text-white">
+      <main className="dark flex flex-1 items-center justify-center bg-background px-6 py-12 text-foreground">
         <SignIn errorCode={typeof error === "string" ? error : undefined} />
       </main>
     </div>

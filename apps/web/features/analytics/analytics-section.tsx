@@ -1,24 +1,45 @@
 "use client"
 
+import { RotateCw } from "lucide-react"
 import { catchError, type ErrorInfo } from "next/error"
 import { Suspense } from "react"
 
-function SectionError({ title }: { title: string }, { retry }: ErrorInfo) {
+/** What a failed section shows instead of blanking the page. */
+export function SectionError({
+  title,
+  onRetry,
+}: {
+  title: string
+  onRetry: () => void
+}) {
   return (
-    <div role="alert" className="rounded-lg border border-border p-6 text-sm">
-      <p>Couldn&apos;t load {title}.</p>
+    <div
+      role="alert"
+      className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border p-6 text-center text-sm"
+    >
+      <p>
+        Couldn&apos;t load {title}.{" "}
+        <span className="text-muted-foreground">
+          The rest of the page is fine.
+        </span>
+      </p>
       <button
         type="button"
-        onClick={() => retry()}
-        className="mt-3 rounded-full border border-border px-4 py-1.5 transition-colors hover:bg-muted"
+        onClick={onRetry}
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 font-medium transition-colors hover:bg-muted sm:min-h-9"
       >
+        <RotateCw aria-hidden="true" className="size-3.5" />
         Try again
       </button>
     </div>
   )
 }
 
-const SectionErrorBoundary = catchError(SectionError)
+const SectionErrorBoundary = catchError(
+  ({ title }: { title: string }, { retry }: ErrorInfo) => (
+    <SectionError title={title} onRetry={retry} />
+  )
+)
 
 type AnalyticsSectionProps = {
   /** Used in the error message, e.g. "the chart". */
