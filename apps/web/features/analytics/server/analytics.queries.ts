@@ -10,7 +10,6 @@ import {
   statsLiveResponseSchema,
   type StatsOverviewResponse,
   statsOverviewResponseSchema,
-  type StatsPeriod,
   type StatsTimeseriesResponse,
   statsTimeseriesResponseSchema,
   type StatsVisitorsResponse,
@@ -23,7 +22,10 @@ import type * as z from "zod"
 
 import { apiRequest } from "@/lib/api-client"
 
-import { periodQuery } from "@/features/analytics/utils/analytics-params"
+import {
+  scopeQuery,
+  type StatsScope,
+} from "@/features/analytics/utils/analytics-params"
 
 // `cache` dedupes calls within a request (the stat cards and the chart
 // summary share one overview request). It compares arguments by identity,
@@ -49,8 +51,8 @@ async function getStats<T extends z.ZodType>(
   return result.data
 }
 
-function toQuery(period: StatsPeriod, extra: Record<string, string> = {}) {
-  return new URLSearchParams({ ...periodQuery(period), ...extra }).toString()
+function toQuery(scope: StatsScope, extra: Record<string, string> = {}) {
+  return new URLSearchParams({ ...scopeQuery(scope), ...extra }).toString()
 }
 
 const overview = cache((siteId: string, query: string) =>
@@ -59,9 +61,9 @@ const overview = cache((siteId: string, query: string) =>
 
 export function getOverview(
   siteId: string,
-  period: StatsPeriod
+  scope: StatsScope
 ): Promise<StatsOverviewResponse> {
-  return overview(siteId, toQuery(period))
+  return overview(siteId, toQuery(scope))
 }
 
 const timeseries = cache((siteId: string, query: string) =>
@@ -70,29 +72,33 @@ const timeseries = cache((siteId: string, query: string) =>
 
 export function getTimeseries(
   siteId: string,
-  period: StatsPeriod,
+  scope: StatsScope,
   interval: StatsInterval
 ): Promise<StatsTimeseriesResponse> {
-  return timeseries(siteId, toQuery(period, { interval }))
+  return timeseries(siteId, toQuery(scope, { interval }))
 }
 
 const breakdown = cache((siteId: string, query: string) =>
   getStats(siteId, "breakdown", query, statsBreakdownResponseSchema)
 )
 
+/** Rows a card's "Details" dialog lists. */
+export const BREAKDOWN_DETAILS_LIMIT = 50
+
 /**
- * The top rows by visitors, up to the API's maximum of 50. Cards show the
- * first ten and "Details" shows the rest, so one request serves both, and
- * the highlights reuse it through `cache`.
+ * The top rows by visitors. Cards show the first ten and "Details" the rest
+ * (50 by default), so one request serves both, and the highlights reuse it
+ * through `cache`. The world map asks for every country.
  */
 export function getBreakdown(
   siteId: string,
-  period: StatsPeriod,
-  by: BreakdownBy
+  scope: StatsScope,
+  by: BreakdownBy,
+  limit: number = BREAKDOWN_DETAILS_LIMIT
 ): Promise<StatsBreakdownResponse> {
   return breakdown(
     siteId,
-    toQuery(period, { by, limit: String(BREAKDOWN_MAX_LIMIT) })
+    toQuery(scope, { by, limit: String(Math.min(limit, BREAKDOWN_MAX_LIMIT)) })
   )
 }
 
@@ -105,13 +111,13 @@ const recentVisitors = cache((siteId: string, query: string) =>
   getStats(siteId, "visitors", query, statsVisitorsResponseSchema)
 )
 
-/** The most recent visitors in the period, latest first. */
+/** The most recent visitors in the scope, latest first. */
 export function getRecentVisitors(
   siteId: string,
-  period: StatsPeriod
+  scope: StatsScope
 ): Promise<StatsVisitorsResponse> {
   return recentVisitors(
     siteId,
-    toQuery(period, { limit: String(VISITORS_DEFAULT_LIMIT) })
+    toQuery(scope, { limit: String(VISITORS_DEFAULT_LIMIT) })
   )
 }

@@ -1,8 +1,10 @@
-import type {
-  BreakdownBy,
-  StatsInterval,
-  StatsPeriod,
+import {
+  BREAKDOWN_MAX_LIMIT,
+  type StatsBreakdownResponse,
+  type StatsInterval,
 } from "@workspace/contracts"
+
+import { routes } from "@/lib/routes"
 
 import {
   getBreakdown,
@@ -11,24 +13,37 @@ import {
   getRecentVisitors,
   getTimeseries,
 } from "@/features/analytics/server/analytics.queries"
-import { BreakdownBody } from "@/features/analytics/components/breakdowns/breakdown-card"
-import { NoData } from "./empty-state"
+import {
+  type DashboardView,
+  type StatsScope,
+  viewSearch,
+} from "@/features/analytics/utils/analytics-params"
+import {
+  type BreakdownCardKey,
+  cardTab,
+} from "@/features/analytics/utils/breakdown-tabs"
+import { rowFilters } from "@/features/analytics/utils/filters"
 import { formatNumber } from "@/features/analytics/utils/format"
 import { buildHighlights } from "@/features/analytics/utils/highlights"
-import { HighlightsCard } from "@/features/analytics/components/summary/highlights-card"
-import { KpiStrip } from "@/features/analytics/components/overview/kpi-strip"
-import { VisitorsChart } from "@/features/analytics/components/overview/visitors-chart"
-import { VisitorsList } from "@/features/analytics/components/visitors/visitors-card"
+import { keyLabel } from "@/features/analytics/utils/labels"
+import { BreakdownBody } from "./breakdowns/breakdown-body"
+import { ChannelDonut } from "./breakdowns/channel-donut"
+import { NoData } from "./empty-state"
+import { WorldMap } from "./locations/world-map"
+import { KpiStrip } from "./overview/kpi-strip"
+import { VisitorsChart } from "./overview/visitors-chart"
+import { HighlightsCard } from "./summary/highlights-card"
+import { VisitorsList } from "./visitors/visitors-card"
 
 // Each section fetches its own data inside its own Suspense boundary, so the
 // requests run in parallel and stream in as they finish. Shared requests are
 // deduped by `cache` in analytics.queries.ts.
 
-type SectionProps = { siteId: string; period: StatsPeriod }
+type SectionProps = { siteId: string; scope: StatsScope }
 
-export async function KpiSection({ siteId, period }: SectionProps) {
+export async function KpiSection({ siteId, scope }: SectionProps) {
   const [overview, live] = await Promise.all([
-    getOverview(siteId, period),
+    getOverview(siteId, scope),
     getLiveVisitors(siteId),
   ])
   return (
@@ -43,7 +58,7 @@ export async function KpiSection({ siteId, period }: SectionProps) {
 /** Always draws the chart, flat when empty, so the card never changes size. */
 export async function ChartSection({
   siteId,
-  period,
+  scope,
   interval,
   label,
   emptyState,
@@ -55,8 +70,8 @@ export async function ChartSection({
   emptyState: React.ReactNode
 }) {
   const [timeseries, { current }] = await Promise.all([
-    getTimeseries(siteId, period, interval),
-    getOverview(siteId, period),
+    getTimeseries(siteId, scope, interval),
+    getOverview(siteId, scope),
   ])
   return (
     <div className="relative">
@@ -70,11 +85,11 @@ export async function ChartSection({
   )
 }
 
-export async function HighlightsSection({ siteId, period }: SectionProps) {
+export async function HighlightsSection({ siteId, scope }: SectionProps) {
   const [{ current, previous }, sources, pages] = await Promise.all([
-    getOverview(siteId, period),
-    getBreakdown(siteId, period, "source"),
-    getBreakdown(siteId, period, "page"),
+    getOverview(siteId, scope),
+    getBreakdown(siteId, scope, "source"),
+    getBreakdown(siteId, scope, "page"),
   ])
   const highlights = buildHighlights({
     current,
@@ -85,18 +100,69 @@ export async function HighlightsSection({ siteId, period }: SectionProps) {
   return <HighlightsCard highlights={highlights} />
 }
 
+type Row = StatsBreakdownResponse["rows"][number]
+
+/** A card's open tab: rows, the channel donut or the world map. */
 export async function BreakdownSection({
   siteId,
-  period,
-  by,
-  title,
-}: SectionProps & { by: BreakdownBy; title: string }) {
-  const breakdown = await getBreakdown(siteId, period, by)
-  return <BreakdownBody title={title} breakdown={breakdown} />
+  view,
+  card,
+}: {
+  siteId: string
+  view: DashboardView
+  card: BreakdownCardKey
+}) {
+  const tab = cardTab(card, view.tabs[card])
+  const breakdown = await getBreakdown(
+    siteId,
+    view,
+    tab.by,
+    tab.chart === "map" ? BREAKDOWN_MAX_LIMIT : undefined
+  )
+  const hrefFor = (row: Row) => {
+    const filters = rowFilters(tab.by, row)
+    return (
+      filters &&
+      routes.site(
+        siteId,
+        viewSearch(view, { filters: { ...view.filters, ...filters } })
+      )
+    )
+  }
+  if (breakdown.rows.length === 0) return <NoData />
+  switch (tab.chart) {
+    case "map":
+      return <WorldMap rows={breakdown.rows} hrefFor={hrefFor} />
+    case "donut":
+      return (
+        <ChannelDonut
+          slices={breakdown.rows.flatMap((row) => {
+            const href = hrefFor(row)
+            if (!href) return []
+            return [
+              {
+                label: keyLabel("channel", row.key),
+                visitors: row.visitors,
+                topSources: row.topSources ?? [],
+                href,
+              },
+            ]
+          })}
+        />
+      )
+    case undefined:
+      return (
+        <BreakdownBody
+          title={tab.label}
+          breakdown={breakdown}
+          hrefFor={hrefFor}
+        />
+      )
+  }
 }
 
-export async function VisitorsSection({ siteId, period }: SectionProps) {
-  const { visitors } = await getRecentVisitors(siteId, period)
+export async function VisitorsSection({ siteId, scope }: SectionProps) {
+  const { visitors } = await getRecentVisitors(siteId, scope)
   if (visitors.length === 0) return <NoData label="No visitors yet" />
   return <VisitorsList visitors={visitors} now={new Date()} />
 }

@@ -1,5 +1,8 @@
 import {
   allowedIntervals,
+  STATS_FILTER_KEYS,
+  type StatsFilterKey,
+  type StatsFilters,
   defaultInterval,
   HOURLY_MAX_DAYS,
   resolveWindow,
@@ -8,6 +11,8 @@ import {
   type StatsWindow,
   utcOffsetMinutes,
 } from "@workspace/contracts"
+
+import type { FilterDimension, SessionFilters } from "@workspace/db"
 
 import { AppError } from "../../../lib/errors"
 
@@ -46,4 +51,17 @@ export function toOffsetIso(ms: number, offsetMs: number): string {
   const hh = String(Math.floor(minutes / 60)).padStart(2, "0")
   const mm = String(minutes % 60).padStart(2, "0")
   return `${local}${offsetMs < 0 ? "-" : "+"}${hh}:${mm}`
+}
+
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+
+/** The filters in a parsed stats query (which also holds the period). */
+export function filtersOf(query: StatsFilters): SessionFilters {
+  // Fails to compile when the contract allows a filter the queries can't apply.
+  true satisfies Same<StatsFilterKey, FilterDimension>
+  const filters: SessionFilters = {}
+  for (const key of STATS_FILTER_KEYS) {
+    if (query[key]) filters[key] = query[key]
+  }
+  return filters
 }

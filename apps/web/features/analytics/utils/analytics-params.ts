@@ -1,18 +1,28 @@
 import {
   allowedIntervals,
-  type BreakdownBy,
   defaultInterval,
   periodDays,
   type PresetRange,
+  STATS_FILTER_KEYS,
+  type StatsFilters,
+  statsFiltersSchema,
   type StatsInterval,
   statsIntervalSchema,
   type StatsPeriod,
   statsPeriodSchema,
 } from "@workspace/contracts"
 
+import {
+  BREAKDOWN_CARD_KEYS,
+  BREAKDOWN_CARDS,
+  type BreakdownTabs,
+  parseBreakdownTabs,
+} from "./breakdown-tabs"
+
 // Everything the dashboard shows is chosen in the URL, so every view is
 // shareable and server-rendered: the period (`range`, `offset` or
-// `from`/`to`), the chart's `interval` and each card's open tab.
+// `from`/`to`), the chart's `interval`, each card's open tab and the
+// filters (`?country=IN`).
 
 export const DEFAULT_PERIOD: StatsPeriod = { range: "7d", offset: 0 }
 
@@ -33,54 +43,16 @@ export const INTERVAL_LABELS: Record<StatsInterval, string> = {
   month: "Monthly",
 }
 
-type Tab = { by: BreakdownBy; label: string }
-
-/**
- * The four breakdown cards. Each keeps its open tab in its own search param
- * (`?sources=referrer`), so every view is shareable and server-rendered.
- * The first tab is the default.
- */
-export const BREAKDOWN_CARDS = {
-  sources: [
-    { by: "source", label: "Source" },
-    { by: "channel", label: "Channel" },
-    { by: "referrer", label: "Referrer" },
-    { by: "campaign", label: "Campaign" },
-  ],
-  pages: [
-    { by: "page", label: "Page" },
-    { by: "entry_page", label: "Entry page" },
-    { by: "exit_page", label: "Exit page" },
-  ],
-  locations: [
-    { by: "country", label: "Country" },
-    { by: "region", label: "Region" },
-    { by: "city", label: "City" },
-  ],
-  devices: [
-    { by: "browser", label: "Browser" },
-    { by: "os", label: "OS" },
-    { by: "device", label: "Device" },
-  ],
-} as const satisfies Record<string, readonly [Tab, ...Tab[]]>
-
-export type BreakdownCardKey = keyof typeof BREAKDOWN_CARDS
-export const BREAKDOWN_CARD_KEYS = [
-  "sources",
-  "pages",
-  "locations",
-  "devices",
-] as const satisfies readonly BreakdownCardKey[]
-
-/** The open tab of each card, as kept in the URL. */
-export type BreakdownTabs = Record<BreakdownCardKey, BreakdownBy>
-
 /** What the page shows, parsed from its search params. */
 export type DashboardView = {
   period: StatsPeriod
   interval: StatsInterval
   tabs: BreakdownTabs
+  filters: StatsFilters
 }
+
+/** What every stats request is narrowed to. */
+export type StatsScope = Pick<DashboardView, "period" | "filters">
 
 type SearchParamValue = string | string[] | undefined
 type SearchParams = Record<string, SearchParamValue>
@@ -111,22 +83,14 @@ export function parseInterval(
     : defaultInterval(period)
 }
 
-function pickTab(
-  tabs: readonly [Tab, ...Tab[]],
-  value: SearchParamValue
-): BreakdownBy {
-  const wanted = first(value)
-  return tabs.find(({ by }) => by === wanted)?.by ?? tabs[0].by
-}
-
-/** Each card's tab from its param; the card's first tab when missing or unknown. */
-export function parseBreakdownTabs(search: SearchParams): BreakdownTabs {
-  return {
-    sources: pickTab(BREAKDOWN_CARDS.sources, search.sources),
-    pages: pickTab(BREAKDOWN_CARDS.pages, search.pages),
-    locations: pickTab(BREAKDOWN_CARDS.locations, search.locations),
-    devices: pickTab(BREAKDOWN_CARDS.devices, search.devices),
+/** Each valid filter in the URL; an invalid one is dropped, not fatal. */
+export function parseFilters(search: SearchParams): StatsFilters {
+  const filters: StatsFilters = {}
+  for (const key of STATS_FILTER_KEYS) {
+    const result = statsFiltersSchema.shape[key].safeParse(first(search[key]))
+    if (result.success && result.data) filters[key] = result.data
   }
+  return filters
 }
 
 export function parseView(search: SearchParams): DashboardView {
@@ -135,6 +99,7 @@ export function parseView(search: SearchParams): DashboardView {
     period,
     interval: parseInterval(search.interval, period),
     tabs: parseBreakdownTabs(search),
+    filters: parseFilters(search),
   }
 }
 
@@ -146,6 +111,19 @@ export function periodQuery(period: StatsPeriod): Record<string, string> {
   return period.offset === 0
     ? { range: period.range }
     : { range: period.range, offset: String(period.offset) }
+}
+
+/** The period and filters as API query params, in a stable order. */
+export function scopeQuery({
+  period,
+  filters,
+}: StatsScope): Record<string, string> {
+  const query = periodQuery(period)
+  for (const key of STATS_FILTER_KEYS) {
+    const value = filters[key]
+    if (value) query[key] = value
+  }
+  return query
 }
 
 /**
@@ -162,17 +140,17 @@ export function viewSearch(
     change.period && periodDays(change.period) !== periodDays(view.period)
   const interval =
     resized && !change.interval ? defaultInterval(next.period) : next.interval
-  const search = periodQuery(next.period)
+  const search = scopeQuery(next)
   if (interval !== defaultInterval(next.period)) search.interval = interval
   for (const card of BREAKDOWN_CARD_KEYS) {
-    if (next.tabs[card] !== BREAKDOWN_CARDS[card][0].by) {
+    if (next.tabs[card] !== BREAKDOWN_CARDS[card].defaultTab) {
       search[card] = next.tabs[card]
     }
   }
   return search
 }
 
-/** A stable string for keys and caches: the same view, the same key. */
-export function periodKey(period: StatsPeriod): string {
-  return new URLSearchParams(periodQuery(period)).toString()
+/** A stable string for section keys and caches: the same data, the same key. */
+export function scopeKey(scope: StatsScope): string {
+  return new URLSearchParams(scopeQuery(scope)).toString()
 }

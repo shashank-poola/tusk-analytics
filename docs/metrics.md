@@ -9,7 +9,8 @@ Ranges and buckets: `apps/api/src/api/v1/stats/stats.range.ts`.
 
 ## What is counted
 
-Only events with `name = 'pageview'`. Custom events (not built yet) never
+Only events with `name = 'pageview'`. Outbound clicks (`name =
+'outbound'`) only feed the `exit_link` breakdown and its filter; they never
 count towards these metrics.
 
 | Metric       | Definition                                                                                                                 |
@@ -53,27 +54,46 @@ key, which the dashboard shows as "Unknown".
 
 ### Dimensions
 
-| Dimension    | Value                                                                                                                       |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `source`     | `events.source`: lowercased `utm_source`, else the referrer's known name (`google`, `x`), else its hostname, else `direct`. |
-| `channel`    | The source grouped into a channel, see below.                                                                               |
-| `referrer`   | `events.referrer`: the referrer's hostname, `null` for none (direct, or navigation inside the site).                        |
-| `campaign`   | `events.utm_campaign`, as tagged.                                                                                           |
-| `page`       | Per event: the pageview's `path`.                                                                                           |
-| `entry_page` | The `path` of the session's first pageview in the range.                                                                    |
-| `exit_page`  | The `path` of the session's **last** pageview in the range (latest `created_at`; ties: either one).                         |
-| `country`    | ISO 3166-1 alpha-2 from Cloudflare's `request.cf.country`.                                                                  |
-| `region`     | `request.cf.region` (state, province), grouped with its country: rows carry `country`.                                      |
-| `city`       | `request.cf.city`, grouped with its country, so Paris, FR and Paris, US are two rows.                                       |
-| `device`     | `desktop`, `mobile` or `tablet`, from the User-Agent.                                                                       |
-| `browser`    | Browser family from the User-Agent.                                                                                         |
-| `os`         | Operating system from the User-Agent.                                                                                       |
+| Dimension    | Value                                                                                                                                                                      |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`     | `events.source`: lowercased `utm_source`, else `ref`, else `via`, else the referrer's known name (`google`, `x`), else its hostname, else `direct`. Shown as "Referrer".   |
+| `channel`    | The source grouped into a channel, see below.                                                                                                                              |
+| `referrer`   | `events.referrer`: the referrer's hostname, `null` for none (direct, or navigation inside the site).                                                                       |
+| `campaign`   | `events.campaign_params`: `ref`, `via`, `utm_source`, `utm_medium`, `utm_campaign` in that order, values URI-encoded (`ref=indiepage`). Sessions without any are left out. |
+| `page`       | Per event: the pageview's `path`.                                                                                                                                          |
+| `hostname`   | Per event: the pageview's hostname (`www.myapp.com`); `null` before it was collected.                                                                                      |
+| `exit_link`  | Per outbound click: the link's `host/path` (no scheme, query or hash). `visitors` are distinct clickers, `pageviews` clicks.                                               |
+| `entry_page` | The `path` of the session's first pageview in the range.                                                                                                                   |
+| `exit_page`  | The `path` of the session's **last** pageview in the range (latest `created_at`; ties: either one).                                                                        |
+| `country`    | ISO 3166-1 alpha-2 from Cloudflare's `request.cf.country`.                                                                                                                 |
+| `region`     | `request.cf.region` (state, province), grouped with its country: rows carry `country`.                                                                                     |
+| `city`       | `request.cf.city`, grouped with its country, so Paris, FR and Paris, US are two rows.                                                                                      |
+| `device`     | `desktop`, `mobile` or `tablet`, from the User-Agent.                                                                                                                      |
+| `browser`    | Browser family from the User-Agent.                                                                                                                                        |
+| `os`         | Operating system from the User-Agent.                                                                                                                                      |
 
 Region and city are derived by Cloudflare from the visitor's IP at ingest
 (`request.cf.region`, `request.cf.city`) and stored on the event only (not
 on `visitors`); the IP itself is never stored. Events from before they were
 collected have `null`. Unknown regions or cities form one row with `key` and
 `country` both `null`, whatever the visitors' countries.
+
+Channel rows also carry `topSources`: the channel's three sources with the
+most visitors (ties by name), for the icons on the channel chart.
+
+## Filters
+
+Every stats request except online takes optional filters, one value each,
+as query params named after the dimension: `channel`, `source`,
+`campaign`, `entry_page`, `country`, `region`, `city`, `browser`, `os`,
+`device` (the session's first pageview in the range has that value),
+`page`, `hostname` (any pageview of the session has it) and `exit_link`
+(the session clicked that link). Filters keep **whole sessions**: with
+`source=google`, a session that landed from Google keeps its later internal
+pageviews, so its bounce, session time and pages stay true. Several filters
+must all match. The previous period is filtered the same way.
+
+A dashboard click on a city or region row adds its `country` too.
 
 ### Channels
 

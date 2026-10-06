@@ -14,3 +14,12 @@ export const MAX_PLACE_NAME_LENGTH = 100
  * can produce a path several times longer.
  */
 export const MAX_PATH_LENGTH = 1024
+
+/** DNS names are at most 253 characters. */
+export const MAX_HOSTNAME_LENGTH = 253
+
+/** Cap for the stored `campaign_params` (five capped, encoded values). */
+export const MAX_CAMPAIGN_PARAMS_LENGTH = 1024
+
+/** Cap for an outbound link's stored host and path. */
+export const MAX_OUTBOUND_URL_LENGTH = 512

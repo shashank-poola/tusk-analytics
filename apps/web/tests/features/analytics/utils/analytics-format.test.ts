@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest"
 
 import {
   DEFAULT_PERIOD,
-  parseBreakdownTabs,
+  parseFilters,
   parseInterval,
   parsePeriod,
   parseView,
   viewSearch,
 } from "@/features/analytics/utils/analytics-params"
+import { parseBreakdownTabs } from "@/features/analytics/utils/breakdown-tabs"
 import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
 import {
   countChange,
@@ -89,7 +90,7 @@ describe("breakdown labels", () => {
   })
 
   it("says what a missing referrer, campaign or channel means", () => {
-    expect(keyLabel("referrer", null)).toBe("Direct / None")
+    expect(keyLabel("referrer", null)).toBe("Direct/None")
     expect(keyLabel("campaign", null)).toBe("No campaign")
     expect(keyLabel("channel", null)).toBe("Unknown")
   })
@@ -109,7 +110,7 @@ describe("browser, os and source labels", () => {
 
   it("names known sources from the shared referrer map", () => {
     expect(keyLabel("source", "hackernews")).toBe("Hacker News")
-    expect(keyLabel("source", "direct")).toBe("Direct")
+    expect(keyLabel("source", "direct")).toBe("Direct/None")
     expect(keyLabel("source", "blog.example.org")).toBe("blog.example.org")
   })
 })
@@ -166,47 +167,71 @@ describe("search params", () => {
     const view = parseView({
       range: "30d",
       interval: "week",
-      pages: "exit_page",
+      pages: "exit_link",
     })
 
     expect(viewSearch(view)).toEqual({
       range: "30d",
       interval: "week",
-      pages: "exit_page",
+      pages: "exit_link",
     })
     expect(viewSearch(view, { period: { range: "7d", offset: 0 } })).toEqual({
       range: "7d",
-      pages: "exit_page",
+      pages: "exit_link",
     })
     expect(viewSearch(view, { period: { range: "30d", offset: 1 } })).toEqual({
       range: "30d",
       offset: "1",
       interval: "week",
-      pages: "exit_page",
+      pages: "exit_link",
     })
   })
 
-  it("defaults every card to its first tab", () => {
+  it("reads valid filters and drops the rest", () => {
+    expect(
+      parseFilters({
+        country: "IN",
+        page: ["/pricing", "/"],
+        source: "",
+        city: "x".repeat(1025),
+        unknown: "1",
+      })
+    ).toEqual({ country: "IN", page: "/pricing" })
+  })
+
+  it("keeps filters in every link", () => {
+    const view = parseView({ range: "7d", country: "IN" })
+
+    expect(viewSearch(view, { tabs: { ...view.tabs, devices: "os" } })).toEqual(
+      {
+        range: "7d",
+        country: "IN",
+        devices: "os",
+      }
+    )
+  })
+
+  it("defaults each card to DataFast's tab", () => {
     expect(parseBreakdownTabs({})).toEqual({
-      sources: "source",
+      sources: "referrer",
       pages: "page",
-      locations: "country",
+      locations: "map",
       devices: "browser",
     })
   })
 
   it("reads each card's tab from its own param", () => {
     expect(
-      parseBreakdownTabs({ sources: "referrer", devices: ["os", "device"] })
+      parseBreakdownTabs({ sources: "campaign", devices: ["os", "device"] })
     ).toEqual({
-      sources: "referrer",
+      sources: "campaign",
       pages: "page",
-      locations: "country",
+      locations: "map",
       devices: "os",
     })
   })
 
   it("ignores a tab that belongs to another card", () => {
-    expect(parseBreakdownTabs({ sources: "country" }).sources).toBe("source")
+    expect(parseBreakdownTabs({ sources: "country" }).sources).toBe("referrer")
   })
 })

@@ -3,6 +3,7 @@ import { type SQL, sql } from "drizzle-orm"
 import type { Database } from "../client"
 import { events } from "../schema"
 import { pageviewsInRange } from "./pageviews-in-range"
+import type { SessionFilters } from "./session-filters"
 
 // Metric definitions: docs/metrics.md. Every query reads one site's pageviews
 // in [fromMs, toMs) through events_site_time_idx (site_id, created_at), and
@@ -37,9 +38,10 @@ export async function getTotals(
   db: Database,
   siteId: string,
   fromMs: number,
-  toMs: number
+  toMs: number,
+  filters: SessionFilters = {}
 ): Promise<StatsTotalsRow> {
-  const inRange = pageviewsInRange(siteId, fromMs, toMs)
+  const inRange = pageviewsInRange(siteId, fromMs, toMs, filters)
   // `per_session` is a one-row aggregate, so its columns are the same on
   // every joined row; coalesce covers a range without pageviews. CROSS JOIN
   // fixes the loop order in SQLite: `per_session` outside, computed once.
@@ -120,7 +122,15 @@ export function getTimeseries(
   siteId: string,
   fromMs: number,
   toMs: number,
-  { interval, offsetMs }: { interval: TimeseriesInterval; offsetMs: number }
+  {
+    interval,
+    offsetMs,
+    filters = {},
+  }: {
+    interval: TimeseriesInterval
+    offsetMs: number
+    filters?: SessionFilters
+  }
 ): Promise<TimeseriesRow[]> {
   return db.all<TimeseriesRow>(sql`
     SELECT
@@ -128,7 +138,7 @@ export function getTimeseries(
       count(DISTINCT ${events.visitorId}) AS visitors,
       count(*) AS pageviews
     FROM ${events}
-    WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
+    WHERE ${pageviewsInRange(siteId, fromMs, toMs, filters)}
     GROUP BY bucket
     ORDER BY bucket`)
 }
@@ -150,7 +160,15 @@ export function getTopSourceByBucket(
   siteId: string,
   fromMs: number,
   toMs: number,
-  { interval, offsetMs }: { interval: TimeseriesInterval; offsetMs: number }
+  {
+    interval,
+    offsetMs,
+    filters = {},
+  }: {
+    interval: TimeseriesInterval
+    offsetMs: number
+    filters?: SessionFilters
+  }
 ): Promise<TopSourceRow[]> {
   return db.all<TopSourceRow>(sql`
     WITH sessions AS (
@@ -159,7 +177,7 @@ export function getTopSourceByBucket(
         ${events.source} AS source,
         min(${events.createdAt}) AS first_at
       FROM ${events}
-      WHERE ${pageviewsInRange(siteId, fromMs, toMs)}
+      WHERE ${pageviewsInRange(siteId, fromMs, toMs, filters)}
       GROUP BY ${events.sessionId}
     ),
     per_bucket AS (

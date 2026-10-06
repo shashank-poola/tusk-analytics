@@ -42,9 +42,12 @@ export function BreakdownIcon({ by, rowKey, country }: BreakdownIconProps) {
     case "source":
     case "referrer":
       if (!rowKey || rowKey === "direct") {
-        return <MousePointerClick aria-hidden="true" className={ICON_CLASSES} />
+        return <Link aria-hidden="true" className={ICON_CLASSES} />
       }
       return <Icon type="referrer" name={rowKey} />
+    case "exit_link":
+      // The link's site favicon, by the host part of `host/path`.
+      return <Icon type="referrer" name={rowKey?.split("/")[0]} />
     case "browser":
     case "os":
     case "device":
@@ -63,6 +66,7 @@ export function BreakdownIcon({ by, rowKey, country }: BreakdownIconProps) {
     case "page":
     case "entry_page":
     case "exit_page":
+    case "hostname":
       return null
   }
 }

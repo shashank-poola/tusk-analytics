@@ -5,12 +5,14 @@ import { notFound } from "next/navigation"
 import { routes } from "@/lib/routes"
 
 import {
-  BREAKDOWN_CARD_KEYS,
-  BREAKDOWN_CARDS,
   parseView,
-  periodKey,
+  scopeKey,
   viewSearch,
 } from "@/features/analytics/utils/analytics-params"
+import {
+  BREAKDOWN_CARD_KEYS,
+  cardTab,
+} from "@/features/analytics/utils/breakdown-tabs"
 import {
   nextPeriod,
   periodLabel,
@@ -66,10 +68,10 @@ export default async function SitePage({
 
   const view = parseView(search)
   const now = new Date()
-  const section = { siteId: site.id, period: view.period }
-  // Keys reset a section's boundaries, so a new period or tab shows its
-  // skeleton (and replays the count-up) instead of stale numbers.
-  const key = periodKey(view.period)
+  const section = { siteId: site.id, scope: view }
+  // Keys reset a section's boundaries, so a new period, filter or tab shows
+  // its skeleton (and replays the count-up) instead of stale numbers.
+  const key = scopeKey(view)
   const next = nextPeriod(view.period, siteToday(site.timezone, now))
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -118,17 +120,15 @@ export default async function SitePage({
 
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
         {BREAKDOWN_CARD_KEYS.map((card) => {
-          const by = view.tabs[card]
-          const title =
-            BREAKDOWN_CARDS[card].find((tab) => tab.by === by)?.label ?? card
+          const tab = cardTab(card, view.tabs[card])
           return (
             <BreakdownCard key={card} card={card} siteId={site.id} view={view}>
               <SectionBoundary
-                key={`${by}-${key}`}
-                title={title.toLowerCase()}
+                key={`${tab.id}-${key}`}
+                title={tab.label.toLowerCase()}
                 fallback={<BreakdownSkeleton />}
               >
-                <BreakdownSection {...section} by={by} title={title} />
+                <BreakdownSection siteId={site.id} view={view} card={card} />
               </SectionBoundary>
             </BreakdownCard>
           )

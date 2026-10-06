@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm"
 import type { Database } from "../client"
 import { events } from "../schema"
 import { pageviewsInRange } from "./pageviews-in-range"
+import type { SessionFilters } from "./session-filters"
 
 // Definition: docs/metrics.md#visitors-list. The caller must check that the
 // signed-in user owns `siteId`.
@@ -39,9 +40,9 @@ export function getRecentVisitors(
   siteId: string,
   fromMs: number,
   toMs: number,
-  { limit }: { limit: number }
+  { limit, filters = {} }: { limit: number; filters?: SessionFilters }
 ): Promise<RecentVisitorRow[]> {
-  const inRange = pageviewsInRange(siteId, fromMs, toMs)
+  const inRange = pageviewsInRange(siteId, fromMs, toMs, filters)
   return db.all<RecentVisitorRow>(sql`
     WITH recent AS (
       SELECT

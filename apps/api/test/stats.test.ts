@@ -41,7 +41,10 @@ type Pageview = {
   Pick<
     NewEvent,
     | "path"
+    | "hostname"
     | "name"
+    | "props"
+    | "campaignParams"
     | "source"
     | "referrer"
     | "utmMedium"
@@ -574,7 +577,7 @@ describe("stats breakdown", () => {
     ["browser", "browser", "Chrome", "Safari"],
     ["os", "os", "Android", "iOS"],
     ["referrer", "referrer", "news.ycombinator.com", "t.co"],
-    ["campaign", "utmCampaign", "launch", "spring-sale"],
+    ["hostname", "hostname", "myapp.com", "www.myapp.com"],
   ] as const)(
     "groups by %s, with unknown values last",
     async (by, field, firstValue, secondValue) => {
@@ -649,7 +652,7 @@ describe("stats breakdown", () => {
       NOW
     )
 
-    expect(rows).toEqual([
+    expect(rows.map(({ topSources: _, ...row }) => row)).toEqual([
       { key: "direct", visitors: 2, pageviews: 2 },
       { key: "email", visitors: 2, pageviews: 2 },
       { key: "referral", visitors: 2, pageviews: 2 },
@@ -657,6 +660,124 @@ describe("stats breakdown", () => {
       { key: "social", visitors: 2, pageviews: 2 },
       { key: "ai", visitors: 1, pageviews: 1 },
       { key: "paid", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("names each channel's top sources, most visitors first, unknown ones left out", async () => {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "x",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "reddit",
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "reddit",
+      },
+      {
+        visitor: "v4",
+        session: "s4",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "youtube",
+      },
+      {
+        visitor: "v5",
+        session: "s5",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "linkedin",
+      },
+      {
+        visitor: "v6",
+        session: "s6",
+        at: "2026-10-05T09:00:00.000Z",
+        source: null,
+      },
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "channel", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      {
+        key: "social",
+        visitors: 5,
+        pageviews: 5,
+        topSources: ["reddit", "linkedin", "x"],
+      },
+      { key: "direct", visitors: 1, pageviews: 1, topSources: [] },
+    ])
+  })
+
+  it("groups campaigns by their parameters and leaves out visits without one", async () => {
+    const site = newSite()
+    const tagged = (visitor: string, campaignParams: string | null) => ({
+      visitor,
+      session: `s-${visitor}`,
+      at: "2026-10-05T09:00:00.000Z",
+      campaignParams,
+    })
+    await insertPageviews(site.id, [
+      tagged("v1", "ref=indiepage"),
+      tagged("v2", "ref=indiepage"),
+      tagged("v3", "utm_source=x&utm_campaign=launch"),
+      tagged("v4", null),
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "campaign", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "ref=indiepage", visitors: 2, pageviews: 2 },
+      { key: "utm_source=x&utm_campaign=launch", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("counts outbound clicks per link, with distinct visitors", async () => {
+    const site = newSite()
+    const click = (visitor: string, url: string) => ({
+      visitor,
+      session: `s-${visitor}`,
+      at: "2026-10-05T09:00:00.000Z",
+      name: "outbound",
+      props: { url },
+    })
+    await insertPageviews(site.id, [
+      click("v1", "github.com/acme"),
+      click("v1", "github.com/acme"),
+      click("v2", "github.com/acme"),
+      click("v3", "x.com/acme"),
+      // A pageview is not a click.
+      { visitor: "v4", session: "s-v4", at: "2026-10-05T09:00:00.000Z" },
+    ])
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...period, by: "exit_link", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "github.com/acme", visitors: 2, pageviews: 3 },
+      { key: "x.com/acme", visitors: 1, pageviews: 1 },
     ])
   })
 
@@ -863,6 +984,142 @@ describe("stats breakdown", () => {
     )
 
     expect(rows.map((row) => row.key)).toEqual(["github", "bing"])
+  })
+})
+
+describe("stats filters", () => {
+  // Three sessions: s1 from google on mobile (/ then /pricing), s2 direct on
+  // desktop (/ only, then clicks out), s3 from google on desktop (/blog).
+  async function seed() {
+    const site = newSite()
+    await insertPageviews(site.id, [
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:00:00.000Z",
+        source: "google",
+        device: "mobile",
+        country: "IN",
+      },
+      {
+        visitor: "v1",
+        session: "s1",
+        at: "2026-10-05T09:01:00.000Z",
+        path: "/pricing",
+        device: "mobile",
+        country: "IN",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T10:00:00.000Z",
+        device: "desktop",
+        country: "US",
+      },
+      {
+        visitor: "v2",
+        session: "s2",
+        at: "2026-10-05T10:00:30.000Z",
+        name: "outbound",
+        props: { url: "github.com/acme" },
+      },
+      {
+        visitor: "v3",
+        session: "s3",
+        at: "2026-10-05T11:00:00.000Z",
+        path: "/blog",
+        source: "google",
+        device: "desktop",
+        country: "US",
+      },
+    ])
+    return site
+  }
+
+  it("keeps whole sessions by their first pageview's value", async () => {
+    const site = await seed()
+
+    const { current } = await getStatsOverview(
+      db,
+      site,
+      { ...preset("7d"), source: "google" },
+      NOW
+    )
+
+    // The internal /pricing pageview is stored as direct but stays in s1.
+    expect(current).toMatchObject({ visitors: 2, pageviews: 3, sessions: 2 })
+  })
+
+  it("keeps sessions that viewed a page, with all their pageviews", async () => {
+    const site = await seed()
+
+    const { rows } = await getStatsBreakdown(
+      db,
+      site,
+      { ...preset("7d"), page: "/pricing", by: "page", limit: 10 },
+      NOW
+    )
+
+    expect(rows).toEqual([
+      { key: "/", visitors: 1, pageviews: 1 },
+      { key: "/pricing", visitors: 1, pageviews: 1 },
+    ])
+  })
+
+  it("combines filters: sessions must match all of them", async () => {
+    const site = await seed()
+
+    const { current } = await getStatsOverview(
+      db,
+      site,
+      { ...preset("7d"), source: "google", device: "desktop" },
+      NOW
+    )
+
+    expect(current).toMatchObject({ visitors: 1, pageviews: 1 })
+  })
+
+  it("keeps sessions with a click on an outbound link", async () => {
+    const site = await seed()
+
+    const { visitors } = await getStatsVisitors(
+      db,
+      site,
+      {
+        ...preset("7d"),
+        exit_link: "github.com/acme",
+        limit: 10,
+        secret: env.BETTER_AUTH_SECRET,
+      },
+      NOW
+    )
+
+    expect(visitors.map((visitor) => visitor.country)).toEqual(["US"])
+  })
+
+  it("filters the chart and its previous period alike", async () => {
+    const site = await seed()
+
+    const { points } = await getStatsTimeseries(
+      db,
+      site,
+      { ...preset("7d"), channel: "search" },
+      NOW
+    )
+
+    expect(points.reduce((sum, point) => sum + point.pageviews, 0)).toBe(3)
+  })
+
+  it("filters through the route's query string", async () => {
+    const owner = await signIn()
+    const site = await createSite(owner.userId)
+
+    const response = await api(
+      `/sites/${site.id}/stats/overview?range=7d&country=IN&page=%2Fpricing`,
+      { cookie: owner.cookie }
+    )
+
+    expect(response.status).toBe(200)
   })
 })
 
@@ -1147,7 +1404,11 @@ describe("stats routes", () => {
       "/stats/breakdown?range=7d&by=path",
       "by",
     ],
-    ["a limit over 50", "/stats/breakdown?range=7d&by=page&limit=51", "limit"],
+    [
+      "a limit over 250",
+      "/stats/breakdown?range=7d&by=page&limit=251",
+      "limit",
+    ],
     [
       "a limit that isn't a number",
       "/stats/breakdown?range=7d&by=page&limit=ten",

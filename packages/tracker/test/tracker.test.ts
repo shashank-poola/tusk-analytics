@@ -117,6 +117,58 @@ describe("pageviews", () => {
   })
 })
 
+describe("outbound clicks", () => {
+  function clickLink(href: string, button = 0) {
+    const link = document.createElement("a")
+    link.href = href
+    const label = document.createElement("span")
+    link.append(label)
+    document.body.append(link)
+    // Not followed: jsdom doesn't navigate, and the test page must stay.
+    link.addEventListener("click", (event) => event.preventDefault())
+    label.dispatchEvent(
+      new MouseEvent(button === 0 ? "click" : "auxclick", {
+        bubbles: true,
+        button,
+      })
+    )
+    link.remove()
+  }
+
+  it("sends the link of a click to another site, in the same session", async () => {
+    history.replaceState(null, "", "/pricing")
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    clickLink("https://github.com/acme?ref=x")
+    clickLink("https://github.com/acme", 1)
+
+    const [pageview, click, middleClick] = await sentPayloads(beacon)
+    expect(click).toEqual({
+      siteId: SITE_ID,
+      name: "outbound",
+      url: "https://example.com/pricing",
+      href: "https://github.com/acme",
+      referrer: "",
+      visitorId: pageview?.visitorId,
+      sessionId: pageview?.sessionId,
+      newSession: false,
+    })
+    expect(middleClick).toMatchObject({ name: "outbound" })
+  })
+
+  it("ignores links within the site, its www host and non-web links", async () => {
+    const beacon = mockBeacon()
+    await loadTracker()
+
+    clickLink("/pricing")
+    clickLink("https://www.example.com/blog")
+    clickLink("mailto:hi@example.org")
+
+    expect(beacon).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe("visitor and session ids", () => {
   it("sets the visitor and session cookies and reuses them on the next load", async () => {
     const beacon = mockBeacon()

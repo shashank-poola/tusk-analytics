@@ -5,9 +5,10 @@ import { statsIntervalSchema } from "./stats-period"
 // Definitions of every metric: docs/metrics.md.
 
 /**
- * `page` is counted per event; every other dimension per session.
- * `entry_page` and `exit_page` are a session's first and last path in the
- * range; `region` and `city` rows also carry their `country`.
+ * `page`, `hostname` and `exit_link` are counted per event; every other
+ * dimension per session. `entry_page` and `exit_page` are a session's first
+ * and last path in the range; `region` and `city` rows also carry their
+ * `country`. `exit_link` is the host and path of outbound link clicks.
  */
 export const breakdownBySchema = z.enum([
   "source",
@@ -23,11 +24,14 @@ export const breakdownBySchema = z.enum([
   "exit_page",
   "region",
   "city",
+  "hostname",
+  "exit_link",
 ])
 export type BreakdownBy = z.infer<typeof breakdownBySchema>
 
 export const BREAKDOWN_DEFAULT_LIMIT = 10
-export const BREAKDOWN_MAX_LIMIT = 50
+/** Enough for every country, so the world map can colour them all. */
+export const BREAKDOWN_MAX_LIMIT = 250
 
 const count = z.number().int().nonnegative()
 
@@ -91,9 +95,15 @@ export const statsBreakdownResponseSchema = z.object({
       /** Tracker-derived and untrusted: render as text. Null when unknown. */
       key: z.string().nullable(),
       visitors: count,
+      /** Pageviews; for `exit_link`, clicks on the link. */
       pageviews: count,
       /** ISO 3166-1 alpha-2, only on `region` and `city` rows. */
       country: z.string().nullable().optional(),
+      /**
+       * Only on `channel` rows: its top sources by visitors, at most
+       * three. Untrusted: render as text.
+       */
+      topSources: z.array(z.string()).optional(),
     })
   ),
 })

@@ -59,15 +59,23 @@ export const events = sqliteTable(
     visitorId: text("visitor_id").notNull(),
     /** Groups events into a visit; used for bounce rate and visit duration. */
     sessionId: text("session_id").notNull(),
-    /** `pageview`, or a custom name such as `signup` or `checkout_started`. */
+    /** `pageview`, `outbound` (a link click to another site) or a goal name such as `signup`. */
     name: text("name").notNull().default("pageview"),
     /** Path without the query string, e.g. `/pricing`. */
     path: text("path").notNull(),
+    /** The page's hostname, e.g. `www.myapp.com`. Null before it was collected. */
+    hostname: text("hostname"),
     referrer: text("referrer"),
     source: text("source"),
     utmSource: text("utm_source"),
     utmMedium: text("utm_medium"),
     utmCampaign: text("utm_campaign"),
+    /**
+     * The page's marketing parameters in a fixed order, values
+     * URI-encoded: `ref=producthunt` or
+     * `utm_source=x&utm_medium=social&utm_campaign=launch`.
+     */
+    campaignParams: text("campaign_params"),
     country: text("country"),
     /** `request.cf.region`, e.g. `California`. */
     region: text("region"),
@@ -76,7 +84,7 @@ export const events = sqliteTable(
     browser: text("browser"),
     os: text("os"),
     device: text("device", { enum: DEVICES }),
-    /** Custom event properties, e.g. `{ "plan": "pro" }`. */
+    /** Event properties: `{ "url": "github.com/acme" }` on outbound clicks. */
     props: text("props", { mode: "json" }).$type<
       Record<string, string | number | boolean>
     >(),

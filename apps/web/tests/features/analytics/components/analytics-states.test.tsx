@@ -80,7 +80,7 @@ describe("chart empty state", () => {
     render(
       await ChartSection({
         siteId: SITE.id,
-        period: { range: "24h", offset: 0 },
+        scope: { period: { range: "24h", offset: 0 }, filters: {} },
         interval: "hour",
         label: "Last 24 hours",
         emptyState: <p>Nothing here</p>,
@@ -180,7 +180,7 @@ describe("site page states", () => {
     const { container } = render(
       await HighlightsSection({
         siteId: SITE.id,
-        period: { range: "7d", offset: 0 },
+        scope: { period: { range: "7d", offset: 0 }, filters: {} },
       })
     )
 

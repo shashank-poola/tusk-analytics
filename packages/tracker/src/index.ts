@@ -1,4 +1,5 @@
 import { type Config, readConfig } from "./config"
+import { onOutboundClick } from "./outbound"
 import { send } from "./send"
 import { getSession } from "./session"
 import { onHistoryChange } from "./spa"
@@ -25,23 +26,30 @@ function start(config: Config): void {
         lastPage === undefined ? document.referrer : location.origin + lastPage
       lastPage = page
 
-      const session = getSession()
-      send(config.endpoint, {
-        siteId: config.siteId,
-        name: "pageview",
-        url: location.origin + page,
-        referrer,
-        visitorId: getVisitorId(),
-        sessionId: session.id,
-        newSession: session.isNew,
-      })
+      send(config.endpoint, { ...eventFields(referrer), name: "pageview" })
     } catch {
       // Swallowed on purpose; see above.
     }
   }
 
+  /** What every event carries; extends the session like any event. */
+  function eventFields(referrer: string) {
+    const session = getSession()
+    return {
+      siteId: config.siteId,
+      url: location.origin + location.pathname + location.search,
+      referrer,
+      visitorId: getVisitorId(),
+      sessionId: session.id,
+      newSession: session.isNew,
+    }
+  }
+
   trackPageview()
   onHistoryChange(trackPageview)
+  onOutboundClick((href) =>
+    send(config.endpoint, { ...eventFields(""), name: "outbound", href })
+  )
 }
 
 try {

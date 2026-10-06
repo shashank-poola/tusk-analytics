@@ -25,19 +25,20 @@ export function referrerHost(referrer: string, domain: string): string | null {
 }
 
 /**
- * Where the visit came from: `utm_source` when present, else the referrer
- * normalized through the shared referrer map (`t.co` → `x`), else the
- * referrer's hostname, else `direct`.
+ * Where the visit came from: the URL's own tag (`utm_source`, else `ref`,
+ * else `via`) when present, lowercased, else the referrer normalized
+ * through the shared referrer map (`t.co` → `x`), else the referrer's
+ * hostname, else `direct`.
  */
 export function classifySource({
-  utmSource,
+  tagged,
   referrer,
 }: {
-  utmSource: string | null
+  tagged: string | null
   referrer: string | null
 }): string {
-  const tagged = utmSource?.toLowerCase()
-  if (tagged) return tagged
+  const tag = tagged?.toLowerCase()
+  if (tag) return tag
   if (!referrer) return DIRECT
   return sourceForHost(referrer) ?? referrer
 }

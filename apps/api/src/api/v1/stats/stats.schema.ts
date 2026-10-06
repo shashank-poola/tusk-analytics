@@ -2,6 +2,7 @@ import {
   BREAKDOWN_DEFAULT_LIMIT,
   BREAKDOWN_MAX_LIMIT,
   breakdownBySchema,
+  statsFiltersSchema,
   statsIntervalSchema,
   statsPeriodSchema,
   VISITORS_DEFAULT_LIMIT,
@@ -10,17 +11,19 @@ import {
 import * as z from "zod"
 
 // Intersections rather than `.extend`: the period is a union (preset or
-// custom), and each half keeps its own rules.
+// custom), and each half keeps its own rules. Every query takes the filters.
 
-export const statsQuerySchema = statsPeriodSchema
+const scopeSchema = z.intersection(statsPeriodSchema, statsFiltersSchema)
+
+export const statsQuerySchema = scopeSchema
 
 export const timeseriesQuerySchema = z.intersection(
-  statsPeriodSchema,
+  scopeSchema,
   z.object({ interval: statsIntervalSchema.optional() })
 )
 
 export const breakdownQuerySchema = z.intersection(
-  statsPeriodSchema,
+  scopeSchema,
   z.object({
     by: breakdownBySchema,
     limit: z.coerce
@@ -33,7 +36,7 @@ export const breakdownQuerySchema = z.intersection(
 )
 
 export const visitorsQuerySchema = z.intersection(
-  statsPeriodSchema,
+  scopeSchema,
   z.object({
     limit: z.coerce
       .number()

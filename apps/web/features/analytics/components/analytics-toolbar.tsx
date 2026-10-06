@@ -4,6 +4,7 @@ import { SiteSwitcher } from "@/features/sites/components/site-switcher"
 
 import type { DashboardView } from "@/features/analytics/utils/analytics-params"
 import { CHIP_CLASSES } from "./toolbar/chip"
+import { FilterChips } from "./toolbar/filter-chips"
 import { IntervalMenu } from "./toolbar/interval-menu"
 import { PeriodPicker } from "./toolbar/period-picker"
 import { RefreshButton } from "./toolbar/refresh-button"
@@ -17,7 +18,7 @@ type AnalyticsToolbarProps = {
   now: Date
 }
 
-/** One row above the numbers: site, period, chart interval and refresh. */
+/** One row above the numbers: site, period, chart interval, refresh, filters. */
 export function AnalyticsToolbar({
   site,
   sites,
@@ -35,6 +36,7 @@ export function AnalyticsToolbar({
       />
       <IntervalMenu siteId={site.id} view={view} />
       <RefreshButton />
+      <FilterChips siteId={site.id} view={view} />
     </div>
   )
 }

@@ -29,7 +29,7 @@ describe("AnalyticsToolbar", () => {
       <AnalyticsToolbar
         site={SITE}
         sites={[SITE]}
-        view={parseView({ ...search, pages: "exit_page" })}
+        view={parseView({ ...search, pages: "exit_link" })}
         now={NOW}
       />
     )
@@ -56,7 +56,7 @@ describe("AnalyticsToolbar", () => {
 
     expect(
       query(screen.getByRole("link", { name: "Previous period" }))
-    ).toEqual({ range: "30d", offset: "1", pages: "exit_page" })
+    ).toEqual({ range: "30d", offset: "1", pages: "exit_link" })
     expect(
       screen.queryByRole("link", { name: "Next period" })
     ).not.toBeInTheDocument()
@@ -68,7 +68,7 @@ describe("AnalyticsToolbar", () => {
     expect(screen.getByLabelText("Period: Aug 8 – Sep 6")).toBeInTheDocument()
     expect(query(screen.getByRole("link", { name: "Next period" }))).toEqual({
       range: "30d",
-      pages: "exit_page",
+      pages: "exit_link",
     })
   })
 
@@ -81,7 +81,7 @@ describe("AnalyticsToolbar", () => {
     expect(query(yesterday)).toEqual({
       range: "today",
       offset: "1",
-      pages: "exit_page",
+      pages: "exit_link",
     })
     expect(yesterday).toHaveAttribute("aria-keyshortcuts", "Y")
     expect(screen.getByRole("link", { name: /Last 30 days/ })).toHaveAttribute(
@@ -101,7 +101,7 @@ describe("AnalyticsToolbar", () => {
     expect(query(screen.getByRole("link", { name: "Weekly" }))).toEqual({
       range: "90d",
       interval: "week",
-      pages: "exit_page",
+      pages: "exit_link",
     })
   })
 })

@@ -6,6 +6,7 @@ import {
   bucketStarts,
   type StatsInterval,
   type StatsOverviewResponse,
+  type StatsFilters,
   type StatsPeriod,
   type StatsTimeseriesResponse,
   type StatsTotals,
@@ -23,7 +24,12 @@ import {
   type StatsTotalsRow,
 } from "@workspace/db"
 
-import { chartInterval, siteWindow, toOffsetIso } from "./stats.range"
+import {
+  chartInterval,
+  filtersOf,
+  siteWindow,
+  toOffsetIso,
+} from "./stats.range"
 import { createVisitorPseudonymizer } from "./visitor-pseudonym"
 
 // Metric definitions: docs/metrics.md. Every function takes `now` so tests
@@ -49,13 +55,14 @@ const toIso = (ms: number) => new Date(ms).toISOString()
 export async function getStatsOverview(
   db: Database,
   site: StatsSite,
-  period: StatsPeriod,
+  query: StatsPeriod & StatsFilters,
   now: Date
 ): Promise<StatsOverviewResponse> {
-  const window = siteWindow(period, site.timezone, now)
+  const window = siteWindow(query, site.timezone, now)
+  const filters = filtersOf(query)
   const [current, previous] = await Promise.all([
-    getTotals(db, site.id, window.fromMs, window.toMs),
-    getTotals(db, site.id, window.previousFromMs, window.previousToMs),
+    getTotals(db, site.id, window.fromMs, window.toMs, filters),
+    getTotals(db, site.id, window.previousFromMs, window.previousToMs, filters),
   ])
   return {
     range: {
@@ -80,7 +87,7 @@ export async function getStatsTimeseries(
   {
     interval: requested,
     ...period
-  }: StatsPeriod & { interval?: StatsInterval | undefined },
+  }: StatsPeriod & StatsFilters & { interval?: StatsInterval | undefined },
   now: Date
 ): Promise<StatsTimeseriesResponse> {
   const interval = chartInterval(period, requested)
@@ -92,7 +99,7 @@ export async function getStatsTimeseries(
     endMs: window.fromMs,
     offsetMs,
   }
-  const options = { interval, offsetMs }
+  const options = { interval, offsetMs, filters: filtersOf(period) }
   const [rows, previousRows, topSources] = await Promise.all([
     getTimeseries(db, site.id, window.fromMs, window.toMs, options),
     getTimeseries(db, site.id, previous.fromMs, previous.endMs, options),
@@ -138,13 +145,18 @@ export async function getStatsTimeseries(
 export async function getStatsBreakdown(
   db: Database,
   site: StatsSite,
-  { by, limit, ...period }: StatsPeriod & { by: BreakdownBy; limit: number },
+  {
+    by,
+    limit,
+    ...query
+  }: StatsPeriod & StatsFilters & { by: BreakdownBy; limit: number },
   now: Date
 ): Promise<StatsBreakdownResponse> {
-  const window = siteWindow(period, site.timezone, now)
+  const window = siteWindow(query, site.timezone, now)
   const rows = await getBreakdown(db, site.id, window.fromMs, window.toMs, {
     dimension: by,
     limit,
+    filters: filtersOf(query),
   })
   return { by, rows }
 }
@@ -167,12 +179,19 @@ export async function getStatsLive(
 export async function getStatsVisitors(
   db: Database,
   site: StatsSite,
-  { limit, secret, ...period }: StatsPeriod & { limit: number; secret: string },
+  {
+    limit,
+    secret,
+    ...query
+  }: StatsPeriod & StatsFilters & { limit: number; secret: string },
   now: Date
 ): Promise<StatsVisitorsResponse> {
-  const window = siteWindow(period, site.timezone, now)
+  const window = siteWindow(query, site.timezone, now)
   const [rows, pseudonymOf] = await Promise.all([
-    getRecentVisitors(db, site.id, window.fromMs, window.toMs, { limit }),
+    getRecentVisitors(db, site.id, window.fromMs, window.toMs, {
+      limit,
+      filters: filtersOf(query),
+    }),
     createVisitorPseudonymizer(secret, site.id),
   ])
   const visitors = await Promise.all(
