@@ -55,7 +55,9 @@ describe("VerifyInstallation", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
 
     await wait(3_000)
-    expect(screen.getByRole("status")).toHaveTextContent("You're live!")
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your first visitor just showed up."
+    )
     expect(
       screen.getByRole("link", { name: "View analytics" })
     ).toHaveAttribute("href", `/site/${SITE_ID}`)
@@ -103,24 +105,28 @@ describe("VerifyInstallation", () => {
 
     await wait(6_000)
 
-    expect(screen.getByRole("status")).toHaveTextContent("You're live!")
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your first visitor just showed up."
+    )
   })
 
-  it("celebrates with tally marks drawing in when the status flips", async () => {
+  it("celebrates with Tusk jumping when the status flips", async () => {
     checkInstallStatus.mockResolvedValueOnce(CONNECTED)
     const { container } = renderPanel()
 
     await wait(3_000)
 
-    expect(container.querySelectorAll("path.animate-draw")).toHaveLength(5)
+    expect(container.querySelectorAll("img.animate-jump")).toHaveLength(1)
   })
 
   it("doesn't replay the celebration when the page loads already connected", () => {
     const { container } = renderPanel(CONNECTED)
 
     expect(screen.getByRole("status")).toHaveTextContent("Connected")
-    expect(screen.getByRole("status")).not.toHaveTextContent("You're live!")
-    expect(container.querySelector(".animate-draw")).toBeNull()
+    expect(screen.getByRole("status")).not.toHaveTextContent(
+      "Your first visitor just showed up."
+    )
+    expect(container.querySelector(".animate-jump")).toBeNull()
   })
 
   it("doesn't poll when the site is already connected", async () => {

@@ -1,9 +1,11 @@
 "use client"
 
+import { cn } from "@workspace/ui/lib/utils"
 import { USER_NAME_MAX_LENGTH, userNameSchema } from "@workspace/contracts"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
+import { BUTTON_CLASSES, INPUT_CLASSES } from "@/components/ui/button-styles"
 import { Avatar } from "@/components/ui/avatar"
 import { accountErrorMessage } from "@/lib/auth-errors"
 import { authClient } from "@/lib/auth-client"
@@ -75,14 +77,14 @@ export function ProfileForm({
               }}
               aria-invalid={status.state === "error" || undefined}
               aria-describedby="profile-name-status"
-              className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm transition-colors outline-none focus-visible:border-accent sm:h-10"
+              className={cn(INPUT_CLASSES, "min-w-0 flex-1")}
             />
             <button
               type="submit"
               disabled={unchanged || status.state === "saving"}
-              className="h-11 shrink-0 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-50 sm:h-10"
+              className={cn(BUTTON_CLASSES.primary, "shrink-0")}
             >
-              {status.state === "saving" ? "Saving…" : "Save"}
+              {status.state === "saving" ? "Saving…" : "Save changes"}
             </button>
           </div>
           <p

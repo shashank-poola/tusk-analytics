@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from "vitest"
 
 import { addSite } from "@/features/onboarding/server/add-site-action"
 
-const { createSite, redirect } = vi.hoisted(() => ({
+const { createSite, redirect, deleteCookie } = vi.hoisted(() => ({
   createSite: vi.fn(),
+  deleteCookie: vi.fn(),
   // Like the real one, redirect() throws to stop the action.
   redirect: vi.fn((url: string) => {
     throw new Error(`redirect:${url}`)
@@ -12,6 +13,9 @@ const { createSite, redirect } = vi.hoisted(() => ({
 
 vi.mock("@/features/sites/server/sites.queries", () => ({ createSite }))
 vi.mock("next/navigation", () => ({ redirect }))
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ delete: deleteCookie }),
+}))
 
 const REQUEST = { domain: "https://www.example.com/", timezone: "UTC" }
 
@@ -34,6 +38,16 @@ describe("addSite", () => {
       timezone: "UTC",
       name: "example.com",
     })
+  })
+
+  it("forgets the domain typed on the landing page once the site exists", async () => {
+    createSite.mockResolvedValue({
+      ok: true,
+      data: { id: "vt_3k9x2m7qpd4n8r1t" },
+    })
+
+    await expect(addSite(REQUEST)).rejects.toThrow("redirect:")
+    expect(deleteCookie).toHaveBeenCalledWith("tusk_signup_domain")
   })
 
   it("puts a duplicate-domain error on the domain field", async () => {

@@ -77,15 +77,20 @@ export function KpiStrip({
       ))}
       <KpiItem
         label="Online"
-        badge={
-          <span aria-hidden="true" className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-live opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-live" />
-          </span>
-        }
+        badge={<LiveDot />}
         value={<LiveCount siteId={siteId} initialCount={liveVisitors} />}
       />
     </ul>
+  )
+}
+
+/** The Online label's pulsing dot: the only looping animation. */
+export function LiveDot() {
+  return (
+    <span aria-hidden="true" className="relative flex size-2">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-live opacity-60" />
+      <span className="relative inline-flex size-2 rounded-full bg-live" />
+    </span>
   )
 }
 
@@ -97,17 +102,17 @@ type KpiItemProps = {
   change?: React.ReactNode
 }
 
-function KpiItem({ label, badge, value, change }: KpiItemProps) {
+export function KpiItem({ label, badge, value, change }: KpiItemProps) {
   return (
     <li
       // Hairlines between items on one row, like table columns.
       className="flex flex-col border-border px-4 py-4 sm:px-5 lg:my-4 lg:border-r lg:py-0 lg:last:border-r-0"
     >
-      <h3 className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <h3 className="flex items-center gap-1.5 font-sans text-[13px] font-medium text-muted-foreground">
         {label}
         {badge}
       </h3>
-      <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums sm:text-[1.75rem]">
+      <p className="mt-1 font-heading text-[2rem] leading-none tabular-nums sm:text-[2.5rem]">
         {value}
       </p>
       <span className="mt-0.5 flex h-4 items-center">{change}</span>

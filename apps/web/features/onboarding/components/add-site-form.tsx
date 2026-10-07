@@ -2,7 +2,10 @@
 
 import { createSiteInputSchema } from "@workspace/contracts"
 import { type FormEvent, useState, useTransition } from "react"
+import { cn } from "@workspace/ui/lib/utils"
 import * as z from "zod"
+
+import { BUTTON_CLASSES, INPUT_CLASSES } from "@/components/ui/button-styles"
 
 import {
   addSite,
@@ -10,8 +13,13 @@ import {
 } from "@/features/onboarding/server/add-site-action"
 import { useTimezoneOptions } from "@/features/onboarding/hooks/use-timezone-options"
 
-export function AddSiteForm() {
-  const [domain, setDomain] = useState("")
+type AddSiteFormProps = {
+  /** Typed on the landing page before sign-in. */
+  defaultDomain?: string
+}
+
+export function AddSiteForm({ defaultDomain = "" }: AddSiteFormProps) {
+  const [domain, setDomain] = useState(defaultDomain)
   const { defaultTimezone, timezones } = useTimezoneOptions()
   const [chosenTimezone, setChosenTimezone] = useState<string | null>(null)
   const timezone = chosenTimezone ?? defaultTimezone
@@ -56,7 +64,7 @@ export function AddSiteForm() {
           onChange={(event) => setDomain(event.target.value)}
           aria-invalid={errors.domain ? true : undefined}
           aria-describedby={errors.domain ? "domain-error" : "domain-hint"}
-          className={INPUT_CLASSES}
+          className={FIELD_CLASSES}
         />
         <FieldMessage id="domain" error={errors.domain}>
           Paste your site&apos;s address. We keep only the domain.
@@ -76,7 +84,7 @@ export function AddSiteForm() {
           aria-describedby={
             errors.timezone ? "timezone-error" : "timezone-hint"
           }
-          className={INPUT_CLASSES}
+          className={FIELD_CLASSES}
         >
           {timezones.map((zone) => (
             <option key={zone} value={zone}>
@@ -98,7 +106,7 @@ export function AddSiteForm() {
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-60 sm:min-h-9"
+        className={BUTTON_CLASSES.primary}
       >
         {pending ? "Adding site…" : "Add site"}
       </button>
@@ -106,8 +114,7 @@ export function AddSiteForm() {
   )
 }
 
-const INPUT_CLASSES =
-  "mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none aria-invalid:border-negative sm:h-10"
+const FIELD_CLASSES = cn(INPUT_CLASSES, "mt-1.5 aria-invalid:border-negative")
 
 function FieldMessage({
   id,

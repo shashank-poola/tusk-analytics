@@ -140,7 +140,7 @@ async function FunnelSection({
                   <Check
                     aria-hidden="true"
                     className={cn(
-                      "size-4 text-accent",
+                      "size-4 text-link",
                       funnel.id !== selected.id && "invisible"
                     )}
                   />

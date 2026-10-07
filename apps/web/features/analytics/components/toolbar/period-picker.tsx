@@ -107,7 +107,7 @@ export function PeriodPicker({
   )
 
   return (
-    <div className="inline-flex h-11 items-stretch overflow-visible rounded-lg border border-border bg-surface text-sm font-medium sm:h-9">
+    <div className="inline-flex h-11 items-stretch overflow-visible rounded-xl border-2 border-border bg-surface text-sm font-medium sm:h-9">
       <PeriodShortcuts links={shortcuts} />
       <ViewLink
         href={href(previous)}

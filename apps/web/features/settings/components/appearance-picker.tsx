@@ -27,7 +27,7 @@ export function AppearancePicker() {
   return (
     <fieldset>
       <legend className="sr-only">Theme</legend>
-      <div className="grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-border bg-muted p-1">
+      <div className="grid max-w-md grid-cols-3 gap-1 rounded-2xl border-2 border-border bg-muted p-1">
         {OPTIONS.map(({ value, label, icon: Icon }) => (
           <label
             key={value}

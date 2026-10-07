@@ -1,15 +1,17 @@
 # Dashboard design
 
-Friendly precision: the numbers come first, the page feels calm, and small
-moments of play (a tally mark, a count-up, a warm "connected") reward
-attention without getting in the way. Metric definitions live in
+Tusk's design system has two modes. **Playful** (sign-in, onboarding,
+empty states, milestones): big Feather Bold type, Tusk the hippo, lots of
+space. **Working** (dashboard, tables, charts, settings): dense and calm;
+the more data on screen, the quieter the page. The playfulness lives in the
+mascot, the chunky buttons and the copy, never in the data. Metric definitions live in
 [`docs/metrics.md`](../metrics.md); this note covers how they look.
 
 ## Layout
 
 ```
 ┌ header (no bottom rule) ────────────────────────────────────────────┐
-│ ▮ viewtally                                      [☾] [photo/face ▾] │
+│ 🦛 tusk                                          [☾] [photo/face ▾] │
 └─────────────────────────────────────────────────────────────────────┘
   [site ▾] [‹ | Last 7 days ▾ | ›] [vs previous 7 days] [Daily ▾] [⟳] [Country: India ×]
 
@@ -30,6 +32,11 @@ attention without getting in the way. Metric definitions live in
   Each card keeps its tab in its own search param (`?sources=campaign`),
   the bottom card in `?insights=`. A row click adds a filter
   (`?country=IN`), shown as a removable chip in the filter row.
+- Tab titles: most specific first, brand last, one `·` separator, because
+  tabs truncate from the right: `shashank.ink · Tusk`, `Settings · Tusk`.
+  The root layout owns the `%s · Tusk` template; a page sets only its own
+  part (`generateMetadata` with the cached `getSite` for site pages). A
+  missing or someone else's site is `Page not found · Tusk`.
 - URLs stay clean: `/site/<id>` is one website's dashboard and `/sites`
   lists all of the user's websites. Clicking a link that sets the view
   (`ViewLink`, or `useSetView` in code) calls a server action that stores
@@ -60,33 +67,60 @@ attention without getting in the way. Metric definitions live in
 
 ## Brand and tokens
 
-Brand colours: **Blue Ribbon `#1E61F0`**, **Black `#000000`**, **Catskill
-White `#F1F4F9`**. Typeface: **Gellix** (`next/font/local` from
-`apps/web/public/font`, weights 400–700); Geist Mono for code.
+Colours: **Tusk Blue `#2D8CFF`** (brand fills, charts), **Button Blue
+`#1F7AF0`** with a **Deep Water `#1558C0`** bottom edge, Deep Water for
+blue text on white. Neutrals Riverbed `#17202E` (text), Mud `#5A6678`,
+Mist `#E2E8F0` (borders), Riverbank `#F4F7FB`, white page. Status:
+Growth Green `#22B573`, Alert Red `#F0443A`, Sunrise `#FFB020`. Mascot
+colours (Pip Teal `#2EC4B6`, Snap Purple `#8B5CF6`, Peck Coral
+`#FF6B4A`) only in chart series and character art, never UI chrome.
+
+Type: **Feather Bold** for h1–h3, page titles (24 px), section headings
+(18 px) and big KPI numbers (40 px); one weight, 700 only, with
+`font-synthesis: none`. **Fredoka** 400–600 for everything else (body
+15 px). JetBrains Mono for code. All from `next/font` in
+`apps/web/app/layout.tsx` (local files in `apps/web/public/font`).
+Sentence case everywhere, no all-caps labels.
 
 Defined once in `packages/ui/src/styles/globals.css` as CSS variables on
 `:root` and `.dark`, exposed to Tailwind through `@theme inline`. Components
 use token utilities only, never palette colours.
 
-| Token                    | Light               | Dark                | Use                                     |
-| ------------------------ | ------------------- | ------------------- | --------------------------------------- |
-| `background`             | `#F1F4F9`           | `#1C1C1C`           | page, tab tracks                        |
-| `surface`                | `#FFFFFF`           | `#242424`           | cards, menus, dialogs                   |
-| `foreground`             | `#0B0D12`           | `#F2F2F2`           | text                                    |
-| `muted` / `-foreground`  | `#E9EDF4`/`#5D6472` | `#303030`/`#A3A3A3` | quiet fills, active tab, secondary text |
-| `border`                 | `#E0E5EE`           | `#323232`           | 1 px hairlines                          |
-| `accent` / `-foreground` | `#1E61F0` / white   | `#5C8FF7` / black   | the brand blue: focus, active, buttons  |
-| `accent-soft`            | `#E2EBFD`           | `#2F4A61`           | breakdown bars (steel blue), chips      |
-| `chart-1` / `chart-2`    | accent / `#B4CBFA`  | `#8CC8F5`/`#3A4C5C` | visitors line, map, funnel / pageviews  |
-| `live`                   | green               | green               | the Online dot only                     |
-| `highlight`              | marigold            | marigold            | celebration only                        |
-| `positive` / `negative`  | green / red         | green / red         | delta chips, next to an arrow + sign    |
+| Token                         | Light                                     | Dark                | Use                                      |
+| ----------------------------- | ----------------------------------------- | ------------------- | ---------------------------------------- |
+| `background`                  | `#FFFFFF`                                 | `#0C1017`           | page                                     |
+| `surface`                     | `#FFFFFF`                                 | `#131821`           | cards, menus, dialogs                    |
+| `foreground`                  | `#17202E`                                 | `#EEF1F6`           | text                                     |
+| `muted` / `-foreground`       | `#F4F7FB`/`#5A6678`                       | `#1B212B`/`#9AA3B2` | tab tracks, quiet fills / secondary text |
+| `border`                      | `#E2E8F0`                                 | `#242B36`           | 2 px card and input borders              |
+| `accent` / `-foreground`      | `#2D8CFF` / white                         | same                | Tusk Blue fills: focus, active, chips    |
+| `accent-soft`                 | `#E6F1FF` (Foam)                          | `#19283D`           | breakdown bars, selected, focus ring     |
+| `link`                        | `#1558C0`                                 | `#5AA6FF`           | blue text and links, menu check marks    |
+| `button` / `-hover` / `-edge` | `#1F7AF0` / `#1668DC` / `#1558C0`         | same                | primary buttons                          |
+| `chart-1`…`chart-4`           | Tusk Blue, Sunrise, Pip Teal, Snap Purple | same                | series in that order                     |
+| `live` / `positive`           | green                                     | green               | Online dot; delta chips with an arrow    |
+| `negative` / `danger-edge`    | red / dark red                            | same                | errors, danger button                    |
+| `highlight`                   | Sunrise                                   | Sunrise             | milestones only                          |
 
-- Dark accent is lighter than the brand blue so text and thin lines pass
-  contrast; buttons on it use dark text.
-- Dark greys and steel blues follow DataFast's dark dashboard.
-- Radii: cards `rounded-[1.25rem]`; filter-row controls and tabs
-  `rounded-lg` on a `rounded-xl` track; bars `rounded-md`.
+- Buttons (`components/ui/button-styles.ts`, `BUTTON_CLASSES`): primary,
+  secondary and danger, 12 px radius, a 4 px bottom edge drawn as a box
+  shadow. Hover goes a shade darker (never lighter: white text keeps its
+  contrast) and lifts 2 px while the edge grows 2 px; pressing moves the
+  button down 4 px and drops the edge (120 ms). Nothing around it moves.
+  Only action buttons get this; toolbar chips, tabs and menus stay flat.
+- Dark mode is near-black with a hint of navy (page `#0C1017`, cards
+  `#131821`), so the blue lives in the brand colour and the data, not the
+  chrome.
+- Inputs (`INPUT_CLASSES`): 2 px Mist border, 12 px radius, Tusk Blue
+  focus border with a 3 px Foam ring.
+- Radii: chips and progress 9999 px, buttons and inputs 12 px
+  (`rounded-xl`), cards 16 px (`rounded-2xl`), dialogs 20 px
+  (`rounded-[1.25rem]`). Dashboard cards are flat: 2 px border, no shadow.
+- Logo: `components/brand/logo.tsx`, the hippo (`/company/logo.png`, no
+  backdrop) with "tusk" in Feather Bold. Mascot art: the same hippo in
+  onboarding (first-visit jump) and `/mascot/404.png` (Tusk lost with a
+  map) on `app/not-found.tsx`, with no backdrop. One mascot per screen,
+  never inside tables, charts or settings.
 - Faces: the signed-in user's Google photo, otherwise a DiceBear "Micah"
   face (CC BY 4.0, credited on /settings) generated on the server from the
   user id. Visitors get a Micah face and a stable nickname ("Curious Otter")
@@ -108,12 +142,14 @@ use token utilities only, never palette colours.
 ## Motion
 
 - Durations 150–300 ms; easing `cubic-bezier(0.2, 0, 0, 1)` (`ease-out-soft`).
-- Allowed: count-up of KPI numbers (300 ms, on first load and range
-  change), bars growing in (300 ms), chart series fading in (300 ms),
-  hover and focus feedback (150 ms), tally marks drawing in once (loading
-  hint, Connected celebration), the small live pulse (step 4B).
+- Allowed: count-up of KPI numbers (600 ms, first load only), bars
+  growing in (300 ms), chart series fading in (300 ms), hover and focus
+  feedback (150 ms), button press (120 ms), Tusk's single jump with a short
+  spring (480 ms, `animate-jump`) when the first visit arrives, the small
+  live pulse.
 - Not allowed: loops other than the live pulse (skeletons are static),
-  confetti, sound, anything that delays or hides numbers. The server always
+  entrance animations on every section, bouncing controls, sound, anything
+  that delays or hides numbers. The server always
   renders the final number; count-up only replays it.
 - `prefers-reduced-motion: reduce` turns every animation and transition
   off globally (`globals.css`), and `usePrefersReducedMotion` skips the
@@ -131,6 +167,6 @@ dots, dark greys.
 Different on purpose: light and dark both first class; the chart shows the
 previous period, the change per bucket on hover and the top source on its
 peaks; every number explains itself on hover and focus; change is never
-colour alone; filters are visible chips; tally marks for loading and empty
-states. Revenue (bars, revenue metrics, the $ axis, Spent, Journey,
+colour alone; filters are visible chips; Tusk for onboarding and
+celebrations. Revenue (bars, revenue metrics, the $ axis, Spent, Journey,
 Keyword) waits for payments.

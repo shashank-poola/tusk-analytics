@@ -19,7 +19,7 @@ export type CountUpFormat = keyof typeof FORMATS
 type CountUpProps = { value: number; format: CountUpFormat }
 
 /**
- * A number that counts up when it first shows and when it changes. Screen
+ * A number that counts up when it first shows. Screen
  * readers only get the final value.
  */
 export function CountUp({ value, format }: CountUpProps) {

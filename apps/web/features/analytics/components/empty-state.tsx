@@ -1,7 +1,6 @@
 import { periodDays } from "@workspace/contracts"
 import { ViewLink } from "@/features/analytics/components/view-link"
 
-import { TallyMarks } from "@/components/brand/tally-marks"
 import { routes } from "@/lib/routes"
 
 import {
@@ -13,7 +12,7 @@ import {
 export function NoData({ label = "No data" }: { label?: string }) {
   return (
     <div className="grid h-full min-h-32 place-items-center">
-      <p className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-muted-foreground">
+      <p className="rounded-xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
         {label}
       </p>
     </div>
@@ -43,12 +42,11 @@ export function ChartEmptyState({ siteId, view }: ChartEmptyStateProps) {
 
   return (
     <div className="pointer-events-none absolute inset-0 grid place-items-center">
-      <div className="pointer-events-auto flex animate-rise flex-col items-center gap-2 rounded-2xl border border-border bg-surface/90 px-5 py-4 text-center shadow-pop backdrop-blur">
-        <TallyMarks className="size-8 text-accent" />
+      <div className="pointer-events-auto flex animate-rise flex-col items-center gap-2 rounded-2xl border-2 border-border bg-surface/90 px-5 py-4 text-center shadow-pop backdrop-blur">
         <p className="text-sm font-medium">No visits in this period</p>
         <ViewLink
           href={next.href}
-          className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-accent transition-colors hover:bg-accent-soft sm:min-h-8"
+          className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-link transition-colors hover:bg-accent-soft sm:min-h-8"
         >
           {next.label}
         </ViewLink>

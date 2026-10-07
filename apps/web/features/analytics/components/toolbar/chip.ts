@@ -1,6 +1,6 @@
 /** The filter row's pill: one height, border and radius for every control. */
 export const CHIP_CLASSES =
-  "inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-9"
+  "inline-flex h-11 items-center gap-2 rounded-xl border-2 border-border bg-surface px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-9"
 
 /** A key hint in a menu row, like DataFast's. */
 export const KBD_CLASSES =

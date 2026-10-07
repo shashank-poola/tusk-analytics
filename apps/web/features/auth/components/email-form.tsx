@@ -1,7 +1,9 @@
 "use client"
 
+import { cn } from "@workspace/ui/lib/utils"
 import { type FormEvent, useState } from "react"
 
+import { INPUT_CLASSES } from "@/components/ui/button-styles"
 import { requestErrorMessage } from "@/lib/auth-errors"
 import { authClient } from "@/lib/auth-client"
 import { routes } from "@/lib/routes"
@@ -47,9 +49,9 @@ export function EmailForm({ onSent, onError }: EmailFormProps) {
         placeholder="you@company.com"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        className="h-11 w-full rounded-full border border-border bg-transparent px-5 text-center text-sm text-foreground placeholder:text-muted-foreground focus:border-foreground/50 focus:outline-none sm:h-10"
+        className={cn(INPUT_CLASSES, "text-center")}
       />
-      <AuthButton type="submit" variant="outline" disabled={pending}>
+      <AuthButton type="submit" variant="secondary" disabled={pending}>
         {pending ? "Sending link…" : "Continue with email"}
       </AuthButton>
     </form>

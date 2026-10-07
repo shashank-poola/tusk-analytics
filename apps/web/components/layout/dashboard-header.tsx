@@ -23,11 +23,11 @@ export function DashboardHeader({
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
         <Link
           href={routes.dashboard}
-          aria-label="Viewtally home"
+          aria-label="Tusk home"
           className="inline-flex min-h-11 items-center rounded-lg"
         >
           <Logo className="hidden sm:inline-flex" />
-          <LogoMark className="size-8 sm:hidden" />
+          <LogoMark className="size-11 sm:hidden" />
         </Link>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />

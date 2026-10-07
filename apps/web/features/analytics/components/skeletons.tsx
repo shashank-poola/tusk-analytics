@@ -1,8 +1,7 @@
-import { TallyMarks } from "@/components/brand/tally-marks"
 import { Card } from "@/components/ui/card"
 
 // Static shapes that match the real layout, so nothing jumps when data
-// arrives. No shimmer loop: the only motion is tally marks drawing in once.
+// arrives. No shimmer loop and no mascot: charts stay quiet.
 
 function Bar({ className }: { className: string }) {
   return (
@@ -44,7 +43,6 @@ export function ChartSkeleton() {
       role="status"
       className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground sm:h-80"
     >
-      <TallyMarks animate className="size-8 text-accent" />
       Counting visits…
     </div>
   )

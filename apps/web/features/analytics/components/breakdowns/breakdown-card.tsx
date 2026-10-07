@@ -49,18 +49,23 @@ export function BreakdownCard({
     >
       <div className="flex min-h-11 items-center justify-between gap-2 pr-1.5">
         <TabPills label={`${card} breakdown`} tabs={tabs} active={active.id} />
-        {!active.chart && (
-          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold">
-            Visitors
-            <ArrowDownWideNarrow
-              aria-hidden="true"
-              className="size-3.5 text-muted-foreground"
-            />
-            <span className="sr-only">, most first</span>
-          </span>
-        )}
+        {!active.chart && <SortedByVisitors />}
       </div>
       <div className="mt-2 flex min-h-0 flex-1 flex-col">{children}</div>
     </Card>
+  )
+}
+
+/** "Visitors ↓" in a breakdown card's corner: rows are sorted by visitors. */
+export function SortedByVisitors() {
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-xs font-semibold">
+      Visitors
+      <ArrowDownWideNarrow
+        aria-hidden="true"
+        className="size-3.5 text-muted-foreground"
+      />
+      <span className="sr-only">, most first</span>
+    </span>
   )
 }

@@ -13,14 +13,14 @@ changes: check `node_modules/next/dist/docs/` before using an API from memory.
 ```
 apps/web/
   app/                      routes only: layouts and pages, no logic
-    layout.tsx              fonts (Gellix, Geist Mono), ThemeProvider
+    layout.tsx              fonts (Feather Bold, Fredoka, JetBrains Mono), ThemeProvider
     signup/                 sign-in page
     (dashboard)/            session gate + header; dashboard/, onboarding/,
                             settings/, sites/[siteId]/ (analytics)
   components/               shared, feature-agnostic UI
-    ui/                     primitives: avatar, card (+ FIXED_CARD_HEIGHT), icon, menu
+    ui/                     primitives: avatar, button-styles, card (+ FIXED_CARD_HEIGHT), icon, menu
     layout/                 app chrome: dashboard-header, account-menu, theme-toggle
-    brand/                  logo, tally-marks, google-icon
+    brand/                  logo (Tusk), google-icon
     providers/              theme-provider
   features/<feature>/       one folder per feature, same categories in each:
     components/             its UI (subfolders by page area when large)
@@ -100,10 +100,11 @@ patterns, bounces, returning visitors). Local only; it adds, never deletes.
 - **Errors to users**: map codes to copy in one place, like
   `lib/auth-errors.ts`. API errors are `{ error: { code, message } }`.
 - **Styling**: Tailwind utilities inline. New code uses the tokens
-  (`bg-background`, `text-muted-foreground`, `border-border`, `bg-muted`,
-  `chart-1/2`); older pages still use the neutral palette they map to
-  (`neutral-950`, `neutral-500`, `white`), `rounded-full` pill buttons, light `font-normal`
-  headings with `tracking-tight`, `max-w-6xl px-6` page width. Variants as a
+  (`bg-surface`, `text-muted-foreground`, `border-border`, `bg-muted`,
+  `text-link`, `chart-1..4`) and the Tusk design system in
+  `docs/design/dashboard.md`: `BUTTON_CLASSES` / `INPUT_CLASSES` from
+  `components/ui/button-styles.ts`, 2 px borders, Feather Bold headings
+  (no weight or tracking classes on them), `max-w-6xl px-6` page width. Variants as a
   `const VARIANTS = {...}` map (see `features/auth/components/auth-button.tsx`).
 - **Dark mode**: `ThemeProvider` (next-themes, `class`, press `d`), the
   header toggle and /settings Appearance; tokens cover both themes.

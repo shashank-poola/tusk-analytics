@@ -8,14 +8,11 @@ import type { ComponentProps } from "react"
  */
 export const FIXED_CARD_HEIGHT = "h-[31rem]"
 
-/** The dashboard's surface: rounded, hairline border, soft lift. */
+/** The dashboard's surface: flat, with a 2 px border and 16 px corners. */
 export function Card({ className, ...props }: ComponentProps<"section">) {
   return (
     <section
-      className={cn(
-        "rounded-[1.25rem] border border-border bg-surface shadow-card",
-        className
-      )}
+      className={cn("rounded-2xl border-2 border-border bg-surface", className)}
       {...props}
     />
   )

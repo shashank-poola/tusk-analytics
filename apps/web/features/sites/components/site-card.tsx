@@ -18,12 +18,12 @@ type SiteCardProps = {
  */
 export function SiteCard({ site, children }: SiteCardProps) {
   return (
-    <div className="relative rounded-[1.25rem] border border-border bg-surface p-4 transition-colors focus-within:border-accent hover:border-muted-foreground/40 hover:bg-muted/30">
+    <div className="relative rounded-2xl border-2 border-border bg-surface p-5 transition-colors focus-within:border-accent hover:border-muted-foreground/40 hover:bg-muted/30">
       <div className="flex items-center gap-2.5">
         <SiteFavicon siteId={site.id} domain={site.domain} />
         <Link
           href={routes.site(site.id)}
-          className="truncate font-semibold outline-none after:absolute after:inset-0 after:rounded-[1.25rem]"
+          className="truncate font-semibold outline-none after:absolute after:inset-0 after:rounded-2xl"
         >
           {site.domain}
         </Link>

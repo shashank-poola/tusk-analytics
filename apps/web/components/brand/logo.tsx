@@ -1,27 +1,28 @@
 import { cn } from "@workspace/ui/lib/utils"
+import Image from "next/image"
 
-import { TallyMarks } from "./tally-marks"
-
-/** The Viewtally mark: a cobalt tile with a group of five tally marks. */
+/** Tusk, the blue hippo: the logo and the mascot on playful screens. */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <span
+    <Image
+      src="/company/logo.png"
+      alt=""
       aria-hidden="true"
-      className={cn(
-        "inline-grid shrink-0 place-items-center rounded-[28%] bg-accent text-accent-foreground",
-        className
-      )}
-    >
-      <TallyMarks className="size-[68%]" strokeWidth={2.4} />
-    </span>
+      width={128}
+      height={128}
+      className={cn("shrink-0", className)}
+    />
   )
 }
 
+/** The mark and the "tusk" wordmark in Feather Bold. */
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <LogoMark className="size-7" />
-      <span className="text-lg font-semibold tracking-tight">viewtally</span>
+    <span className={cn("inline-flex items-center gap-1", className)}>
+      <LogoMark className="size-12" />
+      <span className="font-heading text-[1.75rem] leading-none font-bold [font-synthesis:none]">
+        tusk
+      </span>
     </span>
   )
 }

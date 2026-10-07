@@ -40,7 +40,7 @@ describe("useCountUp", () => {
     expect(result.current).toBe(1200)
   })
 
-  it("counts again when the number changes", async () => {
+  it("shows a changed number at once instead of counting again", async () => {
     stubMatchMedia(false)
     const { result, rerender } = renderHook(
       ({ target }) => useCountUp(target),
@@ -51,10 +51,6 @@ describe("useCountUp", () => {
     await act(() => vi.advanceTimersByTimeAsync(COUNT_UP_MS * 2))
 
     rerender({ target: 500 })
-    await act(() => vi.advanceTimersByTimeAsync(COUNT_UP_MS / 3))
-    expect(result.current).toBeLessThan(500)
-
-    await act(() => vi.advanceTimersByTimeAsync(COUNT_UP_MS))
     expect(result.current).toBe(500)
   })
 })

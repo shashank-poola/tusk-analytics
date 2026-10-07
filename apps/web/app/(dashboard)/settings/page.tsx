@@ -10,7 +10,7 @@ import { routes } from "@/lib/routes"
 import { getSession, listLinkedAccounts } from "@/lib/session"
 
 export const metadata: Metadata = {
-  title: "Settings · Viewtally",
+  title: "Settings",
 }
 
 export default async function SettingsPage({
@@ -34,13 +34,13 @@ export default async function SettingsPage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+      <h1 className="text-2xl leading-tight">Settings</h1>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         Your account: who you sign in as, which providers can sign you in, and
-        how Viewtally looks in this browser.
+        how Tusk looks in this browser.
       </p>
 
-      <Section title="Profile" description="How you show up in Viewtally.">
+      <Section title="Profile" description="How you show up in Tusk.">
         <ProfileForm
           name={user.name}
           email={user.email}
@@ -67,7 +67,7 @@ export default async function SettingsPage({
 
       <Section
         title="Appearance"
-        description="Choose how Viewtally looks in this browser."
+        description="Choose how Tusk looks in this browser."
       >
         <AppearancePicker />
       </Section>
@@ -97,9 +97,9 @@ function Section({ title, description, children }: SectionProps) {
   return (
     <section
       aria-labelledby={id}
-      className="mt-8 rounded-3xl border border-border bg-surface p-5 shadow-card sm:p-7"
+      className="mt-8 rounded-2xl border-2 border-border bg-surface p-5 sm:p-7"
     >
-      <h2 id={id} className="font-semibold">
+      <h2 id={id} className="text-lg leading-snug">
         {title}
       </h2>
       <p className="mt-1 mb-5 text-sm text-muted-foreground">{description}</p>

@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { BUTTON_CLASSES } from "@/components/ui/button-styles"
 import { SectionBoundary } from "@/features/analytics/components/section-boundary"
 import {
   SiteSparkline,
@@ -23,7 +24,7 @@ import { getSession } from "@/lib/session"
 import { SITES_RANGE_COOKIE } from "@/lib/view-cookie"
 
 export const metadata: Metadata = {
-  title: "Your sites · Viewtally",
+  title: "Your sites",
 }
 
 /**
@@ -61,12 +62,9 @@ export default async function SitesPage() {
           </SectionBoundary>{" "}
           visitors in the <SitesRangeMenu range={range} />
         </div>
-        <Link
-          href={routes.onboarding}
-          className="inline-flex h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-9"
-        >
+        <Link href={routes.onboarding} className={BUTTON_CLASSES.primary}>
           <Plus aria-hidden="true" className="size-4" />
-          Website
+          Add site
         </Link>
       </header>
 

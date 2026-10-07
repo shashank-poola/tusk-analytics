@@ -11,8 +11,13 @@ import { scriptUrl } from "@/lib/env"
 import { routes } from "@/lib/routes"
 import { buildSnippets } from "@/features/onboarding/utils/snippets"
 
-export const metadata: Metadata = {
-  title: "Install Viewtally · Viewtally",
+// getSite is cached per request, so the page reuses this lookup.
+export async function generateMetadata({
+  params,
+}: PageProps<"/onboarding/[siteId]">): Promise<Metadata> {
+  const site = await getSite((await params).siteId)
+  if (!site) notFound()
+  return { title: `Install on ${site.domain}` }
 }
 
 export default async function InstallSnippetPage({
@@ -24,9 +29,7 @@ export default async function InstallSnippetPage({
 
   return (
     <>
-      <h1 className="text-2xl font-normal tracking-tight">
-        Install Viewtally on {site.domain}
-      </h1>
+      <h1 className="text-2xl leading-tight">Install Tusk on {site.domain}</h1>
       <p className="mt-2 mb-8 text-sm text-muted-foreground">
         Add this script to your site. It&apos;s small and loads without blocking
         your pages.

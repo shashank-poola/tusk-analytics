@@ -5,10 +5,12 @@ import {
   type CreateSiteRequest,
   type ErrorCode,
 } from "@workspace/contracts"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { createSite } from "@/features/sites/server/sites.queries"
 import { routes } from "@/lib/routes"
+import { SIGNUP_DOMAIN_COOKIE } from "@/lib/signup-domain"
 
 /** Inline errors for the add-site form, by field. */
 export type AddSiteErrors = {
@@ -33,6 +35,8 @@ export async function addSite(
   const result = await createSite(input.data)
   if (!result.ok) return errorsForCode(result.error.code, result.error.message)
 
+  // The landing page's domain has done its job.
+  ;(await cookies()).delete(SIGNUP_DOMAIN_COOKIE)
   redirect(routes.installSnippet(result.data.id))
 }
 

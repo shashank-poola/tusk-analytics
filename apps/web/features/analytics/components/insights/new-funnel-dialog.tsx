@@ -1,5 +1,6 @@
 "use client"
 
+import { cn } from "@workspace/ui/lib/utils"
 import {
   FUNNEL_MAX_STEPS,
   FUNNEL_MIN_STEPS,
@@ -8,6 +9,7 @@ import {
 import { Plus, Trash2, X } from "lucide-react"
 import { useId, useRef, useState, useTransition } from "react"
 
+import { BUTTON_CLASSES, INPUT_CLASSES } from "@/components/ui/button-styles"
 import { useSetView } from "@/features/analytics/hooks/use-set-view"
 import { createFunnelAction } from "@/features/analytics/server/funnel-actions"
 import { routes } from "@/lib/routes"
@@ -26,8 +28,7 @@ type NewFunnelDialogProps = {
   triggerClassName: string
 }
 
-const FIELD_CLASSES =
-  "h-11 rounded-lg border border-border bg-background px-2.5 text-sm sm:h-9"
+const FIELD_CLASSES = cn(INPUT_CLASSES, "w-auto px-2.5 text-sm")
 
 /**
  * "New funnel": a name and 2–8 steps, each a page or a goal, saved through
@@ -90,11 +91,11 @@ export function NewFunnelDialog({
       <dialog
         ref={dialogRef}
         aria-labelledby={`${id}-title`}
-        className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-foreground/30 backdrop:backdrop-blur-[2px] open:animate-rise"
+        className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-[1.25rem] border-2 border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-foreground/30 backdrop:backdrop-blur-[2px] open:animate-rise"
       >
         <form onSubmit={save} className="space-y-4 p-5">
           <div className="flex items-center justify-between">
-            <h2 id={`${id}-title`} className="font-semibold">
+            <h2 id={`${id}-title`} className="text-lg leading-snug">
               New funnel
             </h2>
             <button
@@ -114,7 +115,7 @@ export function NewFunnelDialog({
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Signup"
-              className={`${FIELD_CLASSES} w-full`}
+              className={cn(FIELD_CLASSES, "w-full")}
             />
           </label>
           <ol className="space-y-2">
@@ -147,7 +148,7 @@ export function NewFunnelDialog({
                     update(index, { value: event.target.value })
                   }
                   placeholder={step.type === "page" ? "/pricing" : "signup"}
-                  className={`${FIELD_CLASSES} min-w-0 flex-1`}
+                  className={cn(FIELD_CLASSES, "min-w-0 flex-1")}
                 />
                 <button
                   type="button"
@@ -199,7 +200,7 @@ export function NewFunnelDialog({
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex h-11 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-60 sm:h-9"
+              className={BUTTON_CLASSES.primary}
             >
               {saving ? "Saving…" : "Save funnel"}
             </button>

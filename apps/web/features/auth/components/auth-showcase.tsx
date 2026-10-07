@@ -6,24 +6,24 @@ const FEATURES = [
   "Connects to Stripe, Polar, Paddle and more",
 ]
 
-/** The light half of the sign-in page. Hidden on small screens. */
+/** The light half of the sign-in page, in playful mode. Hidden on small screens. */
 export function AuthShowcase() {
   return (
     <section className="hidden flex-1 flex-col bg-surface px-20 py-11 text-foreground lg:flex">
       <Logo />
 
       <div className="my-auto max-w-lg pb-11">
-        <h1 className="text-[3.25rem] leading-[1.08] font-normal tracking-[-0.03em]">
+        <h1 className="text-[3.5rem] leading-[1.05]">
           Know which traffic
           <br />
           turns into revenue.
         </h1>
-        <p className="mt-7 text-[1.0625rem] leading-relaxed text-muted-foreground">
-          Add one script. Viewtally counts your visitors and links every payment
-          to the source that brought the customer in.
+        <p className="mt-7 max-w-[60ch] text-[1.0625rem] leading-normal text-muted-foreground">
+          Add one script. Tusk counts your visitors and links every payment to
+          the source that brought the customer in.
         </p>
 
-        <ul className="mt-9 space-y-3.5 text-sm">
+        <ul className="mt-9 space-y-3.5">
           {FEATURES.map((feature) => (
             <li key={feature} className="flex items-center gap-3">
               <CheckIcon />
@@ -40,7 +40,7 @@ function CheckIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      className="size-4 shrink-0 text-accent"
+      className="size-5 shrink-0 text-positive"
       aria-hidden="true"
     >
       <circle cx="8" cy="8" r="8" fill="currentColor" />

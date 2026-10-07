@@ -4,6 +4,7 @@ import { Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
+import { BUTTON_CLASSES } from "@/components/ui/button-styles"
 import { GoogleIcon } from "@/components/brand/google-icon"
 import { accountErrorMessage } from "@/lib/auth-errors"
 import { authClient } from "@/lib/auth-client"
@@ -85,7 +86,7 @@ export function SignInMethods({
                 type="button"
                 disabled={pending}
                 onClick={connectGoogle}
-                className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 sm:min-h-9"
+                className={BUTTON_CLASSES.secondary}
               >
                 Connect
               </button>
@@ -93,7 +94,7 @@ export function SignInMethods({
           }
         />
         <MethodRow
-          icon={<Mail aria-hidden="true" className="size-5 text-accent" />}
+          icon={<Mail aria-hidden="true" className="size-5 text-link" />}
           name="Email link"
           detail={`Always on: we send a one-time link to ${email}`}
           action={null}
@@ -118,7 +119,7 @@ type MethodRowProps = {
 function MethodRow({ icon, name, detail, action }: MethodRowProps) {
   return (
     <li className="flex items-center gap-4 py-4">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-surface">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl border-2 border-border bg-surface">
         {icon}
       </span>
       <span className="min-w-0 flex-1">

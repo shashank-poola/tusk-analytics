@@ -27,7 +27,7 @@ const ACCOUNT_MESSAGES: Record<string, string> = {
     "This is your only connected provider, so it can't be disconnected.",
   ACCOUNT_NOT_FOUND: "That provider is no longer connected. Refresh the page.",
   SOCIAL_ACCOUNT_ALREADY_LINKED:
-    "That Google account is already linked to another Viewtally account.",
+    "That Google account is already linked to another Tusk account.",
 }
 
 export function accountErrorMessage(error: {

@@ -54,3 +54,48 @@ describe("proxy", () => {
     expect(response.cookies.get("vt_view")).toBeUndefined()
   })
 })
+
+describe("proxy on the landing page", () => {
+  const HOME = "http://localhost:3000/"
+
+  it("sends a visitor with a session cookie to the dashboard", () => {
+    const response = proxy(
+      new NextRequest(HOME, {
+        headers: { cookie: "better-auth.session_token=abc.def" },
+      })
+    )
+
+    expect(response.status).toBe(307)
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/dashboard"
+    )
+  })
+
+  it("accepts the secure cookie name used over https", () => {
+    const response = proxy(
+      new NextRequest("https://tusk.example/", {
+        headers: { cookie: "__Secure-better-auth.session_token=abc.def" },
+      })
+    )
+
+    expect(response.headers.get("location")).toBe(
+      "https://tusk.example/dashboard"
+    )
+  })
+
+  it("shows the landing page to everyone else", () => {
+    const response = proxy(new NextRequest(HOME))
+
+    expect(response.headers.get("location")).toBeNull()
+  })
+
+  it("leaves a site page with a session cookie alone", () => {
+    const response = proxy(
+      new NextRequest(SITE, {
+        headers: { cookie: "better-auth.session_token=abc.def" },
+      })
+    )
+
+    expect(response.headers.get("location")).toBeNull()
+  })
+})
