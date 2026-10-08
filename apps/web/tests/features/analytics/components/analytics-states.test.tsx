@@ -47,6 +47,10 @@ vi.mock("@/features/analytics/server/funnel-actions", () => ({
   createFunnelAction: vi.fn(),
   deleteFunnelAction: vi.fn(),
 }))
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+}))
 vi.mock("@/features/onboarding/server/install-status-action", () => ({
   checkInstallStatus: vi.fn(),
 }))
@@ -158,7 +162,7 @@ describe("site page states", () => {
     expect(getInstallStatus).not.toHaveBeenCalled()
   })
 
-  it("shows the verify panel while the site has no events at all", async () => {
+  it("shows the waiting dashboard while the site has no events at all", async () => {
     getSite.mockResolvedValue(SITE)
     getInstallStatus.mockResolvedValue({ connected: false, firstEventAt: null })
 
@@ -170,11 +174,11 @@ describe("site page states", () => {
     )
 
     expect(
-      screen.getByRole("heading", {
-        name: /myapp\.com hasn't sent a visit yet/,
-      })
+      screen.getByRole("heading", { name: "Waiting for your first visitor" })
     ).toBeInTheDocument()
-    expect(screen.getByText("Waiting for the first visit")).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: /Open myapp\.com/ })
+    ).toHaveAttribute("href", "https://myapp.com")
     expect(getOverview).not.toHaveBeenCalled()
   })
 })

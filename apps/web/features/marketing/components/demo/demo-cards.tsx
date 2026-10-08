@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card"
+import { LiveDot } from "@/components/ui/live-dot"
 
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -7,16 +8,10 @@ import { BreakdownRows } from "@/features/analytics/components/breakdowns/breakd
 import { UsersTable } from "@/features/analytics/components/insights/users-table"
 import { ChangeIndicator } from "@/features/analytics/components/overview/change-indicator"
 import { CountUp } from "@/features/analytics/components/overview/count-up"
-import {
-  KpiItem,
-  LiveDot,
-} from "@/features/analytics/components/overview/kpi-strip"
+import { KpiItem } from "@/features/analytics/components/overview/kpi-strip"
 import { WorldMap } from "@/features/analytics/components/locations/world-map"
 import { VisitorsChart } from "@/features/analytics/components/overview/visitors-chart"
-import {
-  TAB_TRACK_CLASSES,
-  tabClasses,
-} from "@/features/analytics/components/tab-pills"
+import { TAB_TRACK_CLASSES, tabClasses } from "@/components/ui/tab-styles"
 import {
   type Change,
   countChange,

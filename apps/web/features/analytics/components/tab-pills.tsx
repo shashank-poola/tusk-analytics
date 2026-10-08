@@ -1,17 +1,5 @@
-import { cn } from "@workspace/ui/lib/utils"
+import { TAB_TRACK_CLASSES, tabClasses } from "@/components/ui/tab-styles"
 import { ViewLink } from "@/features/analytics/components/view-link"
-
-/** The track and its pills; shared with the landing page demo. */
-export const TAB_TRACK_CLASSES = "inline-flex gap-0.5 rounded-xl bg-muted p-1"
-
-export function tabClasses(active: boolean): string {
-  return cn(
-    "inline-flex h-11 items-center rounded-lg px-3 text-[0.8125rem] font-medium whitespace-nowrap transition-colors sm:h-7",
-    active
-      ? "bg-surface text-foreground shadow-card"
-      : "text-muted-foreground hover:text-foreground"
-  )
-}
 
 type TabPillsProps = {
   /** Accessible name of the tab list, e.g. "sources breakdown". */

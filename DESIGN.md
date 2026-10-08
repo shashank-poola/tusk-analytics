@@ -189,11 +189,11 @@ Still needed: Peck alone (asleep and awake, for the Online count), Tusk waving (
 Live today:
 
 - **404 and missing sites**: the landing header, Tusk lost with his map (no backdrop), a plain explanation, "Go to dashboard" and "Back to home"
-- **First visitor (onboarding)**: Tusk jumps once and the card says "Your first visitor just showed up."
+- **Waiting for the first visit (dashboard)**: Pip waits with the bucket, with "Open yoursite.com" and the install snippet one click away
+- **First visitor**: one confetti burst (skipped with reduced motion), Tusk jumping in confetti and "Your first visitor just showed up.", then the real dashboard loads
 
 Planned:
 
-- Empty dashboard: Pip waiting, with the install snippet
 - Milestones (100, 1k, 10k visitors): Tusk jumping, with confetti
 - Traffic spike: Peck on Tusk's head, pointing
 - High bounce rate: Snap smirking in the corner of that card only

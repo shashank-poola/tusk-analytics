@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-import { usePrefersReducedMotion } from "./use-prefers-reduced-motion"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 
 export const COUNT_UP_MS = 600
 

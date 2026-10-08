@@ -9,7 +9,7 @@ import {
 } from "@workspace/ui/components/chart"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
-import { usePrefersReducedMotion } from "@/features/analytics/hooks/use-prefers-reduced-motion"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { tickLabel, tooltipLabel } from "@/features/analytics/utils/chart-axis"
 import { formatCompact } from "@/features/analytics/utils/format"
 import { goalColor } from "./goal-colors"

@@ -2,20 +2,16 @@
 
 import { domainSchema } from "@workspace/contracts"
 import { cn } from "@workspace/ui/lib/utils"
-import { Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { type FormEvent, useId, useState } from "react"
-import { preconnect } from "react-dom"
 
 import { BUTTON_CLASSES, INPUT_CLASSES } from "@/components/ui/button-styles"
-import { Icon } from "@/components/ui/icon"
+import { DomainFavicon } from "@/components/ui/domain-favicon"
 import { routes } from "@/lib/routes"
 import {
   SIGNUP_DOMAIN_COOKIE,
   SIGNUP_DOMAIN_MAX_AGE_SECONDS,
 } from "@/lib/signup-domain"
-
-const FAVICON_ORIGIN = "https://www.google.com"
 
 /**
  * "yoursite.com" plus the start button. The site's icon swaps in on the
@@ -28,11 +24,8 @@ export function DomainStart() {
   const id = useId()
   const [value, setValue] = useState("")
   const [error, setError] = useState<string | null>(null)
-  // Warms the connection, so the first favicon arrives sooner.
-  preconnect(FAVICON_ORIGIN)
 
   const parsed = domainSchema.safeParse(value)
-  const host = parsed.success ? parsed.data : null
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,11 +55,7 @@ export function DomainStart() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-4 grid place-items-center"
           >
-            {host ? (
-              <Icon type="referrer" name={host} className="size-5" />
-            ) : (
-              <Globe className="size-5 text-muted-foreground" />
-            )}
+            <DomainFavicon value={value} className="size-5" />
           </span>
           <input
             id={`${id}-domain`}

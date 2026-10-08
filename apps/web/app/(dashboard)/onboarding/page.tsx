@@ -2,6 +2,9 @@ import type { Metadata } from "next"
 import { cookies } from "next/headers"
 
 import { AddSiteForm } from "@/features/onboarding/components/add-site-form"
+import { OnboardingCard } from "@/features/onboarding/components/onboarding-card"
+import { listSites } from "@/features/sites/server/sites.queries"
+import { routes } from "@/lib/routes"
 import { parseSignupDomain, SIGNUP_DOMAIN_COOKIE } from "@/lib/signup-domain"
 
 export const metadata: Metadata = {
@@ -9,17 +12,21 @@ export const metadata: Metadata = {
 }
 
 export default async function OnboardingPage() {
+  const [jar, sites] = await Promise.all([cookies(), listSites({ limit: 1 })])
   // The domain typed on the landing page, if any, fills the form in.
-  const signupDomain = parseSignupDomain(
-    (await cookies()).get(SIGNUP_DOMAIN_COOKIE)?.value
-  )
+  const signupDomain = parseSignupDomain(jar.get(SIGNUP_DOMAIN_COOKIE)?.value)
   return (
-    <>
-      <h1 className="text-2xl leading-tight">Add your site</h1>
-      <p className="mt-2 mb-8 text-sm text-muted-foreground">
-        Tell us where Tusk will run. You&apos;ll get the install snippet next.
-      </p>
+    <OnboardingCard
+      step={1}
+      title="Add your site"
+      description="Tell us where Tusk will run. The install snippet comes next."
+      back={
+        sites.length > 0
+          ? { href: routes.sites, label: "Your sites" }
+          : undefined
+      }
+    >
       <AddSiteForm defaultDomain={signupDomain} />
-    </>
+    </OnboardingCard>
   )
 }

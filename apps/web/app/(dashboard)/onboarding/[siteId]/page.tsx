@@ -1,12 +1,10 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
-import { InstallSnippet } from "@/features/onboarding/components/install-snippet"
-import { VerifyInstallation } from "@/features/onboarding/components/verify-installation"
-import {
-  getInstallStatus,
-  getSite,
-} from "@/features/sites/server/sites.queries"
+import { InstallPanel } from "@/features/onboarding/components/install-panel"
+import { OnboardingCard } from "@/features/onboarding/components/onboarding-card"
+import { SiteFavicon } from "@/features/sites/components/site-favicon"
+import { getSite } from "@/features/sites/server/sites.queries"
 import { scriptUrl } from "@/lib/env"
 import { routes } from "@/lib/routes"
 import { buildSnippets } from "@/features/onboarding/utils/snippets"
@@ -25,26 +23,27 @@ export default async function InstallSnippetPage({
 }: PageProps<"/onboarding/[siteId]">) {
   const site = await getSite((await params).siteId)
   if (!site) notFound()
-  const installStatus = await getInstallStatus(site.id)
 
+  const snippet = { siteId: site.id, scriptUrl: scriptUrl() }
   return (
-    <>
-      <h1 className="text-2xl leading-tight">Install Tusk on {site.domain}</h1>
-      <p className="mt-2 mb-8 text-sm text-muted-foreground">
-        Add this script to your site. It&apos;s small and loads without blocking
-        your pages.
-      </p>
-      <InstallSnippet
-        snippets={buildSnippets({ siteId: site.id, scriptUrl: scriptUrl() })}
+    <OnboardingCard
+      step={2}
+      title={
+        <span className="flex items-center gap-2.5">
+          <SiteFavicon siteId={site.id} domain={site.domain} />
+          Install Tusk on {site.domain}
+        </span>
+      }
+      description="Pick how your site is built. It takes about a minute."
+      back={{ href: routes.site(site.id), label: "Dashboard" }}
+    >
+      <InstallPanel
+        snippets={{
+          standard: buildSnippets(snippet),
+          cookieless: buildSnippets({ ...snippet, cookieless: true }),
+        }}
         continueHref={routes.site(site.id)}
       />
-      <div className="mt-10">
-        <VerifyInstallation
-          siteId={site.id}
-          domain={site.domain}
-          initialStatus={installStatus}
-        />
-      </div>
-    </>
+    </OnboardingCard>
   )
 }
