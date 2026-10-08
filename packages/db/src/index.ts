@@ -1,6 +1,7 @@
 export { createDb, type Database } from "./client"
 export { createId } from "./lib/id"
 export * from "./schema"
+export * from "./queries/api-tokens"
 export * from "./queries/funnels"
 export * from "./queries/revenue"
 export * from "./queries/sites"

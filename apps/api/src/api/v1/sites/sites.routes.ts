@@ -12,7 +12,7 @@ import { HTTPException } from "hono/http-exception"
 import type { UserEnv } from "../../../config/env"
 import { jsonBody, queryParams } from "../../../lib/validate"
 import { requireSite } from "../../../middleware/require-site"
-import { requireUser } from "../../../middleware/require-user"
+import { requireUserOrToken } from "../../../middleware/require-user"
 import {
   listSitesQuerySchema,
   MAX_CREATE_SITE_BODY_BYTES,
@@ -27,7 +27,7 @@ import {
 } from "./sites.service"
 
 export const sitesRoutes = new Hono<UserEnv>()
-  .use(requireUser)
+  .use(requireUserOrToken)
   .get("/", queryParams(listSitesQuerySchema), async (c) => {
     const sites = await listSites(createDb(c.env.DB), {
       ownerId: c.get("user").id,

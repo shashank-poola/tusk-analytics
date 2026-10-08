@@ -1,7 +1,7 @@
 import type { Site } from "@workspace/db"
 import * as z from "zod"
 
-import type { AuthSession, AuthUser } from "../auth/auth.config"
+import type { AuthUser } from "../auth/auth.config"
 
 const requiredString = z.string({ error: "missing" }).trim().min(1, "missing")
 
@@ -35,7 +35,6 @@ export type Bindings = z.infer<typeof envSchema>
 
 type UserVariables = {
   user: AuthUser
-  session: AuthSession
 }
 
 /** Every route. */
@@ -43,7 +42,7 @@ export type AppEnv = {
   Bindings: Bindings
 }
 
-/** Routes behind `requireUser`. */
+/** Routes behind `requireUser` or `requireUserOrToken`. */
 export type UserEnv = {
   Bindings: Bindings
   Variables: UserVariables

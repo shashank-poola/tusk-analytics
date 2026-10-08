@@ -13,6 +13,8 @@ paths:
   `src/middleware/` or `packages/db/src/queries/`.
 - Mount new modules in `src/api/v1/index.ts`. Customer-data routes use
   `requireUser` then `requireSite` and type the router with `SiteEnv`.
+  `requireUserOrToken` also accepts read-only account tokens (the MCP
+  server); opt a router in only when an AI client should read it.
 - Throw `AppError(code, message)` for client errors. Add a code to
   `STATUS_BY_CODE` in `src/lib/errors.ts` only if none fits. Never return ad-hoc
   error JSON.

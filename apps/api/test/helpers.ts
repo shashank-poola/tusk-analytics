@@ -186,3 +186,34 @@ export async function insertPageviews(siteId: string, pageviews: Pageview[]) {
   )
   if (first) await createDb(env.DB).batch([first, ...rest])
 }
+
+/** Creates an account token through the API and returns its secret. */
+export async function createApiToken(cookie: string, name = "Claude Code") {
+  const res = await api(
+    "/tokens",
+    { cookie },
+    { method: "POST", body: JSON.stringify({ name }) }
+  )
+  expect(res.status).toBe(201)
+  const { secret } = (await res.json()) as { secret: string }
+  return secret
+}
+
+/** Calls `/api/v1${path}` with an account token instead of a cookie. */
+export function apiWithToken(
+  path: string,
+  token: string,
+  init: RequestInit = {}
+) {
+  return app.request(
+    `/api/v1${path}`,
+    {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+    env
+  )
+}

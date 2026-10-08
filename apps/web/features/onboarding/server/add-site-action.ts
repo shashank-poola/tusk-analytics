@@ -58,6 +58,8 @@ function errorsForCode(code: ErrorCode, message: string): AddSiteErrors {
       return { domain: message }
     case "site_limit_reached":
     case "funnel_limit_reached":
+    case "token_limit_reached":
+    case "forbidden":
     case "bad_request":
     case "unauthorized":
     case "not_found":

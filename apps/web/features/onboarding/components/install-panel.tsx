@@ -6,10 +6,10 @@ import Link from "next/link"
 import { useId, useState } from "react"
 
 import { BUTTON_CLASSES } from "@/components/ui/button-styles"
+import { CodeBlock } from "@/components/ui/code-block"
 import { TabList } from "@/components/ui/tab-list"
 
 import type { Snippets } from "@/features/onboarding/utils/snippets"
-import { CodeBlock } from "./code-block"
 import { CookielessSwitch } from "./cookieless-switch"
 import { LovableInstall } from "./lovable-install"
 

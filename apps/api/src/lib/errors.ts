@@ -8,6 +8,8 @@ const STATUS_BY_CODE = {
   site_already_exists: 409,
   site_limit_reached: 409,
   funnel_limit_reached: 409,
+  token_limit_reached: 409,
+  forbidden: 403,
   internal_error: 500,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>
 
@@ -38,6 +40,7 @@ export function toErrorBody(code: ErrorCode, message: string): ErrorBody {
 /** For errors that only carry an HTTP status, such as Hono's HTTPException. */
 export function codeForStatus(status: number): ErrorCode {
   if (status === 401) return "unauthorized"
+  if (status === 403) return "forbidden"
   if (status === 404) return "not_found"
   return status < 500 ? "bad_request" : "internal_error"
 }
