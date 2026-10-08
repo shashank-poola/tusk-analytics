@@ -4,12 +4,11 @@ import {
   createSiteInputSchema,
   type CreateSiteRequest,
   type ErrorCode,
+  type Site,
 } from "@workspace/contracts"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
 
 import { createSite } from "@/features/sites/server/sites.queries"
-import { routes } from "@/lib/routes"
 import { SIGNUP_DOMAIN_COOKIE } from "@/lib/signup-domain"
 
 /** Inline errors for the add-site form, by field. */
@@ -19,25 +18,38 @@ export type AddSiteErrors = {
   form?: string
 }
 
+export type AddSiteResult =
+  | { ok: true; site: Pick<Site, "id" | "domain"> }
+  | { ok: false; errors: AddSiteErrors }
+
 /**
- * Creates the site and redirects to its install snippet, or returns the
- * errors to show. Server actions are public POST endpoints, so the input is
- * validated again here even though the form already did.
+ * Creates the site, or returns the errors to show. The onboarding card
+ * then moves to the install step in place. Server actions are public POST
+ * endpoints, so the input is validated again here even though the form
+ * already did.
  */
 export async function addSite(
   request: CreateSiteRequest
-): Promise<AddSiteErrors> {
+): Promise<AddSiteResult> {
   const input = createSiteInputSchema.safeParse(request)
   if (!input.success) {
-    return { form: "Check the domain and time zone, then try again." }
+    return {
+      ok: false,
+      errors: { form: "Check the domain and time zone, then try again." },
+    }
   }
 
   const result = await createSite(input.data)
-  if (!result.ok) return errorsForCode(result.error.code, result.error.message)
+  if (!result.ok) {
+    return {
+      ok: false,
+      errors: errorsForCode(result.error.code, result.error.message),
+    }
+  }
 
   // The landing page's domain has done its job.
   ;(await cookies()).delete(SIGNUP_DOMAIN_COOKIE)
-  redirect(routes.installSnippet(result.data.id))
+  return { ok: true, site: { id: result.data.id, domain: result.data.domain } }
 }
 
 function errorsForCode(code: ErrorCode, message: string): AddSiteErrors {

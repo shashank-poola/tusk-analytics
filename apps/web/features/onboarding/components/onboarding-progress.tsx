@@ -1,33 +1,34 @@
 import { cn } from "@workspace/ui/lib/utils"
 
-const STEPS = 3
+const STEPS = ["Add your site", "Install the script"] as const
 
-/**
- * Three short bars over the onboarding card: add the site, install, first
- * visit. No step names on screen; screen readers hear the position.
- */
-export function OnboardingProgress({ step }: { step: 1 | 2 | 3 }) {
+/** Two bars over the onboarding card, each named; done and current fill blue. */
+export function OnboardingProgress({ step }: { step: 1 | 2 }) {
   return (
-    <div
-      role="progressbar"
-      aria-label="Setup progress"
-      aria-valuemin={1}
-      aria-valuemax={STEPS}
-      aria-valuenow={step}
-      aria-valuetext={`Step ${step} of ${STEPS}`}
-      className="flex gap-1.5"
-    >
-      {Array.from({ length: STEPS }, (_, index) => (
-        <span
-          // Fixed length and order: the index is the step.
-          // eslint-disable-next-line react/no-array-index-key
-          key={index}
-          className={cn(
-            "h-1.5 flex-1 rounded-full transition-colors",
-            index < step ? "bg-accent" : "bg-muted"
-          )}
-        />
-      ))}
-    </div>
+    <ol aria-label="Setup progress" className="grid w-full grid-cols-2 gap-3">
+      {STEPS.map((label, index) => {
+        const reached = index < step
+        const current = index === step - 1
+        return (
+          <li key={label} aria-current={current ? "step" : undefined}>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "block h-1.5 rounded-full transition-colors",
+                reached ? "bg-accent" : "bg-muted"
+              )}
+            />
+            <span
+              className={cn(
+                "mt-2 block text-[13px] font-semibold",
+                current ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {label}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }

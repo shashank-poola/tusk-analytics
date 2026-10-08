@@ -2,37 +2,28 @@ import { describe, expect, it, vi } from "vitest"
 
 import { addSite } from "@/features/onboarding/server/add-site-action"
 
-const { createSite, redirect, deleteCookie } = vi.hoisted(() => ({
+const { createSite, deleteCookie } = vi.hoisted(() => ({
   createSite: vi.fn(),
   deleteCookie: vi.fn(),
-  // Like the real one, redirect() throws to stop the action.
-  redirect: vi.fn((url: string) => {
-    throw new Error(`redirect:${url}`)
-  }),
 }))
 
 vi.mock("@/features/sites/server/sites.queries", () => ({ createSite }))
-vi.mock("next/navigation", () => ({ redirect }))
 vi.mock("next/headers", () => ({
   cookies: async () => ({ delete: deleteCookie }),
 }))
 
 const REQUEST = { domain: "https://www.example.com/", timezone: "UTC" }
+const SITE = { id: "vt_3k9x2m7qpd4n8r1t", domain: "example.com" }
 
 function apiError(code: string, message: string) {
   return { ok: false, status: 400, error: { code, message } }
 }
 
 describe("addSite", () => {
-  it("sends the normalized site and redirects to its install snippet", async () => {
-    createSite.mockResolvedValue({
-      ok: true,
-      data: { id: "vt_3k9x2m7qpd4n8r1t" },
-    })
+  it("sends the normalized site and returns it for the install step", async () => {
+    createSite.mockResolvedValue({ ok: true, data: SITE })
 
-    await expect(addSite(REQUEST)).rejects.toThrow(
-      "redirect:/onboarding/vt_3k9x2m7qpd4n8r1t"
-    )
+    expect(await addSite(REQUEST)).toEqual({ ok: true, site: SITE })
     expect(createSite).toHaveBeenCalledWith({
       domain: "example.com",
       timezone: "UTC",
@@ -41,12 +32,10 @@ describe("addSite", () => {
   })
 
   it("forgets the domain typed on the landing page once the site exists", async () => {
-    createSite.mockResolvedValue({
-      ok: true,
-      data: { id: "vt_3k9x2m7qpd4n8r1t" },
-    })
+    createSite.mockResolvedValue({ ok: true, data: SITE })
 
-    await expect(addSite(REQUEST)).rejects.toThrow("redirect:")
+    await addSite(REQUEST)
+
     expect(deleteCookie).toHaveBeenCalledWith("tusk_signup_domain")
   })
 
@@ -56,7 +45,8 @@ describe("addSite", () => {
     )
 
     expect(await addSite(REQUEST)).toEqual({
-      domain: "You already added example.com.",
+      ok: false,
+      errors: { domain: "You already added example.com." },
     })
   })
 
@@ -66,7 +56,8 @@ describe("addSite", () => {
     )
 
     expect(await addSite(REQUEST)).toEqual({
-      form: "You can add up to 25 sites per account.",
+      ok: false,
+      errors: { form: "You can add up to 25 sites per account." },
     })
   })
 
@@ -76,13 +67,17 @@ describe("addSite", () => {
     )
 
     expect(await addSite(REQUEST)).toEqual({
-      form: "localhost only works in development.",
+      ok: false,
+      errors: { form: "localhost only works in development." },
     })
   })
 
   it("rejects invalid input without calling the API", async () => {
+    createSite.mockClear()
+
     expect(await addSite({ domain: "not a domain", timezone: "UTC" })).toEqual({
-      form: "Check the domain and time zone, then try again.",
+      ok: false,
+      errors: { form: "Check the domain and time zone, then try again." },
     })
     expect(createSite).not.toHaveBeenCalled()
   })

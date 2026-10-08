@@ -1,14 +1,12 @@
 "use client"
 
 import type { InstallStatus } from "@workspace/contracts"
-import { ExternalLink } from "lucide-react"
-import Image from "next/image"
+import { Check, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 import { BUTTON_CLASSES } from "@/components/ui/button-styles"
-import { LiveDot } from "@/components/ui/live-dot"
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { routes } from "@/lib/routes"
 
@@ -79,13 +77,12 @@ function Celebration({
 }) {
   return (
     <section className="flex flex-col items-center gap-5 rounded-[1.25rem] border-2 border-accent bg-surface p-6 text-center sm:flex-row sm:text-left">
-      <Image
-        src="/mascot/hippocelebration.png"
-        alt="Tusk the hippo jumping for joy in confetti"
-        width={112}
-        height={112}
-        className="size-28 shrink-0 motion-safe:animate-jump"
-      />
+      <span
+        aria-hidden="true"
+        className="grid size-16 shrink-0 place-items-center rounded-full bg-positive text-white motion-safe:animate-jump"
+      >
+        <Check className="size-8" strokeWidth={3} />
+      </span>
       <div className="flex-1">
         <h1 className="text-2xl leading-tight">
           Your first visitor just showed up.
@@ -116,13 +113,7 @@ function Waiting({ siteId, domain, timedOut, showChecklist }: WaitingProps) {
   return (
     <section className="rounded-[1.25rem] border-2 border-border bg-surface p-6">
       <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-        <Image
-          src="/mascot/tealbucket.png"
-          alt="Pip the baby hippo, waiting with a bucket"
-          width={96}
-          height={96}
-          className="size-24 shrink-0"
-        />
+        <ListeningRadar paused={timedOut} />
         <div className="flex-1">
           <h1 className="text-2xl leading-tight">
             {timedOut
@@ -134,12 +125,6 @@ function Waiting({ siteId, domain, timedOut, showChecklist }: WaitingProps) {
               ? "We stopped checking after 5 minutes. Reload this page to check again."
               : `Open ${domain} in a new tab. You'll show up here within a few seconds.`}
           </p>
-          {!timedOut && (
-            <p className="mt-2 inline-flex items-center gap-2 text-[13px] font-semibold text-muted-foreground">
-              <LiveDot />
-              Listening for visits
-            </p>
-          )}
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
           <a
@@ -161,5 +146,33 @@ function Waiting({ siteId, domain, timedOut, showChecklist }: WaitingProps) {
       </div>
       {showChecklist && <InstallChecklist domain={domain} />}
     </section>
+  )
+}
+
+/**
+ * A dot with rings rippling out while Tusk listens for the first visit;
+ * still once checking has stopped. The rings are the page's only loop,
+ * like the Online dot's pulse, and stop with reduced motion.
+ */
+function ListeningRadar({ paused }: { paused: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative grid size-16 shrink-0 place-items-center"
+    >
+      {!paused && (
+        <>
+          <span className="absolute inset-0 animate-ping rounded-full bg-accent/25" />
+          <span className="absolute inset-3 animate-ping rounded-full bg-accent/30 [animation-delay:400ms]" />
+        </>
+      )}
+      <span
+        className={
+          paused
+            ? "size-4 rounded-full bg-muted-foreground"
+            : "size-4 rounded-full bg-accent"
+        }
+      />
+    </span>
   )
 }

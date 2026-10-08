@@ -189,8 +189,8 @@ Still needed: Peck alone (asleep and awake, for the Online count), Tusk waving (
 Live today:
 
 - **404 and missing sites**: the landing header, Tusk lost with his map (no backdrop), a plain explanation, "Go to dashboard" and "Back to home"
-- **Waiting for the first visit (dashboard)**: Pip waits with the bucket, with "Open yoursite.com" and the install snippet one click away
-- **First visitor**: one confetti burst (skipped with reduced motion), Tusk jumping in confetti and "Your first visitor just showed up.", then the real dashboard loads
+- **Waiting for the first visit (dashboard)**: no mascot; a small radar (a dot with rings rippling out) while Tusk listens, "Open yoursite.com" and the install snippet one click away
+- **First visitor**: one confetti burst (skipped with reduced motion), a green check and "Your first visitor just showed up.", then the real dashboard loads
 
 Planned:
 

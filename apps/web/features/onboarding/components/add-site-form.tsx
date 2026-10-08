@@ -12,6 +12,7 @@ import { DomainFavicon } from "@/components/ui/domain-favicon"
 import {
   addSite,
   type AddSiteErrors,
+  type AddSiteResult,
 } from "@/features/onboarding/server/add-site-action"
 import { useLocalTime } from "@/features/onboarding/hooks/use-local-time"
 import { useTimezoneOptions } from "@/features/onboarding/hooks/use-timezone-options"
@@ -19,6 +20,8 @@ import { useTimezoneOptions } from "@/features/onboarding/hooks/use-timezone-opt
 type AddSiteFormProps = {
   /** Typed on the landing page before sign-in. */
   defaultDomain?: string
+  /** Called with the new site; the card then shows the install step. */
+  onAdded: (site: Extract<AddSiteResult, { ok: true }>["site"]) => void
 }
 
 /**
@@ -26,7 +29,7 @@ type AddSiteFormProps = {
  * the domain is valid, and the time zone shows its clock right now, so
  * the choice is easy to check.
  */
-export function AddSiteForm({ defaultDomain = "" }: AddSiteFormProps) {
+export function AddSiteForm({ defaultDomain = "", onAdded }: AddSiteFormProps) {
   const [domain, setDomain] = useState(defaultDomain)
   const { defaultTimezone, timezones } = useTimezoneOptions()
   const [chosenTimezone, setChosenTimezone] = useState<string | null>(null)
@@ -50,8 +53,9 @@ export function AddSiteForm({ defaultDomain = "" }: AddSiteFormProps) {
 
     setErrors({})
     startTransition(async () => {
-      // Only returns on failure; on success the action redirects.
-      setErrors(await addSite({ domain, timezone }))
+      const result = await addSite({ domain, timezone })
+      if (result.ok) onAdded(result.site)
+      else setErrors(result.errors)
     })
   }
 

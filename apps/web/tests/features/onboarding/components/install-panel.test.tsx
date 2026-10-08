@@ -23,10 +23,17 @@ function renderPanel() {
 }
 
 describe("InstallPanel", () => {
-  it("shows the script tag first and goes to the dashboard once added", () => {
+  it("starts on Next.js, has no plain HTML tab, and goes to the dashboard once added", () => {
     renderPanel()
 
-    expect(screen.getByText(/<script defer data-site=/)).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: /Next\.js/ })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
+    expect(screen.getAllByRole("tab")).toHaveLength(3)
+    expect(
+      screen.getByText(/import Script from "next\/script"/)
+    ).toBeInTheDocument()
     expect(
       screen.getByRole("link", { name: "I've added the script" })
     ).toHaveAttribute("href", "/site/vt_3k9x2m7qpd4n8r1t")

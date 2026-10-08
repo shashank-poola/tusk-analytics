@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@workspace/ui/lib/utils"
-import { ArrowRight, Code, Heart, Package, Triangle } from "lucide-react"
+import { ArrowRight, Heart, Package, Triangle } from "lucide-react"
 import Link from "next/link"
 import { useId, useState } from "react"
 
@@ -15,7 +15,6 @@ import { InstallHint } from "./install-hint"
 import { LovableInstall } from "./lovable-install"
 
 const TABS = [
-  { id: "script", label: "Script", icon: Code },
   { id: "nextjs", label: "Next.js", icon: Triangle },
   { id: "npm", label: "npm", icon: Package },
   { id: "lovable", label: "Lovable", icon: Heart },
@@ -37,7 +36,7 @@ type InstallPanelProps = {
  */
 export function InstallPanel({ snippets, continueHref }: InstallPanelProps) {
   const id = useId()
-  const [tab, setTab] = useState<Tab>("script")
+  const [tab, setTab] = useState<Tab>("nextjs")
   const [cookieless, setCookieless] = useState(false)
   const current = cookieless ? snippets.cookieless : snippets.standard
 
@@ -60,14 +59,6 @@ export function InstallPanel({ snippets, continueHref }: InstallPanelProps) {
         tabIndex={0}
         className="space-y-3 rounded-2xl"
       >
-        {tab === "script" && (
-          <>
-            <InstallHint>
-              Paste it into the &lt;head&gt; of every page.
-            </InstallHint>
-            <CodeBlock label="index.html" code={current.html} />
-          </>
-        )}
         {tab === "nextjs" && (
           <>
             <InstallHint>
