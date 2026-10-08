@@ -121,7 +121,7 @@ The most recent visitors in the range, latest first, up to `limit` (20 by
 default, at most 50). For each `visitor_id` with a pageview in the range:
 
 - `id`: a site-scoped pseudonym, never the tracker's `visitor_id` (the
-  `vt_vid` cookie value). It is HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`
+  `vt_vid` cookie value, or an in-memory id in cookieless mode). It is HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`
   over `viewtally:visitor-pseudonym:v1:<siteId>:<visitorId>`, in hex, cut
   to 24 characters. Stable across requests, different for the same browser
   on two sites; rotating the secret changes every pseudonym (avatars,
