@@ -42,7 +42,7 @@ export function OnboardingFlow({
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100svh-7rem)] w-full max-w-lg flex-col justify-center gap-5 sm:h-[calc(100svh-9rem)]">
+    <div className="mx-auto flex h-[calc(100svh-7rem)] w-full max-w-lg flex-col justify-start gap-5 pt-[6svh] sm:h-[calc(100svh-9rem)] sm:pt-[10svh]">
       <OnboardingProgress step={site ? 2 : 1} />
       <section
         aria-labelledby="onboarding-title"
