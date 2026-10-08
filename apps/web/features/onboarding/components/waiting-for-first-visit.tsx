@@ -1,38 +1,47 @@
 import type { InstallStatus, Site } from "@workspace/contracts"
-import Link from "next/link"
 
-import { routes } from "@/lib/routes"
+import { Card, FIXED_CARD_HEIGHT } from "@/components/ui/card"
 
-import { VerifyInstallation } from "./verify-installation"
+import {
+  BreakdownSkeleton,
+  ChartSkeleton,
+  KpiStripSkeleton,
+} from "@/features/analytics/components/skeletons"
+import { FirstVisitWatch } from "./first-visit-watch"
 
 type WaitingForFirstVisitProps = { site: Site; initialStatus: InstallStatus }
 
-/** The site page before any event: the verify panel and the way back. */
+/**
+ * The site's dashboard before its first visit: the watch banner on top,
+ * the dashboard's own skeleton below, so the page the owner is about to
+ * see is already in place when the first visit lands.
+ */
 export function WaitingForFirstVisit({
   site,
   initialStatus,
 }: WaitingForFirstVisitProps) {
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl leading-tight">
-          Almost there: {site.domain} hasn&apos;t sent a visit yet.
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your analytics appear here as soon as it does.{" "}
-          <Link
-            href={routes.installSnippet(site.id)}
-            className="font-medium text-link underline-offset-4 hover:underline"
-          >
-            See the install snippet
-          </Link>
-        </p>
-      </div>
-      <VerifyInstallation
+    <div className="space-y-4 sm:space-y-5">
+      <FirstVisitWatch
         siteId={site.id}
         domain={site.domain}
         initialStatus={initialStatus}
       />
+      <div aria-hidden="true" className="space-y-4 sm:space-y-5">
+        <Card className="overflow-hidden">
+          <KpiStripSkeleton />
+          <div className="px-3 pb-3 sm:px-5 sm:pb-4">
+            <ChartSkeleton />
+          </div>
+        </Card>
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+          {["sources", "pages", "locations", "devices"].map((card) => (
+            <Card key={card} className={`${FIXED_CARD_HEIGHT} p-2.5`}>
+              <BreakdownSkeleton />
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

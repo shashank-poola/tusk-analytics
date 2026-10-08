@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { cookies } from "next/headers"
 
-import { AddSiteForm } from "@/features/onboarding/components/add-site-form"
+import { OnboardingFlow } from "@/features/onboarding/components/onboarding-flow"
+import { scriptUrl } from "@/lib/env"
 import { parseSignupDomain, SIGNUP_DOMAIN_COOKIE } from "@/lib/signup-domain"
 
 export const metadata: Metadata = {
@@ -13,13 +14,5 @@ export default async function OnboardingPage() {
   const signupDomain = parseSignupDomain(
     (await cookies()).get(SIGNUP_DOMAIN_COOKIE)?.value
   )
-  return (
-    <>
-      <h1 className="text-2xl leading-tight">Add your site</h1>
-      <p className="mt-2 mb-8 text-sm text-muted-foreground">
-        Tell us where Tusk will run. You&apos;ll get the install snippet next.
-      </p>
-      <AddSiteForm defaultDomain={signupDomain} />
-    </>
-  )
+  return <OnboardingFlow scriptUrl={scriptUrl()} defaultDomain={signupDomain} />
 }

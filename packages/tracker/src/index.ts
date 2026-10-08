@@ -1,4 +1,5 @@
 import { type Config, readConfig } from "./config"
+import { disableCookies } from "./cookie"
 import { onGoal } from "./goals"
 import { onOutboundClick } from "./outbound"
 import { send } from "./send"
@@ -10,6 +11,7 @@ import { getVisitorId } from "./visitor"
 // customer's page.
 
 function start(config: Config): void {
+  if (config.cookieless) disableCookies()
   let lastPage: string | undefined
 
   function trackPageview(): void {

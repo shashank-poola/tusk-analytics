@@ -122,4 +122,3 @@ export function createAuth(env: Bindings) {
 
 type Auth = ReturnType<typeof createAuth>
 export type AuthUser = Auth["$Infer"]["Session"]["user"]
-export type AuthSession = Auth["$Infer"]["Session"]["session"]

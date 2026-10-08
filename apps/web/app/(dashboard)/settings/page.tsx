@@ -1,11 +1,14 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
+import { ApiTokens } from "@/features/settings/components/api-tokens"
 import { AppearancePicker } from "@/features/settings/components/appearance-picker"
 import { ProfileForm } from "@/features/settings/components/profile-form"
 import { SignInMethods } from "@/features/settings/components/sign-in-methods"
+import { findApiTokens } from "@/features/settings/server/api-tokens.queries"
 import { accountErrorMessage } from "@/lib/auth-errors"
 import { userAvatar } from "@/lib/avatar"
+import { scriptUrl } from "@/lib/env"
 import { routes } from "@/lib/routes"
 import { getSession, listLinkedAccounts } from "@/lib/session"
 
@@ -16,9 +19,10 @@ export const metadata: Metadata = {
 export default async function SettingsPage({
   searchParams,
 }: PageProps<"/settings">) {
-  const [session, accounts, { error }] = await Promise.all([
+  const [session, accounts, tokens, { error }] = await Promise.all([
     getSession(),
     listLinkedAccounts(),
+    findApiTokens(),
     searchParams,
   ])
   // The layout already checked; this narrows the type.
@@ -36,8 +40,8 @@ export default async function SettingsPage({
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl leading-tight">Settings</h1>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Your account: who you sign in as, which providers can sign you in, and
-        how Tusk looks in this browser.
+        Your account: who you sign in as, which providers can sign you in, which
+        AI tools can read your stats, and how Tusk looks in this browser.
       </p>
 
       <Section title="Profile" description="How you show up in Tusk.">
@@ -62,6 +66,16 @@ export default async function SettingsPage({
           email={user.email}
           googleAccountId={google?.id ?? null}
           linkedCount={accounts.length}
+        />
+      </Section>
+
+      <Section
+        title="API & MCP"
+        description="Let Claude, Cursor or Codex read your stats. Account tokens are read-only: they can't change or delete anything."
+      >
+        <ApiTokens
+          tokens={tokens}
+          mcpUrl={new URL("/api/mcp", scriptUrl()).href}
         />
       </Section>
 

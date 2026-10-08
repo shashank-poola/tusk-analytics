@@ -17,9 +17,9 @@ export async function sendMagicLinkEmail(
     body: JSON.stringify({
       from: env.EMAIL_FROM,
       to: [to],
-      subject: "Sign in to Viewtally",
-      text: `Sign in to Viewtally:\n\n${url}\n\nThis link expires in 5 minutes. If you didn't ask for it, ignore this email.`,
-      html: `<p><a href="${escapeHtml(url)}">Sign in to Viewtally</a></p><p>This link expires in 5 minutes. If you didn't ask for it, ignore this email.</p>`,
+      subject: "Sign in to Tusk",
+      text: `Sign in to Tusk:\n\n${url}\n\nThis link expires in 5 minutes. If you didn't ask for it, ignore this email.`,
+      html: `<p><a href="${escapeHtml(url)}">Sign in to Tusk</a></p><p>This link expires in 5 minutes. If you didn't ask for it, ignore this email.</p>`,
     }),
   })
 

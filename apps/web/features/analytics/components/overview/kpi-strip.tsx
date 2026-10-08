@@ -1,5 +1,7 @@
 import type { StatsOverviewResponse } from "@workspace/contracts"
 
+import { LiveDot } from "@/components/ui/live-dot"
+
 import { ChangeIndicator } from "./change-indicator"
 import { CountUp, type CountUpFormat } from "./count-up"
 import { type Change, countChange } from "@/features/analytics/utils/format"
@@ -81,16 +83,6 @@ export function KpiStrip({
         value={<LiveCount siteId={siteId} initialCount={liveVisitors} />}
       />
     </ul>
-  )
-}
-
-/** The Online label's pulsing dot: the only looping animation. */
-export function LiveDot() {
-  return (
-    <span aria-hidden="true" className="relative flex size-2">
-      <span className="absolute inline-flex size-full animate-ping rounded-full bg-live opacity-60" />
-      <span className="relative inline-flex size-2 rounded-full bg-live" />
-    </span>
   )
 }
 

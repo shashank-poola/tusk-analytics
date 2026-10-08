@@ -12,7 +12,7 @@ import { validator } from "hono/validator"
 import type { SiteEnv } from "../../../config/env"
 import { jsonBody, parseOrThrow } from "../../../lib/validate"
 import { requireSite } from "../../../middleware/require-site"
-import { requireUser } from "../../../middleware/require-user"
+import { requireUserOrToken } from "../../../middleware/require-user"
 import {
   funnelParamsSchema,
   MAX_CREATE_FUNNEL_BODY_BYTES,
@@ -24,7 +24,7 @@ import { createFunnel, getFunnels, removeFunnel } from "./funnels.service"
  * signed-in user owns :siteId; every query is scoped to that site.
  */
 export const funnelsRoutes = new Hono<SiteEnv>()
-  .use(requireUser)
+  .use(requireUserOrToken)
   .use(requireSite)
   .get("/", async (c) => {
     const funnels = await getFunnels(createDb(c.env.DB), c.get("site").id)

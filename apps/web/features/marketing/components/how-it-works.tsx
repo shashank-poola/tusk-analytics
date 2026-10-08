@@ -21,7 +21,7 @@ const STEPS = [
   },
 ] as const
 
-/** Heading and button on the left (sticky on desktop), numbered steps on the right. */
+/** Heading and button on the left, numbered steps on the right. */
 export function HowItWorks() {
   return (
     <Section
@@ -30,7 +30,7 @@ export function HowItWorks() {
       labelledBy="how-title"
       className="grid gap-12 lg:grid-cols-2 lg:gap-16"
     >
-      <div className="lg:sticky lg:top-28 lg:self-start">
+      <div>
         <Pill>How it works</Pill>
         <h2 id="how-title" className={`${SECTION_HEADING_CLASSES} mt-5`}>
           Up and running in three steps.

@@ -4,7 +4,6 @@ import { Logo, LogoMark } from "@/components/brand/logo"
 import { routes } from "@/lib/routes"
 
 import { AccountMenu } from "./account-menu"
-import { ThemeToggle } from "./theme-toggle"
 
 type DashboardHeaderProps = {
   name: string | null
@@ -30,7 +29,6 @@ export function DashboardHeader({
           <LogoMark className="size-11 sm:hidden" />
         </Link>
         <div className="ml-auto flex items-center gap-1">
-          <ThemeToggle />
           <AccountMenu name={name} email={email} avatarSrc={avatarSrc} />
         </div>
       </div>

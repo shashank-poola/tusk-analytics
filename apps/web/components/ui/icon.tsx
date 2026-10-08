@@ -13,6 +13,14 @@ const DIRECTORIES: Record<Exclude<IconType, "referrer">, string> = {
   country: "flags",
 }
 
+// Black logos that vanish on a dark background: flipped to white there.
+const BLACK_ICONS = new Set([
+  "/icons/os/macos.svg",
+  "/icons/os/ios.svg",
+  "/icons/referrers/x.svg",
+  "/icons/referrers/github.svg",
+])
+
 const GENERIC = "/icons/generic.svg"
 const GENERIC_LINK = "/icons/generic-link.svg"
 
@@ -59,7 +67,11 @@ export function Icon({ type, name, className }: IconProps) {
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src)}
-      className={cn("size-5 shrink-0 rounded-[4px] object-contain", className)}
+      className={cn(
+        "size-5 shrink-0 rounded-[4px] object-contain",
+        BLACK_ICONS.has(src) && "dark:invert",
+        className
+      )}
     />
   )
 }

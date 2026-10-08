@@ -9,7 +9,8 @@ paths:
   (`bun run check:tracker-size`, enforced in CI). Zero runtime
   dependencies; only `import type` from `@workspace/contracts`.
 - Two first-party cookies only, both random ids: `vt_vid` (visitor, which
-  attribution needs) and `vt_sid` (session). No third-party cookies, no
+  attribution needs) and `vt_sid` (session); none at all in cookieless
+  mode (`data-cookieless="true"`). No third-party cookies, no
   fingerprinting, no PII. Collect only what
   `packages/db/src/schema/tracking.ts` stores (see the `tracker-script`
   skill for what is sent and reduced server-side).

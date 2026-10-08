@@ -54,13 +54,12 @@ export async function createSite(
 }
 
 /**
- * Whether the signed-in user's site has received its first event. An API
- * error counts as "not yet": the verify panel keeps polling and recovers,
- * instead of a secondary check taking the whole page down. Cached per
- * request: the site layout and page both need it.
+ * Whether the signed-in user's site has received its first event, or null
+ * when the API couldn't say. For decisions that must not guess, like
+ * where /dashboard sends someone. Cached per request.
  */
-export const getInstallStatus = cache(
-  async (siteId: string): Promise<InstallStatus> => {
+export const findInstallStatus = cache(
+  async (siteId: string): Promise<InstallStatus | null> => {
     const result = await apiRequest(
       `/api/v1/sites/${siteId}/install-status`,
       installStatusSchema
@@ -69,6 +68,20 @@ export const getInstallStatus = cache(
     console.error(
       `Checking the install status of ${siteId} failed (${result.error.code}): ${result.error.message}`
     )
-    return { connected: false, firstEventAt: null }
+    return null
   }
 )
+
+/**
+ * Like `findInstallStatus`, but an API error counts as "not yet": the
+ * waiting banner keeps polling and recovers, instead of a secondary check
+ * taking the whole page down.
+ */
+export async function getInstallStatus(siteId: string): Promise<InstallStatus> {
+  return (
+    (await findInstallStatus(siteId)) ?? {
+      connected: false,
+      firstEventAt: null,
+    }
+  )
+}

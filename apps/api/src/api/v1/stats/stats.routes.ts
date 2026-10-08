@@ -13,7 +13,7 @@ import { Hono } from "hono"
 import type { SiteEnv } from "../../../config/env"
 import { queryParams } from "../../../lib/validate"
 import { requireSite } from "../../../middleware/require-site"
-import { requireUser } from "../../../middleware/require-user"
+import { requireUserOrToken } from "../../../middleware/require-user"
 import {
   breakdownQuerySchema,
   funnelQuerySchema,
@@ -35,7 +35,7 @@ import { getStatsFunnel, getStatsGoals } from "./stats.goals"
  * signed-in user owns :siteId.
  */
 export const statsRoutes = new Hono<SiteEnv>()
-  .use(requireUser)
+  .use(requireUserOrToken)
   .use(requireSite)
   .get("/overview", queryParams(statsQuerySchema), async (c) => {
     const overview = await getStatsOverview(

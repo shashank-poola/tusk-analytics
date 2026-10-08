@@ -1,6 +1,8 @@
 export type Config = {
   siteId: string
   endpoint: string
+  /** No cookies at all: ids last for the page only (EU sites without consent). */
+  cookieless: boolean
 }
 
 function isLocalPage(): boolean {
@@ -22,12 +24,13 @@ function isIgnored(): boolean {
 
 /**
  * Reads the tracker's settings from its script tag:
- * `<script defer data-site="vt_…" src="https://…/script.js">`.
+ * `<script defer data-site="vt_…" src="https://…/script.js">`, plus
+ * `data-cookieless="true"` to set no cookies.
  * Returns null when this page must not be tracked.
  */
 export function readConfig(script: Element | null): Config | null {
   if (!(script instanceof HTMLScriptElement)) return null
-  const { site, api, allowLocalhost } = script.dataset
+  const { site, api, allowLocalhost, cookieless } = script.dataset
   if (!site) return null
   if (isLocalPage() && allowLocalhost !== "true") return null
   if (isIgnored()) return null
@@ -36,5 +39,6 @@ export function readConfig(script: Element | null): Config | null {
     siteId: site,
     // data-api points the tracker at another origin, for proxies.
     endpoint: new URL("/api/v1/collect", api || script.src).href,
+    cookieless: cookieless === "true",
   }
 }

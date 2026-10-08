@@ -45,7 +45,9 @@ packages/tracker/
 
 - Config from `document.currentScript`: `data-site="vt_…"` (required; the
   install snippet's attribute, never rename it), `data-api` (an origin; the
-  default is the script's own origin), `data-allow-localhost="true"`.
+  default is the script's own origin), `data-allow-localhost="true"`,
+  `data-cookieless="true"` (no cookies; ids in memory for the page only,
+  see references/privacy.md).
   Endpoint: `<origin>/api/v1/collect`.
 - Skips entirely on `localhost`, `127.0.0.1` and `file:` (unless
   `data-allow-localhost="true"`), and when `localStorage.vt_ignore` is set

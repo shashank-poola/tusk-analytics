@@ -10,7 +10,7 @@ import { Cell, Pie, PieChart } from "recharts"
 import { Icon } from "@/components/ui/icon"
 
 import { useSetView } from "@/features/analytics/hooks/use-set-view"
-import { usePrefersReducedMotion } from "@/features/analytics/hooks/use-prefers-reduced-motion"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { formatNumber } from "@/features/analytics/utils/format"
 
 export type ChannelSlice = {
