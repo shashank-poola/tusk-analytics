@@ -31,7 +31,7 @@ export function BreakdownDialog({
       <button
         type="button"
         onClick={() => dialogRef.current?.showModal()}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase transition-colors hover:bg-muted hover:text-foreground sm:min-h-8"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-8"
       >
         <Maximize2 aria-hidden="true" className="size-3" />
         Details
@@ -46,10 +46,10 @@ export function BreakdownDialog({
           // A click on the backdrop lands on the <dialog> itself.
           if (event.target === event.currentTarget) dialogRef.current?.close()
         }}
-        className="m-auto h-[min(42rem,85svh)] w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-black/50 backdrop:backdrop-blur-sm open:flex open:animate-rise"
+        className="m-auto h-[min(42rem,85svh)] w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border-2 border-border bg-surface p-0 text-foreground shadow-pop backdrop:bg-black/50 backdrop:backdrop-blur-sm open:flex open:animate-rise"
       >
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <h2 className="shrink-0 text-lg font-bold">{title}</h2>
+          <h2 className="shrink-0 text-lg leading-snug">{title}</h2>
           <SearchFilter
             label={`Search ${title.toLowerCase()}`}
             placeholder="Search…"

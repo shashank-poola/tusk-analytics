@@ -38,17 +38,19 @@ type VisitorsChartProps = {
   label: string
   /** The totals in words, for screen readers. */
   summary: string
+  /** The plot's height; the landing page's small card uses a shorter one. */
+  heightClassName?: string
 }
 
 type DotProps = { cx?: number; cy?: number; index?: number }
 
-/** Up to this many points, each one gets a dot (sparse data reads better). */
-const DOTTED_POINTS = 31
+/** Wide enough for "9.9K" at 12 px, so no tick label is clipped. */
+const Y_AXIS_WIDTH = 40
 
 /**
  * Visitors: one smooth, curvy line with a soft glow over a fading
- * gradient, dashed for the bucket still running, dots on each point when there are
- * few, a crosshair and tooltip on hover. The biggest peaks carry the icon
+ * gradient, dashed for the bucket still running. No dots until hover: then
+ * one dot on the hovered point, a crosshair and a tooltip. The biggest peaks carry the icon
  * of their top source. With `compare`, the previous period is a dotted
  * line behind it (the Google Analytics / Plausible pattern).
  */
@@ -57,6 +59,7 @@ export function VisitorsChart({
   compare,
   label,
   summary,
+  heightClassName = "h-64 sm:h-80",
 }: VisitorsChartProps) {
   // useId output can contain characters that break `url(#…)` references.
   const gradientId = `visitors-fill-${useId().replace(/[^\w-]/g, "")}`
@@ -105,11 +108,11 @@ export function VisitorsChart({
     <figure className="m-0">
       <ChartContainer
         config={chartConfig}
-        className="aspect-auto h-64 w-full sm:h-80"
+        className={`aspect-auto w-full ${heightClassName} dark:[&_.recharts-cartesian-axis-tick_text]:fill-foreground/75`}
         role="img"
         aria-label={label}
       >
-        <ComposedChart data={data} margin={{ left: 0, right: 12, top: 32 }}>
+        <ComposedChart data={data} margin={{ left: 4, right: 12, top: 32 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop
@@ -140,14 +143,16 @@ export function VisitorsChart({
             axisLine={false}
             tickMargin={12}
             minTickGap={28}
+            fontSize={12}
             tickFormatter={(t: string) => tickLabel(t, scale)}
           />
-          {/* Numbers start at the card's left edge, as on DataFast. */}
           <YAxis
-            width={32}
-            tick={{ textAnchor: "start", dx: -26 }}
+            width={Y_AXIS_WIDTH}
+            tickMargin={8}
+            fontSize={12}
             tickLine={false}
             axisLine={false}
+            // Whole visitors only: small counts tick 0, 1, 2… never 0.5.
             allowDecimals={false}
             tickCount={5}
             domain={[0, (max: number) => Math.max(4, Math.ceil(max * 1.15))]}
@@ -187,16 +192,7 @@ export function VisitorsChart({
             type="monotone"
             stroke="none"
             fill={`url(#${gradientId})`}
-            dot={
-              points.length <= DOTTED_POINTS
-                ? {
-                    r: 2.5,
-                    strokeWidth: 2,
-                    stroke: "var(--color-visitors)",
-                    fill: "var(--surface)",
-                  }
-                : false
-            }
+            dot={false}
             activeDot={{
               r: 5,
               strokeWidth: 3,

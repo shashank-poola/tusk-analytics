@@ -61,7 +61,7 @@ export function SitesRangeMenu({ range }: { range: SitesRange }) {
                 <Check
                   aria-hidden="true"
                   className={cn(
-                    "size-4 text-accent",
+                    "size-4 text-link",
                     option !== range && "invisible"
                   )}
                 />

@@ -63,7 +63,7 @@ export function IntervalMenu({ siteId, view }: IntervalMenuProps) {
                 <span className="flex-1">{INTERVAL_LABELS[interval]}</span>
                 <Check
                   aria-hidden="true"
-                  className={cn("size-4 text-accent", !active && "invisible")}
+                  className={cn("size-4 text-link", !active && "invisible")}
                 />
               </ViewLink>
             </li>

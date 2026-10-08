@@ -25,21 +25,19 @@ export function SignIn({ errorCode }: SignInProps) {
 
   return (
     <div className="w-full max-w-76 text-center">
-      <LogoMark className="mx-auto size-9" />
-      <h1 className="mt-5 text-[1.75rem] font-light tracking-tight">
-        Welcome to Viewtally
-      </h1>
+      <LogoMark className="mx-auto size-16 lg:hidden" />
+      <h1 className="mt-5 text-[1.75rem] leading-tight">Welcome to Tusk</h1>
 
       {sentTo ? (
         <>
-          <p className="mt-2 text-[0.8125rem] text-muted-foreground">
+          <p className="mt-2 text-[15px] text-muted-foreground">
             We sent a sign-in link to{" "}
             <span className="text-foreground">{sentTo}</span>. It expires in 5
             minutes.
           </p>
           <AuthButton
             type="button"
-            variant="outline"
+            variant="secondary"
             className="mt-6"
             onClick={() => setSentTo(null)}
           >
@@ -48,7 +46,7 @@ export function SignIn({ errorCode }: SignInProps) {
         </>
       ) : (
         <>
-          <p className="mt-2 text-[0.8125rem] text-muted-foreground">
+          <p className="mt-2 text-[15px] text-muted-foreground">
             Sign in or create your account to get started.
           </p>
           <div className="mt-6 space-y-2.5">

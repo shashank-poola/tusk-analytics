@@ -9,6 +9,7 @@ export const VIEW_PARAM = "view"
 type SiteSearch = Record<string, string | undefined>
 
 export const routes = {
+  home: "/",
   signIn: "/signup",
   dashboard: "/dashboard",
   onboarding: "/onboarding",
@@ -30,4 +31,14 @@ export const routes = {
   },
   terms: "/terms",
   privacy: "/privacy",
+  // Public pages linked from the landing footer that still have to be
+  // written; until then they answer with the 404 page.
+  cookies: "/cookies",
+  dataProcessing: "/dpa",
+  docs: "/docs",
+  installGuide: "/docs/install",
+  changelog: "/changelog",
+  blog: "/blog",
+  compare: (rival: "google-analytics" | "plausible" | "fathom" | "datafast") =>
+    `/compare/${rival}`,
 } as const

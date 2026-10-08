@@ -40,8 +40,13 @@ import {
   listSites,
 } from "@/features/sites/server/sites.queries"
 
-export const metadata: Metadata = {
-  title: "Site · Viewtally",
+// getSite is cached per request, so the page reuses this lookup.
+export async function generateMetadata({
+  params,
+}: PageProps<"/site/[siteId]">): Promise<Metadata> {
+  const site = await getSite((await params).siteId)
+  if (!site) notFound()
+  return { title: site.domain }
 }
 
 export default async function SitePage({

@@ -35,7 +35,7 @@ export function GoalsView({ goals }: { goals: StatsGoalsResponse }) {
         <ul
           id={LIST_ID}
           aria-label="Goals"
-          className="min-h-0 space-y-1 overflow-y-auto rounded-xl border border-border p-1.5"
+          className="min-h-0 space-y-1 overflow-y-auto rounded-xl border-2 border-border p-1.5"
         >
           {goals.goals.map((goal, index) => (
             <li
@@ -73,7 +73,7 @@ export function GoalsView({ goals }: { goals: StatsGoalsResponse }) {
 }
 
 const CODE_CLASSES =
-  "block overflow-x-auto rounded-lg bg-background px-2.5 py-2 font-mono text-xs"
+  "block overflow-x-auto rounded-lg bg-muted px-2.5 py-2 font-mono text-xs"
 
 /** How to send goals: the "+" in DataFast's corner, as a how-to. */
 export function GoalHelp() {

@@ -36,7 +36,7 @@ describe("InstallSnippet", () => {
     const writeText = mockClipboard(() => Promise.resolve())
     render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy" }))
+    fireEvent.click(screen.getByRole("button", { name: "Copy snippet" }))
 
     expect(
       await screen.findByRole("button", { name: "Copied" })
@@ -48,7 +48,7 @@ describe("InstallSnippet", () => {
     mockClipboard(() => Promise.reject(new Error("NotAllowedError")))
     render(<InstallSnippet snippets={SNIPPETS} continueHref="/site/vt_x" />)
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy" }))
+    fireEvent.click(screen.getByRole("button", { name: "Copy snippet" }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't copy")
   })

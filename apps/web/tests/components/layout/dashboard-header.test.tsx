@@ -96,9 +96,10 @@ describe("DashboardHeader", () => {
   it("has only the logo, the theme toggle and the account menu", () => {
     renderHeader()
 
-    expect(
-      screen.getByRole("link", { name: "Viewtally home" })
-    ).toHaveAttribute("href", "/dashboard")
+    expect(screen.getByRole("link", { name: "Tusk home" })).toHaveAttribute(
+      "href",
+      "/dashboard"
+    )
     expect(screen.getByLabelText("Account: Ada Lovelace")).toBeInTheDocument()
     expect(screen.queryByLabelText(/Switch site/)).not.toBeInTheDocument()
   })

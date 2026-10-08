@@ -34,7 +34,7 @@ describe("ProfileForm", () => {
 
   it("keeps Save disabled until the name changes", async () => {
     const input = renderForm()
-    const save = screen.getByRole("button", { name: "Save" })
+    const save = screen.getByRole("button", { name: "Save changes" })
     expect(save).toBeDisabled()
 
     await userEvent.type(input, "!")
@@ -50,7 +50,7 @@ describe("ProfileForm", () => {
 
     await userEvent.clear(input)
     await userEvent.type(input, "  Grace Hopper  ")
-    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(updateUser).toHaveBeenCalledWith({ name: "Grace Hopper" })
     expect(await screen.findByText("Saved.")).toBeInTheDocument()
@@ -61,7 +61,7 @@ describe("ProfileForm", () => {
     const input = renderForm()
 
     await userEvent.clear(input)
-    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(screen.getByRole("alert")).toHaveTextContent("Enter your name.")
     expect(updateUser).not.toHaveBeenCalled()
@@ -75,7 +75,7 @@ describe("ProfileForm", () => {
     const input = renderForm()
 
     await userEvent.type(input, "!")
-    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Enter a name of up to 80 characters."

@@ -5,6 +5,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
 
+import { BUTTON_CLASSES } from "@/components/ui/button-styles"
 import { LOCALE } from "@/features/analytics/utils/format"
 import {
   addMonths,
@@ -160,7 +161,7 @@ export function DateRangeCalendar({
             type="button"
             disabled={!from || !to || tooLong}
             onClick={() => from && to && onApply(from, to)}
-            className="inline-flex h-11 items-center rounded-lg bg-accent px-4 font-semibold text-accent-foreground transition-opacity hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:h-9"
+            className={BUTTON_CLASSES.primary}
           >
             Apply
           </button>
@@ -265,7 +266,7 @@ function DateField({ label, value, today, onChange }: DateFieldProps) {
           const date = parseDate(event.target.value)
           if (date && date <= today) onChange(date)
         }}
-        className="h-11 w-32 rounded-lg border border-border bg-background px-2.5 tabular-nums placeholder:text-muted-foreground/60 sm:h-9"
+        className="h-11 w-32 rounded-xl border-2 border-border bg-surface px-2.5 tabular-nums placeholder:text-muted-foreground/60 focus:border-accent focus:ring-3 focus:ring-accent-soft focus:outline-none sm:h-9"
       />
     </label>
   )

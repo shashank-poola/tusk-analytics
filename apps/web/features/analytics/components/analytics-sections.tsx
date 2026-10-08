@@ -28,10 +28,10 @@ import { BreakdownBody } from "./breakdowns/breakdown-body"
 import { BreakdownDialog } from "./breakdowns/breakdown-dialog"
 import { BreakdownTable } from "./breakdowns/breakdown-table"
 import { ChannelDonut } from "./breakdowns/channel-donut"
-import { NoData } from "./empty-state"
 import { WorldMap } from "./locations/world-map"
 import { KpiStrip } from "./overview/kpi-strip"
 import { VisitorsChart } from "./overview/visitors-chart"
+import { NoData } from "./empty-state"
 
 // Each section fetches its own data inside its own Suspense boundary, so the
 // requests run in parallel and stream in as they finish. Shared requests are

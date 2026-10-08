@@ -5,7 +5,8 @@ import { cn } from "@workspace/ui/lib/utils"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-import { TallyMarks } from "@/components/brand/tally-marks"
+import { LogoMark } from "@/components/brand/logo"
+import { BUTTON_CLASSES } from "@/components/ui/button-styles"
 import { Card } from "@/components/ui/card"
 import { routes } from "@/lib/routes"
 
@@ -33,26 +34,22 @@ export function VerifyInstallation({
     return (
       <Card role="status" className="max-w-2xl p-6">
         <div className="flex items-start gap-4">
-          <span
+          <LogoMark
             className={cn(
-              "grid size-12 shrink-0 place-items-center rounded-2xl",
-              celebrate
-                ? "bg-highlight/20 text-foreground"
-                : "bg-accent-soft text-accent"
+              "size-16 bg-accent-soft",
+              celebrate && "animate-jump"
             )}
-          >
-            <TallyMarks animate={celebrate} className="size-7" />
-          </span>
+          />
           <div>
-            <h2 className="font-medium">
-              {celebrate ? "You're live! First visit counted." : "Connected"}
+            <h2 className="text-lg leading-snug">
+              {celebrate ? "Your first visitor just showed up." : "Connected"}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Viewtally received the first pageview from {domain}.
+              Tusk received the first pageview from {domain}.
             </p>
             <Link
               href={routes.site(siteId)}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90 sm:min-h-9"
+              className={cn(BUTTON_CLASSES.primary, "mt-4")}
             >
               View analytics
               <ArrowRight aria-hidden="true" className="size-4" />
@@ -67,11 +64,9 @@ export function VerifyInstallation({
   return (
     <Card aria-live="polite" className="max-w-2xl p-6">
       <div className="flex items-start gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-muted text-muted-foreground">
-          <TallyMarks className="size-7 opacity-40" />
-        </span>
+        <LogoMark className="size-16" />
         <div>
-          <h2 className="font-medium">Waiting for the first visit</h2>
+          <h2 className="text-lg leading-snug">Waiting for the first visit</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {timedOut
               ? "We stopped checking after 5 minutes. Reload this page to check again."

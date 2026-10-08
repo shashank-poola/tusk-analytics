@@ -67,7 +67,7 @@ export function SiteSwitcher({
               <Check
                 aria-hidden="true"
                 className={cn(
-                  "size-4 text-accent",
+                  "size-4 text-link",
                   site.id !== current.id && "invisible"
                 )}
               />

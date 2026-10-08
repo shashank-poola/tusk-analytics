@@ -4,6 +4,8 @@ import { RotateCw } from "lucide-react"
 import { catchError, type ErrorInfo } from "next/error"
 import { Suspense } from "react"
 
+import { BUTTON_CLASSES } from "@/components/ui/button-styles"
+
 /** What a failed section shows instead of blanking the page. */
 export function SectionError({
   title,
@@ -26,7 +28,7 @@ export function SectionError({
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 font-medium transition-colors hover:bg-muted sm:min-h-9"
+        className={BUTTON_CLASSES.secondary}
       >
         <RotateCw aria-hidden="true" className="size-3.5" />
         Try again

@@ -12,63 +12,110 @@
  * Values and usage: docs/design/dashboard.md.
  */
 :root {
-  /* Brand: Blue Ribbon #1E61F0, Black #000000, Catskill White #F1F4F9. */
-  --background: #f1f4f9;
+  /* Tusk palette: Tusk White page, Riverbank, Mist, Mud, Riverbed. */
+  --background: #ffffff;
   --surface: #ffffff;
-  --foreground: #0b0d12;
-  --muted: #e9edf4;
-  --muted-foreground: #5d6472;
-  --border: #e0e5ee;
-  --accent: #1e61f0;
+  --foreground: #17202e;
+  --muted: #f4f7fb;
+  --muted-foreground: #5a6678;
+  --border: #e2e8f0;
+  /* Landing page: alternate sections, and the cards that sit on them. */
+  --section-alt: #f4f7fb;
+  --surface-on-alt: #ffffff;
+  /* Tusk Blue for fills; Deep Water for blue text, which needs contrast. */
+  --accent: #2d8cff;
   --accent-foreground: #ffffff;
-  --accent-soft: #e2ebfd;
-  --highlight: oklch(0.8 0.15 75);
-  --positive: oklch(0.55 0.13 155);
-  --negative: oklch(0.56 0.19 27);
-  --live: oklch(0.68 0.17 150);
-  --chart-1: var(--accent);
-  --chart-2: #b4cbfa;
-  --shadow-color: 222 60% 25%;
+  --accent-soft: #e6f1ff;
+  --link: #1558c0;
+  --button: #1f7af0;
+  /* Hover goes darker, not lighter, so white text keeps its contrast. */
+  --button-hover: #1668dc;
+  /* Deep Water in both themes: blue text on a white button. */
+  --deep-water: #1558c0;
+  --button-edge: #1558c0;
+  --danger-edge: #b8261e;
+  --highlight: #ffb020;
+  --positive: #22b573;
+  --negative: #f0443a;
+  --live: #22b573;
+  /* macOS window buttons, for the landing page's demo window. */
+  --window-close: #ff5f57;
+  --window-minimize: #febc2e;
+  --window-zoom: #28c840;
+  /* Series order: Tusk Blue, Sunrise, Pip Teal, Snap Purple. */
+  --chart-1: #2d8cff;
+  --chart-2: #ffb020;
+  --chart-3: #2ec4b6;
+  --chart-4: #8b5cf6;
+  --shadow-color: 216 33% 14%;
 }
 
 .dark {
-  /* Neutral greys and steel blues after DataFast's dark dashboard. */
-  --background: #1c1c1c;
-  --surface: #242424;
-  --foreground: #f2f2f2;
-  --muted: #303030;
-  --muted-foreground: #a3a3a3;
-  --border: #323232;
-  /* Lighter than the brand blue so text and thin lines stay legible. */
-  --accent: #5c8ff7;
-  --accent-foreground: #0a0a0c;
-  --accent-soft: #2f4a61;
-  --highlight: oklch(0.82 0.14 75);
-  --positive: oklch(0.75 0.13 155);
-  --negative: oklch(0.72 0.15 27);
-  --live: oklch(0.75 0.17 150);
-  --chart-1: #8cc8f5;
-  --chart-2: #3a4c5c;
+  /* Near-black with only a hint of navy, so the blue stays in the brand
+     colour and the data, not the chrome. */
+  --background: #0c1017;
+  --surface: #131821;
+  --foreground: #eef1f6;
+  --muted: #1b212b;
+  --muted-foreground: #9aa3b2;
+  --border: #242b36;
+  /* Same as surface, so cards on alt sections step up to the muted fill. */
+  --section-alt: #131821;
+  --surface-on-alt: #1b212b;
+  --accent: #2d8cff;
+  --accent-foreground: #ffffff;
+  --accent-soft: #19283d;
+  --link: #5aa6ff;
+  --button: #1f7af0;
+  --deep-water: #1558c0;
+  --button-hover: #1668dc;
+  --button-edge: #1558c0;
+  --danger-edge: #b8261e;
+  --highlight: #ffb020;
+  --positive: #22b573;
+  --negative: #f0443a;
+  --live: #22b573;
+  --chart-1: #2d8cff;
+  --chart-2: #ffb020;
+  --chart-3: #2ec4b6;
+  --chart-4: #8b5cf6;
   --shadow-color: 0 0% 0%;
   color-scheme: dark;
 }
 
 @theme inline {
+  /* next/font sets these three variables in apps/web/app/layout.tsx. */
+  --font-sans: var(--font-fredoka), system-ui, sans-serif;
+  --font-heading: var(--font-feather), "Baloo 2", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-section-alt: var(--section-alt);
+  --color-surface-on-alt: var(--surface-on-alt);
+  --color-deep-water: var(--deep-water);
+  --color-window-close: var(--window-close);
+  --color-window-minimize: var(--window-minimize);
+  --color-window-zoom: var(--window-zoom);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
+  --color-link: var(--link);
+  --color-button: var(--button);
+  --color-button-hover: var(--button-hover);
+  --color-button-edge: var(--button-edge);
+  --color-danger-edge: var(--danger-edge);
   --color-highlight: var(--highlight);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-live: var(--live);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
   --shadow-card:
     0 1px 2px hsl(var(--shadow-color) / 0.05),
     0 8px 24px -12px hsl(var(--shadow-color) / 0.12);
@@ -76,21 +123,15 @@
     0 1px 2px hsl(var(--shadow-color) / 0.08),
     0 16px 40px -12px hsl(var(--shadow-color) / 0.25);
   --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-grow-x: grow-x 300ms var(--ease-out-soft) both;
-  --animate-draw: draw 150ms var(--ease-out-soft) both;
   --animate-rise: rise 200ms var(--ease-out-soft) both;
+  --animate-jump: jump 480ms var(--ease-spring) both;
+  --animate-marquee: marquee 40s linear infinite;
 
   @keyframes grow-x {
     from {
       transform: scaleX(0);
-    }
-  }
-  @keyframes draw {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
     }
   }
   @keyframes rise {
@@ -99,11 +140,35 @@
       transform: translateY(4px);
     }
   }
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes jump {
+    40% {
+      transform: translateY(-14px) scale(1.04);
+    }
+  }
+}
+
+/* A named utility instead of an arbitrary property, so class sorting is the
+   same on every machine. Used by the landing page's demo window. */
+@utility zoom-90 {
+  zoom: 0.9;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-[15px] leading-normal text-foreground;
+  }
+  /* Feather Bold has one weight: never ask for another or let it fake one. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-synthesis: none;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-accent;

@@ -45,7 +45,7 @@ export function SearchFilter({
             row.hidden = !(row.dataset.search ?? "").includes(query)
           }
         }}
-        className="h-11 w-40 rounded-lg border border-border bg-background pr-2 pl-8 text-sm placeholder:text-muted-foreground sm:h-8 sm:w-48"
+        className="h-11 w-40 rounded-xl border-2 border-border bg-surface pr-2 pl-8 text-sm placeholder:text-muted-foreground focus:border-accent focus:ring-3 focus:ring-accent-soft focus:outline-none sm:h-8 sm:w-48"
       />
     </div>
   )

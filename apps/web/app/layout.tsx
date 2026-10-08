@@ -1,30 +1,40 @@
 import type { Metadata } from "next"
-import { Geist_Mono } from "next/font/google"
+import { JetBrains_Mono } from "next/font/google"
 import localFont from "next/font/local"
 
 import "@workspace/ui/globals.css"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 
 export const metadata: Metadata = {
-  title: "Viewtally",
+  // Tabs truncate from the right, so the specific part (a site's domain,
+  // "Settings") comes first and the brand last: "shashank.ink · Tusk".
+  title: { template: "%s · Tusk", default: "Tusk" },
   description: "Web analytics that links every payment to its traffic source.",
 }
 
-// Gellix is the brand typeface. Only the weights the UI uses are loaded.
-const fontSans = localFont({
+// Feather Bold (headings) has a single weight; Fredoka (everything else)
+// loads only the weights the UI uses.
+const fontHeading = localFont({
+  src: "../public/font/feather-bold/Duolingo Feather Bold.ttf",
+  weight: "700",
+  variable: "--font-feather",
+  display: "swap",
+  fallback: ["Baloo 2", "system-ui", "sans-serif"],
+})
+
+const fontBody = localFont({
   src: [
-    { path: "../public/font/Gellix-TRIAL-Regular.otf", weight: "400" },
-    { path: "../public/font/Gellix-TRIAL-Medium.otf", weight: "500" },
-    { path: "../public/font/Gellix-TRIAL-SemiBold.otf", weight: "600" },
-    { path: "../public/font/Gellix-TRIAL-Bold.otf", weight: "700" },
+    { path: "../public/font/fredoka/Fredoka-Regular.ttf", weight: "400" },
+    { path: "../public/font/fredoka/Fredoka-Medium.ttf", weight: "500" },
+    { path: "../public/font/fredoka/Fredoka-SemiBold.ttf", weight: "600" },
   ],
-  variable: "--font-sans",
+  variable: "--font-fredoka",
   display: "swap",
 })
 
-const fontMono = Geist_Mono({
+const fontMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-jetbrains-mono",
 })
 
 export default function RootLayout({
@@ -36,7 +46,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
+      className={`${fontHeading.variable} ${fontBody.variable} ${fontMono.variable} font-sans antialiased`}
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>

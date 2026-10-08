@@ -7,7 +7,7 @@ import { routes } from "@/lib/routes"
 import { getSession } from "@/lib/session"
 
 export const metadata: Metadata = {
-  title: "Sign in · Viewtally",
+  title: "Sign in",
 }
 
 export default async function SignUpPage({
