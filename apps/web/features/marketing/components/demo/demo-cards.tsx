@@ -11,6 +11,7 @@ import {
   KpiItem,
   LiveDot,
 } from "@/features/analytics/components/overview/kpi-strip"
+import { WorldMap } from "@/features/analytics/components/locations/world-map"
 import { VisitorsChart } from "@/features/analytics/components/overview/visitors-chart"
 import {
   TAB_TRACK_CLASSES,
@@ -159,7 +160,11 @@ export function DemoBreakdown({
           const breakdown = DEMO_BREAKDOWNS[tab.id]
           return [
             tab.id,
-            compact ? (
+            tab.id === "map" ? (
+              <div key={tab.id} className="min-h-0 flex-1">
+                <WorldMap rows={breakdown.rows} hrefFor={noFilter} />
+              </div>
+            ) : compact ? (
               <BreakdownRows
                 key={tab.id}
                 label={`Top ${tab.label.toLowerCase()}`}

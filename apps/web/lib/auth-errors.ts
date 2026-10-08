@@ -17,6 +17,9 @@ export function requestErrorMessage(error: { status: number }): string {
   if (error.status === 429) {
     return "Too many attempts. Wait a minute and try again."
   }
+  if (error.status >= 500) {
+    return "We couldn't send the sign-in email. Try again in a minute, or continue with Google."
+  }
   return FALLBACK
 }
 

@@ -1,4 +1,4 @@
-import { ArrowDownWideNarrow } from "lucide-react"
+import { ArrowDown } from "lucide-react"
 
 import { Card, FIXED_CARD_HEIGHT } from "@/components/ui/card"
 import { routes } from "@/lib/routes"
@@ -61,7 +61,7 @@ export function SortedByVisitors() {
   return (
     <span className="flex shrink-0 items-center gap-1 text-xs font-semibold">
       Visitors
-      <ArrowDownWideNarrow
+      <ArrowDown
         aria-hidden="true"
         className="size-3.5 text-muted-foreground"
       />

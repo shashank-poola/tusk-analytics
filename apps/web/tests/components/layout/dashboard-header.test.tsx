@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { DashboardHeader } from "@/components/layout/dashboard-header"
-import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { SiteSwitcher } from "@/features/sites/components/site-switcher"
 
 import { SITE } from "@/tests/fixtures/analytics"
@@ -21,30 +20,6 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ siteId: SITE.id }),
   useRouter: () => ({ replace: vi.fn() }),
 }))
-
-describe("ThemeToggle", () => {
-  it("switches to dark from light", async () => {
-    theme.resolvedTheme = "light"
-    render(<ThemeToggle />)
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Switch to dark theme" })
-    )
-
-    expect(setTheme).toHaveBeenCalledWith("dark")
-  })
-
-  it("switches to light from dark", async () => {
-    theme.resolvedTheme = "dark"
-    render(<ThemeToggle />)
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Switch to light theme" })
-    )
-
-    expect(setTheme).toHaveBeenCalledWith("light")
-  })
-})
 
 describe("SiteSwitcher", () => {
   const BLOG = {

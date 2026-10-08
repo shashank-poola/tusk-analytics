@@ -73,6 +73,19 @@ const rows = (entries: [string | null, number][]): Rows =>
     pageviews: pageviewsFor(visitors),
   }))
 
+const COUNTRY_ROWS = rows([
+  ["US", 3_412],
+  ["IN", 1_788],
+  ["GB", 1_021],
+  ["DE", 864],
+  ["CA", 655],
+  ["FR", 512],
+  ["NL", 344],
+  ["BR", 298],
+  ["AU", 241],
+  ["SG", 167],
+])
+
 /** One entry per demo tab: its breakdown, as the stats API returns it. */
 export const DEMO_BREAKDOWNS = {
   referrer: {
@@ -120,21 +133,9 @@ export const DEMO_BREAKDOWNS = {
       ["/privacy", 21],
     ]),
   },
-  country: {
-    by: "country",
-    rows: rows([
-      ["US", 3_412],
-      ["IN", 1_788],
-      ["GB", 1_021],
-      ["DE", 864],
-      ["CA", 655],
-      ["FR", 512],
-      ["NL", 344],
-      ["BR", 298],
-      ["AU", 241],
-      ["SG", 167],
-    ]),
-  },
+  // The map is drawn from the same country rows.
+  map: { by: "country", rows: COUNTRY_ROWS },
+  country: { by: "country", rows: COUNTRY_ROWS },
   city: {
     by: "city",
     rows: [
@@ -208,6 +209,7 @@ export const DEMO_CARDS: {
   {
     label: "Locations",
     tabs: [
+      { id: "map", label: "Map" },
       { id: "country", label: "Country" },
       { id: "city", label: "City" },
     ],
