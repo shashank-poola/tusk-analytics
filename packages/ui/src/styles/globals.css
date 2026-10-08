@@ -152,6 +152,12 @@
   }
 }
 
+/* A named utility instead of an arbitrary property, so class sorting is the
+   same on every machine. Used by the landing page's demo window. */
+@utility zoom-90 {
+  zoom: 0.9;
+}
+
 @layer base {
   body {
     @apply bg-background text-[15px] leading-normal text-foreground;

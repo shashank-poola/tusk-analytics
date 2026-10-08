@@ -26,27 +26,30 @@ export function DemoDashboard() {
         tabIndex={0}
         role="region"
         aria-label="Demo dashboard, scrollable"
-        className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto overscroll-contain"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        style={{ scrollbarWidth: "thin" }}
       >
         {/* Zoomed out a step, like a dashboard seen in a real browser. */}
-        <div className="space-y-4 p-3 sm:[zoom:0.9] sm:space-y-5 sm:p-6">
-          <div className="flex items-center justify-between">
-            <Logo className="hidden sm:inline-flex" />
-            <LogoMark className="size-10 sm:hidden" />
-            <Avatar
-              src={generatedAvatar("usetusk-demo-owner")}
-              className="size-9"
-            />
-          </div>
+        <div className="sm:zoom-90">
+          <div className="space-y-4 p-3 sm:space-y-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <Logo className="hidden sm:inline-flex" />
+              <LogoMark className="size-10 sm:hidden" />
+              <Avatar
+                src={generatedAvatar("usetusk-demo-owner")}
+                className="size-9"
+              />
+            </div>
 
-          <Toolbar />
+            <Toolbar />
 
-          <DemoOverviewCard />
+            <DemoOverviewCard />
 
-          <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-            {DEMO_CARDS.map((card) => (
-              <DemoBreakdown key={card.label} card={card.label} />
-            ))}
+            <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+              {DEMO_CARDS.map((card) => (
+                <DemoBreakdown key={card.label} card={card.label} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
