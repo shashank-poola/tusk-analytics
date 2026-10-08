@@ -85,14 +85,16 @@ const LINK_CLASSES =
   "inline-flex min-h-11 items-center text-[15px] font-semibold text-white/80 transition-colors hover:text-white sm:min-h-8"
 
 /**
- * One solid Deep Water band, like Duolingo's: bold headings and link
- * columns, the maker and a theme switch, then a giant "tusk" cropped at the bottom.
+ * One solid band, like Duolingo's: Deep Water in light mode, the page's
+ * near-black in dark mode with the wordmark in Tusk Blue, so the theme
+ * switch visibly changes it. Bold headings and link columns, the maker
+ * and the theme switch, then a giant "tusk" cropped at the bottom.
  * White on Deep Water is about 6.6:1, so 15 px links stay readable.
  * `relative z-10` keeps the FAQ band's fade from tinting it.
  */
 export function SiteFooter() {
   return (
-    <footer className="relative z-10 overflow-hidden bg-deep-water text-white">
+    <footer className="relative z-10 overflow-hidden bg-deep-water text-white dark:bg-background">
       <div className="mx-auto w-full max-w-[70rem] px-4 pt-16 sm:px-6 sm:pt-24">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-5">
           {COLUMNS.map((groups) => (
@@ -131,7 +133,7 @@ export function SiteFooter() {
 
         {/* Sized to the container's width (cqw), cropped at the bottom. */}
         <div aria-hidden="true" className="@container mt-6 select-none">
-          <p className="-mb-[5cqw] text-center font-heading text-[52cqw] leading-[0.8] font-bold text-white [font-synthesis:none]">
+          <p className="-mb-[5cqw] text-center font-heading text-[52cqw] leading-[0.8] font-bold text-white dark:text-accent">
             tusk
           </p>
         </div>
