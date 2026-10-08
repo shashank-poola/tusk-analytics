@@ -1,6 +1,9 @@
 import { Card } from "@/components/ui/card"
 
+import { cn } from "@workspace/ui/lib/utils"
+
 import { BreakdownBody } from "@/features/analytics/components/breakdowns/breakdown-body"
+import { BreakdownRows } from "@/features/analytics/components/breakdowns/breakdown-rows"
 import { UsersTable } from "@/features/analytics/components/insights/users-table"
 import { ChangeIndicator } from "@/features/analytics/components/overview/change-indicator"
 import { CountUp } from "@/features/analytics/components/overview/count-up"
@@ -67,16 +70,23 @@ const KPIS: Record<"visitors" | "pageviews" | "bounce" | "session", Kpi> = {
 type DemoOverviewCardProps = {
   /** `live`: Visitors, Pageviews and Online only, for a narrow column. */
   variant?: "full" | "live"
+  className?: string
 }
 
 /** The numbers row on top of the visitors chart. */
-export function DemoOverviewCard({ variant = "full" }: DemoOverviewCardProps) {
+export function DemoOverviewCard({
+  variant = "full",
+  className,
+}: DemoOverviewCardProps) {
   const kpis =
     variant === "full"
       ? [KPIS.visitors, KPIS.pageviews, KPIS.bounce, KPIS.session]
       : [KPIS.visitors, KPIS.pageviews]
   return (
-    <Card aria-label="Overview" className="overflow-hidden">
+    <Card
+      aria-label="Overview"
+      className={cn("flex flex-col overflow-hidden", className)}
+    >
       <ul
         className={
           variant === "full"
@@ -103,7 +113,7 @@ export function DemoOverviewCard({ variant = "full" }: DemoOverviewCardProps) {
           value={formatNumber(online)}
         />
       </ul>
-      <div className="px-3 pb-3 sm:px-5 sm:pb-4">
+      <div className="mt-auto px-3 pb-3 sm:px-5 sm:pb-4">
         <VisitorsChart
           timeseries={DEMO_TIMESERIES}
           compare={false}
@@ -123,14 +133,19 @@ const noFilter = () => null
 type DemoBreakdownProps = {
   /** Which of the dashboard's four cards: "Sources", "Pages"… */
   card: (typeof DEMO_CARDS)[number]["label"]
-  /** Fewer rows and no fixed height, for a feature row. */
+  /** A feature row's card: fewer rows, no "Details", its height from `className`. */
   compact?: boolean
+  className?: string
 }
 
-const COMPACT_ROWS = 6
+const COMPACT_ROWS = 7
 
 /** One breakdown card, its tabs switching in place. */
-export function DemoBreakdown({ card, compact = false }: DemoBreakdownProps) {
+export function DemoBreakdown({
+  card,
+  compact = false,
+  className,
+}: DemoBreakdownProps) {
   const spec = DEMO_CARDS.find((candidate) => candidate.label === card)
   if (!spec) return null
   return (
@@ -138,24 +153,30 @@ export function DemoBreakdown({ card, compact = false }: DemoBreakdownProps) {
       label={spec.label}
       tabs={spec.tabs}
       compact={compact}
+      className={className}
       panels={Object.fromEntries(
         spec.tabs.map((tab) => {
           const breakdown = DEMO_BREAKDOWNS[tab.id]
           return [
             tab.id,
-            <BreakdownBody
-              key={tab.id}
-              title={tab.label}
-              breakdown={
-                compact
-                  ? {
-                      ...breakdown,
-                      rows: breakdown.rows.slice(0, COMPACT_ROWS),
-                    }
-                  : breakdown
-              }
-              hrefFor={noFilter}
-            />,
+            compact ? (
+              <BreakdownRows
+                key={tab.id}
+                label={`Top ${tab.label.toLowerCase()}`}
+                breakdown={{
+                  ...breakdown,
+                  rows: breakdown.rows.slice(0, COMPACT_ROWS),
+                }}
+                hrefFor={noFilter}
+              />
+            ) : (
+              <BreakdownBody
+                key={tab.id}
+                title={tab.label}
+                breakdown={breakdown}
+                hrefFor={noFilter}
+              />
+            ),
           ]
         })
       )}
@@ -164,9 +185,18 @@ export function DemoBreakdown({ card, compact = false }: DemoBreakdownProps) {
 }
 
 /** The User tab: faces, names, where they're from and when they were here. */
-export function DemoUsersCard({ count }: { count: number }) {
+export function DemoUsersCard({
+  count,
+  className,
+}: {
+  count: number
+  className?: string
+}) {
   return (
-    <Card aria-label="Users" className="relative flex flex-col p-2.5">
+    <Card
+      aria-label="Users"
+      className={cn("relative flex flex-col p-2.5", className)}
+    >
       <div className="flex min-h-11 items-center pr-1.5">
         <div className={TAB_TRACK_CLASSES}>
           <span className={tabClasses(true)}>User</span>

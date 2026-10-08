@@ -1,9 +1,9 @@
-import Image from "next/image"
 import Link from "next/link"
 
 import { routes } from "@/lib/routes"
 
 import { MAKER_URL } from "@/features/marketing/utils/links"
+import { FooterThemeSwitch } from "./footer-theme-switch"
 import { type LandingSection, SectionLink } from "./section-link"
 
 type FooterLink =
@@ -86,7 +86,7 @@ const LINK_CLASSES =
 
 /**
  * One solid Deep Water band, like Duolingo's: bold headings and link
- * columns, the maker and Shell, then a giant "tusk" cropped at the bottom.
+ * columns, the maker and a theme switch, then a giant "tusk" cropped at the bottom.
  * White on Deep Water is about 6.6:1, so 15 px links stay readable.
  * `relative z-10` keeps the FAQ band's fade from tinting it.
  */
@@ -126,16 +126,7 @@ export function SiteFooter() {
             </a>
             .
           </p>
-          <div className="flex items-center gap-3">
-            You made it to the bottom. Shell is impressed.
-            <Image
-              src="/mascot/turtle.png"
-              alt="Shell the turtle, strolling along"
-              width={56}
-              height={56}
-              className="size-14"
-            />
-          </div>
+          <FooterThemeSwitch />
         </div>
 
         {/* Sized to the container's width (cqw), cropped at the bottom. */}

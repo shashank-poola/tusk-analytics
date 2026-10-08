@@ -16,8 +16,9 @@ type DemoBreakdownCardProps = {
   tabs: { id: string; label: string }[]
   /** Each tab's rows, rendered on the server. */
   panels: Record<string, React.ReactNode>
-  /** Sizes to its rows instead of the dashboard's fixed height. */
+  /** A feature row's card: its height comes from `className`. */
   compact?: boolean
+  className?: string
 }
 
 /**
@@ -29,13 +30,18 @@ export function DemoBreakdownCard({
   tabs,
   panels,
   compact = false,
+  className,
 }: DemoBreakdownCardProps) {
   const [active, setActive] = useState(tabs[0]?.id ?? "")
   const id = useId()
   return (
     <Card
       aria-label={label}
-      className={cn("flex flex-col p-2.5", !compact && FIXED_CARD_HEIGHT)}
+      className={cn(
+        "flex flex-col p-2.5",
+        !compact && FIXED_CARD_HEIGHT,
+        className
+      )}
     >
       <div className="flex min-h-11 items-center justify-between gap-2 pr-1.5">
         <div className="min-w-0 overflow-x-auto">
