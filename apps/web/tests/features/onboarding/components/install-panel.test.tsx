@@ -23,17 +23,27 @@ function renderPanel() {
 }
 
 describe("InstallPanel", () => {
-  it("starts on Next.js, has no plain HTML tab, and goes to the dashboard once added", () => {
+  it("offers Next.js, npm, Lovable and Shopify, starting on Next.js", () => {
     renderPanel()
 
-    expect(screen.getByRole("tab", { name: /Next\.js/ })).toHaveAttribute(
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Next.js",
+      "npm",
+      "Lovable",
+      "Shopify",
+    ])
+    expect(screen.getByRole("tab", { name: "Next.js" })).toHaveAttribute(
       "aria-selected",
       "true"
     )
-    expect(screen.getAllByRole("tab")).toHaveLength(3)
     expect(
       screen.getByText(/import Script from "next\/script"/)
     ).toBeInTheDocument()
+  })
+
+  it("goes to the dashboard once the script is added", () => {
+    renderPanel()
+
     expect(
       screen.getByRole("link", { name: "I've added the script" })
     ).toHaveAttribute("href", "/site/vt_3k9x2m7qpd4n8r1t")
@@ -41,7 +51,7 @@ describe("InstallPanel", () => {
 
   it("switches every snippet to cookieless with the switch", async () => {
     renderPanel()
-    const toggle = screen.getByRole("switch", { name: /Cookieless mode/ })
+    const toggle = screen.getByRole("switch", { name: /Cookieless tracking/ })
 
     await userEvent.click(toggle)
 
@@ -52,25 +62,36 @@ describe("InstallPanel", () => {
   it("shows the npm package on its tab", async () => {
     renderPanel()
 
-    await userEvent.click(screen.getByRole("tab", { name: /npm/ }))
+    await userEvent.click(screen.getByRole("tab", { name: "npm" }))
 
     expect(screen.getByText("npm i @usetusk/analytics")).toBeInTheDocument()
   })
 
+  it("tells Shopify stores where in the theme the script goes", async () => {
+    renderPanel()
+
+    await userEvent.click(screen.getByRole("tab", { name: "Shopify" }))
+
+    expect(
+      screen.getByText(/Online Store → Themes → Edit code/)
+    ).toBeInTheDocument()
+    expect(screen.getByText(/<script defer data-site=/)).toBeInTheDocument()
+  })
+
   it("enables Open in Lovable only for a Lovable project link", async () => {
     renderPanel()
-    await userEvent.click(screen.getByRole("tab", { name: /Lovable/ }))
+    await userEvent.click(screen.getByRole("tab", { name: "Lovable" }))
     expect(
-      screen.queryByRole("link", { name: /Open in Lovable/ })
+      screen.queryByRole("link", { name: "Open in Lovable" })
     ).not.toBeInTheDocument()
 
     await userEvent.type(
-      screen.getByLabelText("Your Lovable project link"),
+      screen.getByLabelText("Lovable project link"),
       "https://lovable.dev/projects/0a1b2c3d-4e5f"
     )
 
     expect(
-      screen.getByRole("link", { name: /Open in Lovable/ })
+      screen.getByRole("link", { name: "Open in Lovable" })
     ).toHaveAttribute(
       "href",
       expect.stringMatching(

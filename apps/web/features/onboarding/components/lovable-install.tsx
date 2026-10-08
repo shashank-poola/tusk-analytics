@@ -1,56 +1,55 @@
 "use client"
 
 import { cn } from "@workspace/ui/lib/utils"
-import { Heart } from "lucide-react"
 import { useId, useState } from "react"
 
 import { BUTTON_CLASSES, INPUT_CLASSES } from "@/components/ui/button-styles"
 
 import { lovableLink } from "@/features/onboarding/utils/snippets"
-import { CodeBlock } from "./code-block"
-import { InstallHint } from "./install-hint"
 
 /**
- * Lovable's own link format opens the project with the prompt typed in
- * (lovable.dev/projects/<id>?prompt=…); the person still presses send.
- * The same prompt works in Cursor, Bolt or any AI editor.
+ * Lovable's own link format opens the project with the install prompt
+ * typed in (lovable.dev/projects/<id>?prompt=…); the person presses send.
+ * "Copy prompt" covers Cursor, Bolt and other AI editors.
  */
 export function LovableInstall({ prompt }: { prompt: string }) {
   const id = useId()
   const [projectUrl, setProjectUrl] = useState("")
+  const [copied, setCopied] = useState(false)
   const link = lovableLink(projectUrl, prompt)
-  const showError = projectUrl.trim() !== "" && !link
+  const invalid = projectUrl.trim() !== "" && !link
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(prompt)
+      setCopied(true)
+    } catch {
+      // Denied: nothing to show; the Lovable link still works.
+    }
+  }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label htmlFor={`${id}-project`} className="text-[15px] font-semibold">
-          Your Lovable project link
-        </label>
-        <input
-          id={`${id}-project`}
-          inputMode="url"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="https://lovable.dev/projects/…"
-          value={projectUrl}
-          onChange={(event) => setProjectUrl(event.target.value)}
-          aria-invalid={showError || undefined}
-          aria-describedby={`${id}-project-hint`}
-          className={cn(INPUT_CLASSES, "mt-1.5")}
-        />
-        <p
-          id={`${id}-project-hint`}
-          className={cn(
-            "mt-1.5 text-[13px]",
-            showError ? "text-negative" : "text-muted-foreground"
-          )}
-        >
-          {showError
-            ? "That isn't a Lovable project link. Copy it from your browser's address bar in Lovable."
-            : "Open your project in Lovable and copy the address from your browser."}
+    <div className="space-y-3">
+      <label htmlFor={`${id}-project`} className="sr-only">
+        Lovable project link
+      </label>
+      <input
+        id={`${id}-project`}
+        inputMode="url"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="https://lovable.dev/projects/…"
+        value={projectUrl}
+        onChange={(event) => setProjectUrl(event.target.value)}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-error` : undefined}
+        className={INPUT_CLASSES}
+      />
+      {invalid && (
+        <p id={`${id}-error`} className="text-[13px] text-negative">
+          That isn&apos;t a Lovable project link.
         </p>
-      </div>
+      )}
       {link ? (
         <a
           href={link}
@@ -58,8 +57,7 @@ export function LovableInstall({ prompt }: { prompt: string }) {
           rel="noopener noreferrer"
           className={cn(BUTTON_CLASSES.secondary, "w-full")}
         >
-          <Heart aria-hidden="true" className="size-4" />
-          Open in Lovable with the prompt
+          Open in Lovable
         </a>
       ) : (
         <span
@@ -69,15 +67,16 @@ export function LovableInstall({ prompt }: { prompt: string }) {
             "pointer-events-none w-full opacity-60"
           )}
         >
-          <Heart aria-hidden="true" className="size-4" />
-          Open in Lovable with the prompt
+          Open in Lovable
         </span>
       )}
-      <InstallHint>
-        Then press send in Lovable. Using Cursor, Bolt or v0? Copy the same
-        prompt:
-      </InstallHint>
-      <CodeBlock label="Prompt" code={prompt} copyLabel="Copy prompt" />
+      <button
+        type="button"
+        onClick={copyPrompt}
+        className="mx-auto block min-h-11 text-[13px] font-semibold text-link underline-offset-4 hover:underline sm:min-h-8"
+      >
+        {copied ? "Prompt copied" : "Copy prompt for another AI editor"}
+      </button>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@workspace/ui/lib/utils"
-import { ArrowRight, Heart, Package, Triangle } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { useId, useState } from "react"
 
@@ -11,13 +11,25 @@ import { TabList } from "@/components/ui/tab-list"
 import type { Snippets } from "@/features/onboarding/utils/snippets"
 import { CodeBlock } from "./code-block"
 import { CookielessSwitch } from "./cookieless-switch"
-import { InstallHint } from "./install-hint"
 import { LovableInstall } from "./lovable-install"
 
 const TABS = [
-  { id: "nextjs", label: "Next.js", icon: Triangle },
-  { id: "npm", label: "npm", icon: Package },
-  { id: "lovable", label: "Lovable", icon: Heart },
+  {
+    id: "nextjs",
+    label: "Next.js",
+    logo: { src: "/icons/platforms/nextjs.svg", invertInDark: true },
+  },
+  { id: "npm", label: "npm", logo: { src: "/icons/platforms/npm.svg" } },
+  {
+    id: "lovable",
+    label: "Lovable",
+    logo: { src: "/icons/platforms/lovable.svg" },
+  },
+  {
+    id: "shopify",
+    label: "Shopify",
+    logo: { src: "/icons/platforms/shopify.svg" },
+  },
 ] as const
 
 type Tab = (typeof TABS)[number]["id"]
@@ -30,9 +42,8 @@ type InstallPanelProps = {
 }
 
 /**
- * Every way to install, one tab each, with the cookieless switch on top.
- * "I've added the script" goes straight to the dashboard, which waits for
- * the first visit there.
+ * One tab per way to install, the cookieless switch, the snippet and the
+ * button: nothing else, so the card stays small.
  */
 export function InstallPanel({ snippets, continueHref }: InstallPanelProps) {
   const id = useId()
@@ -41,13 +52,14 @@ export function InstallPanel({ snippets, continueHref }: InstallPanelProps) {
   const current = cookieless ? snippets.cookieless : snippets.standard
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <TabList
         label="How to install"
         tabs={TABS}
         active={tab}
         onChange={(next) => setTab(next as Tab)}
         idPrefix={id}
+        stretch
       />
 
       <CookielessSwitch on={cookieless} onChange={setCookieless} />
@@ -57,46 +69,39 @@ export function InstallPanel({ snippets, continueHref }: InstallPanelProps) {
         id={`${id}-panel`}
         aria-labelledby={`${id}-${tab}`}
         tabIndex={0}
-        className="space-y-3 rounded-2xl"
+        className="space-y-3 rounded-xl"
       >
         {tab === "nextjs" && (
-          <>
-            <InstallHint>
-              Add it to your root layout, inside &lt;body&gt;.
-            </InstallHint>
-            <CodeBlock label="app/layout.tsx" code={current.nextjs} />
-          </>
+          <CodeBlock label="app/layout.tsx" code={current.nextjs} />
         )}
         {tab === "npm" && (
           <>
-            <InstallHint>
-              For any framework: start Tusk from your app code and send goals
-              with <code className="font-mono">track(&quot;signup&quot;)</code>.
-              The package is on its way to npm; until then, use the script.
-            </InstallHint>
-            <CodeBlock
-              label="Terminal"
-              code={current.npm.install}
-              copyLabel="Copy command"
-            />
-            <CodeBlock label="Your app's entry" code={current.npm.code} />
+            <CodeBlock label="Terminal" code={current.npm.install} />
+            <CodeBlock label="Your app" code={current.npm.code} />
           </>
         )}
         {tab === "lovable" && <LovableInstall prompt={current.aiPrompt} />}
+        {tab === "shopify" && (
+          <>
+            <ol className="list-decimal space-y-1 pl-5 text-[13px] text-muted-foreground">
+              <li>Online Store → Themes → Edit code</li>
+              <li>
+                In <span className="font-mono">theme.liquid</span>, paste this
+                before <span className="font-mono">&lt;/head&gt;</span> and save
+              </li>
+            </ol>
+            <CodeBlock label="theme.liquid" code={current.html} />
+          </>
+        )}
       </div>
 
-      <div className="border-t-2 border-border pt-5">
-        <Link
-          href={continueHref}
-          className={cn(BUTTON_CLASSES.primary, "w-full")}
-        >
-          I&apos;ve added the script
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
-        <p className="mt-3 text-center text-[13px] text-muted-foreground">
-          Your dashboard waits for the first visit and lights up when it lands.
-        </p>
-      </div>
+      <Link
+        href={continueHref}
+        className={cn(BUTTON_CLASSES.primary, "w-full")}
+      >
+        I&apos;ve added the script
+        <ArrowRight aria-hidden="true" className="size-4" />
+      </Link>
     </div>
   )
 }

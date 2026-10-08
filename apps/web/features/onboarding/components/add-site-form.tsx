@@ -60,7 +60,7 @@ export function AddSiteForm({ defaultDomain = "", onAdded }: AddSiteFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div>
         <label htmlFor="domain" className="text-[15px] font-semibold">
           Domain
@@ -83,28 +83,31 @@ export function AddSiteForm({ defaultDomain = "", onAdded }: AddSiteFormProps) {
             value={domain}
             onChange={(event) => setDomain(event.target.value)}
             aria-invalid={errors.domain ? true : undefined}
-            aria-describedby={errors.domain ? "domain-error" : "domain-hint"}
+            aria-describedby={errors.domain ? "domain-error" : undefined}
             className={cn(FIELD_CLASSES, "pl-11")}
           />
         </div>
-        <FieldMessage id="domain" error={errors.domain}>
-          Paste your site&apos;s address. We keep only the domain.
-        </FieldMessage>
+        <FieldError id="domain" error={errors.domain} />
       </div>
 
       <div>
-        <label htmlFor="timezone" className="text-[15px] font-semibold">
-          Time zone
-        </label>
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor="timezone" className="text-[15px] font-semibold">
+            Time zone
+          </label>
+          {localTime && (
+            <span className="text-[13px] text-muted-foreground">
+              {localTime} there
+            </span>
+          )}
+        </div>
         <select
           id="timezone"
           name="timezone"
           value={timezone}
           onChange={(event) => setChosenTimezone(event.target.value)}
           aria-invalid={errors.timezone ? true : undefined}
-          aria-describedby={
-            errors.timezone ? "timezone-error" : "timezone-hint"
-          }
+          aria-describedby={errors.timezone ? "timezone-error" : undefined}
           className={cn(FIELD_CLASSES, "mt-1.5")}
         >
           {timezones.map((zone) => (
@@ -113,10 +116,7 @@ export function AddSiteForm({ defaultDomain = "", onAdded }: AddSiteFormProps) {
             </option>
           ))}
         </select>
-        <FieldMessage id="timezone" error={errors.timezone}>
-          {localTime ? `It's ${localTime} there. ` : ""}Your days start at
-          midnight in this time zone.
-        </FieldMessage>
+        <FieldError id="timezone" error={errors.timezone} />
       </div>
 
       {errors.form && (
@@ -139,29 +139,11 @@ export function AddSiteForm({ defaultDomain = "", onAdded }: AddSiteFormProps) {
 
 const FIELD_CLASSES = cn(INPUT_CLASSES, "aria-invalid:border-negative")
 
-function FieldMessage({
-  id,
-  error,
-  children,
-}: {
-  id: string
-  error: string | undefined
-  children: React.ReactNode
-}) {
-  if (error) {
-    return (
-      <p
-        id={`${id}-error`}
-        role="alert"
-        className="mt-1.5 text-sm text-negative"
-      >
-        {error}
-      </p>
-    )
-  }
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null
   return (
-    <p id={`${id}-hint`} className="mt-1.5 text-sm text-muted-foreground">
-      {children}
+    <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm text-negative">
+      {error}
     </p>
   )
 }

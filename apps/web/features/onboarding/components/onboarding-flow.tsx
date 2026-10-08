@@ -42,29 +42,24 @@ export function OnboardingFlow({
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100svh-7rem)] w-full max-w-xl flex-col justify-center gap-6 sm:h-[calc(100svh-9rem)]">
+    <div className="mx-auto flex h-[calc(100svh-7rem)] w-full max-w-lg flex-col justify-center gap-5 sm:h-[calc(100svh-9rem)]">
       <OnboardingProgress step={site ? 2 : 1} />
       <section
         aria-labelledby="onboarding-title"
         className="flex min-h-0 flex-col rounded-[1.25rem] border-2 border-border bg-surface"
       >
-        <header className="px-5 pt-5 sm:px-7 sm:pt-7">
+        <header className="px-5 pt-5 sm:px-6 sm:pt-6">
           <h1
             id="onboarding-title"
-            className="flex items-center gap-2.5 text-2xl leading-tight"
+            className="flex items-center gap-2.5 text-xl leading-tight"
           >
             {site && <SiteFavicon siteId={site.id} domain={site.domain} />}
             {site ? `Install Tusk on ${site.domain}` : "Add your site"}
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            {site
-              ? "Pick how your site is built. It takes about a minute."
-              : "Tell us where Tusk will run. The install snippet comes next."}
-          </p>
         </header>
         <div
           key={site ? "install" : "add"}
-          className="min-h-0 animate-rise overflow-y-auto px-5 pt-6 pb-5 sm:px-7 sm:pb-7"
+          className="min-h-0 animate-rise overflow-y-auto px-5 pt-5 pb-5 sm:px-6 sm:pb-6"
         >
           {site ? (
             <InstallPanel

@@ -6,7 +6,13 @@ import { useRef } from "react"
 
 import { TAB_TRACK_CLASSES, tabClasses } from "./tab-styles"
 
-export type TabItem = { id: string; label: string; icon?: LucideIcon }
+export type TabItem = {
+  id: string
+  label: string
+  icon?: LucideIcon
+  /** A brand logo instead of an icon; `invertInDark` for black logos. */
+  logo?: { src: string; invertInDark?: boolean }
+}
 
 type TabListProps = {
   /** Names the list, e.g. "How to install". */
@@ -16,6 +22,8 @@ type TabListProps = {
   onChange: (id: string) => void
   /** From useId(): tabs get `${idPrefix}-${id}`, the panel `${idPrefix}-panel`. */
   idPrefix: string
+  /** Tabs share the full width equally, like a segmented control. */
+  stretch?: boolean
 }
 
 const MOVES: Record<string, (index: number, count: number) => number> = {
@@ -37,6 +45,7 @@ export function TabList({
   active,
   onChange,
   idPrefix,
+  stretch = false,
 }: TabListProps) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -53,7 +62,14 @@ export function TabList({
 
   return (
     <div className="min-w-0 overflow-x-auto">
-      <div role="tablist" aria-label={label} className={TAB_TRACK_CLASSES}>
+      <div
+        role="tablist"
+        aria-label={label}
+        className={cn(
+          TAB_TRACK_CLASSES,
+          stretch && "grid w-full auto-cols-fr grid-flow-col"
+        )}
+      >
         {tabs.map((tab, index) => {
           const selected = tab.id === active
           return (
@@ -70,9 +86,26 @@ export function TabList({
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(tab.id)}
               onKeyDown={(event) => handleKeyDown(event, index)}
-              className={cn(tabClasses(selected), tab.icon && "gap-1.5")}
+              className={cn(
+                tabClasses(selected),
+                (tab.icon || tab.logo) && "gap-1.5",
+                stretch && "justify-center"
+              )}
             >
               {tab.icon && <tab.icon aria-hidden="true" className="size-3.5" />}
+              {tab.logo && (
+                // eslint-disable-next-line @next/next/no-img-element -- small static SVG
+                <img
+                  src={tab.logo.src}
+                  alt=""
+                  width={14}
+                  height={14}
+                  className={cn(
+                    "size-3.5",
+                    tab.logo.invertInDark && "dark:invert"
+                  )}
+                />
+              )}
               {tab.label}
             </button>
           )
