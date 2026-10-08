@@ -131,8 +131,13 @@ export function SiteFooter() {
           <FooterThemeSwitch />
         </div>
 
-        {/* Sized to the container's width (cqw), cropped at the bottom. */}
-        <div aria-hidden="true" className="@container mt-6 select-none">
+        {/* Sized to the container's width (cqw), cropped at the bottom. Its
+            letters rise above its box (tight leading), so it must never
+            catch clicks meant for the theme switch above it. */}
+        <div
+          aria-hidden="true"
+          className="@container pointer-events-none mt-6 select-none"
+        >
           <p className="-mb-[5cqw] text-center font-heading text-[52cqw] leading-[0.8] font-bold text-white dark:text-accent">
             tusk
           </p>
