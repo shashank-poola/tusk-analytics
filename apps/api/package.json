@@ -27,7 +27,7 @@
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^10",
     "typescript": "^7",
-    "vitest": "~4.1.11",
+    "vitest": "~5.0.5",
     "wrangler": "^4.147.0"
   }
 }
