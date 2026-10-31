@@ -11,10 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "1.7.7",
+    "@better-auth/drizzle-adapter": "1.7.14",
     "@workspace/contracts": "workspace:*",
     "@workspace/db": "workspace:*",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.14",
     "hono": "^4.13.13",
     "ua-parser-js": "1.0.41",
     "zod": "^4.6.7"
